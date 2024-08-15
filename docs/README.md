@@ -16,6 +16,11 @@ The class will be a combination of lectures and hands-on exercises. We will use 
 
 [Kaggle](https://www.kaggle.com/datasets)
 
+## 
+- Attendence
+- Homeworks
+- Project
+- Presentation, Report
 
 ## Schedule
 
