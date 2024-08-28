@@ -29,7 +29,7 @@ The class will be a combination of lectures and hands-on exercises. We will use 
 | 09/02 | Labor Day |
 | 09/09 | [Introduction && Python 101] | <!-- SEDC -->
 | 09/16 | [Numpy & Pandas] |
-| 09/23 | [Maplotlib & PyGMT & Pyrko] |
+| 09/23 | [Maplotlib & PyGMT & Cartopy] |
 | 09/30 | [SkLearn: Regression & Classificiation & Supervised Learning] |
 | 10/07 | [SkLearn: Model selection: Bias vs Variance trade-off] |
 | 10/14 | [Sklearn: Unsupervised Learning: cluster & Dimensionality reduction] |
