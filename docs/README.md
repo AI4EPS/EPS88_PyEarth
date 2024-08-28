@@ -10,7 +10,7 @@ The class will be a combination of lectures and hands-on exercises. We will use 
 
 ## Time and Location
 - Lecture: Monday 12:00 PM - 2:00 PM in McCone 265
-- Office Hour: Monday 2:00 PM - 3:00 PM in McCone 285
+- Office Hour: Monday 2:00 PM - 3:00 PM in McCone 265
 
 ## Projects
 
