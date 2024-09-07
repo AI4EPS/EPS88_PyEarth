@@ -11,7 +11,9 @@
         "mathematic.vscode-pdf"
       ],
       "settings": {
-        "jupyter.defaultKernelSpec": "/home/codespace/.python/current/bin/python"
+        "jupyter.defaultKernelSpec": "/home/codespace/.python/current/bin/python",
+        "python.defaultInterpreterPath": "/home/codespace/.python/current/bin/python",
+        "python.pythonPath": "/home/codespace/.python/current/bin/python"
       }
     }
   },
