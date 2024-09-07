@@ -1,0 +1,15 @@
+{
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "features": {
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-toolsai.jupyter",
+        "ms-python.python",
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "mechatroner.rainbow-csv"
+      ]
+    }
+}
