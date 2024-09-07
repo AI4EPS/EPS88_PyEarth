@@ -1,0 +1,2 @@
+docs/scripts/data/earthquakes.csv filter=lfs diff=lfs merge=lfs -text
+docs/scripts/data/global_temperature.csv filter=lfs diff=lfs merge=lfs -text

@@ -11,7 +11,7 @@ paginate: true
 
 ---
 
-# 0. Course Overview
+# Course Overview
 
 - Focus on Python programming for Earth Science applications
 - Topics include:
@@ -24,7 +24,22 @@ paginate: true
 
 ---
 
-# 1. Class Tools
+# Grading
+
+- Attendance: 10%
+- In-class and homework exercises: 50%
+- Project presentation: 20%
+- Project report: 20%
+
+Bonus points:
+
+- Assisting classmates: 10%
+- Contributing course materials: 10%
+- Achieving success in a Kaggle competition (top 10% rank): 10%
+
+---
+
+# Class Tools
 
 ## GitHub
 - Version control system
@@ -40,7 +55,7 @@ paginate: true
 
 ---
 
-# 2. How to Use Copilot
+# How to Use Copilot
 
 1. Install Copilot extension
 2. Authenticate with your GitHub account
@@ -53,9 +68,9 @@ Tips:
 
 ---
 
-# 3. Using GPT or Claude for Programming and Earth Science Questions
+# Using Chatbots for Programming and Earth Science Questions
 
-- AI-powered language models
+- AI-powered language models, such as GPT, Claude, Gemini, Grok, LLama, etc.
 - Can assist with:
   - Explaining concepts
   - Debugging code
