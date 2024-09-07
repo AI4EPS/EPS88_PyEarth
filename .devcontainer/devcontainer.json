@@ -7,8 +7,13 @@
         "ms-python.python",
         "GitHub.copilot",
         "GitHub.copilot-chat",
-        "mechatroner.rainbow-csv"
-      ]
-    }
+        "mechatroner.rainbow-csv",
+        "mathematic.vscode-pdf"
+      ],
+      "settings": {
+        "jupyter.defaultKernelSpec": "/home/codespace/.python/current/bin/python"
+      }
+    },
+    "postCreateCommand": "sudo apt-get update && sudo apt-get install -y texlive-xetex texlive-fonts-recommended texlive-plain-generic pandoc && pip install -r requirements.txt"
   }
 }
