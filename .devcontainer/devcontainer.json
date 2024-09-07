@@ -1,7 +1,5 @@
 {
   "image": "mcr.microsoft.com/devcontainers/universal:2",
-  "features": {
-  },
   "customizations": {
     "vscode": {
       "extensions": [
@@ -12,4 +10,5 @@
         "mechatroner.rainbow-csv"
       ]
     }
+  }
 }
