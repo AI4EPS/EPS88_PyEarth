@@ -4,6 +4,7 @@
 ### Exercise 1: Variables and Data Types
 
 Create variables for the following Earth-related information:
+
 - Name of our planet
 - Earth's radius in kilometers
 - Earth's average surface temperature in Celsius
