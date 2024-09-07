@@ -96,18 +96,20 @@ Let's compare the speed of calculating the mean of a large array:
 import numpy as np
 import time
 
-# Create a large list of numbers
-data = list(range(1000000))
+# Create large arrays
+size = 10000000
+data = list(range(size))
+np_data = np.array(data)
 
-# Basic Python
+# Python list comprehension
 start = time.time()
-mean_py = sum(data) / len(data)
+result_py = [x**2 + 2*x + 1 for x in data]
 end = time.time()
 print(f"Python time: {end - start:.6f} seconds")
 
-# NumPy
+# NumPy vectorized operation
 start = time.time()
-mean_np = np.mean(data)
+result_np = np_data**2 + 2*np_data + 1
 end = time.time()
 print(f"NumPy time: {end - start:.6f} seconds")
 ```
