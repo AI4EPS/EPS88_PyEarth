@@ -4,8 +4,8 @@
 
 Welcome to PyEarth, a course designed to introduce students to the intersection of Python programming and Earth Science. This course is tailored for students interested in applying computational methods to understand our planet.
 
-The course uses Python/Jupyter Notebook and real-world observations to introduce students to various Earth phenomena and their underlying physics. Students will learn how to access and visualize data, extract signals, and make probability forecasts.
-
+The course uses Python/Jupyter Notebook and real-world observations to introduce students to various Earth phenomena and their underlying physics. 
+<!-- Students will learn how to access and visualize data, extract signals, and make probability forecasts. -->
 The class is designed for undergraduate students, and no prior knowledge of Earth Science is required.  In this course, you will:
 
 - Learn the basics of Python programming
