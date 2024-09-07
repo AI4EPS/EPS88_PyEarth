@@ -24,11 +24,11 @@ The class will be a combination of lectures and hands-on exercises. We will use 
 
 ## Schedule
 
-| Date | Topic | Notebooks |
+| Date | Topic | Links |
 | --- | --- | --- |
 | 09/02 | Labor Day |  |
-| 09/09 | [Introduction && Python 101] |  |
-| 09/16 | [Numpy & Pandas] |  |
+| 09/09 | [Introduction && Python 101] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/00_introduction_python101), [notebook](https://ai4eps.github.io/EPS88_PyEarth/exercises/00_introduction_python101) |
+| 09/16 | [Numpy & Pandas] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/01_numpy_pandas), [notebook](https://ai4eps.github.io/EPS88_PyEarth/exercises/01_numpy_pandas) |
 | 09/23 | [Maplotlib & Cartopy & PyGMT] |  |
 | 09/30 | [SkLearn: Supervised Learning: Regression & Classification] |  |
 | 10/07 | [Sklearn: Advanced models: SVM & Decision Tree] |  |
