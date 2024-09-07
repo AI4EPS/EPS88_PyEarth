@@ -1,10 +1,22 @@
-Welcome to EPS88 PyEarth: A Python Introduction to Earth Science
+# PyEarth: A Python Introduction to Earth Science
 
 <!-- [![documentation](https://github.com/ai4eps/EPS207_Observational_Seismology/actions/workflows/docs.yml/badge.svg)](https://ai4eps.github.io/EPS207_Observational_Seismology/) -->
 
-Earthquakes and El Ninos are examples of natural hazards in California.  The course uses Python/Jupyter Notebook and real-world observations to introduce students to these and other Earth phenomena and their underlying physics.  The students will learn how to access and visualize the data, extract signals, and make probability forecasts.   The final module is a project that synthesizes the course material to make a probabilistic forecast.  The course will be co-taught by a team of EPS faculty, and the focus of each semester will depend on the expertise of the faculty in charge.
+Welcome to PyEarth, a course designed to introduce students to the intersection of Python programming and Earth Science. This course is tailored for students interested in applying computational methods to understand our planet.
 
-The class will be a combination of lectures and hands-on exercises. We will use primarily Python (obpsy, numpy, scipy, matplotlib, pytorch, etc.) as programming languages. The course is designed for undergraduate students. No prior knowledge of Earth Science is required.
+The course uses Python/Jupyter Notebook and real-world observations to introduce students to various Earth phenomena and their underlying physics. Students will learn how to access and visualize data, extract signals, and make probability forecasts.
+
+The class is designed for undergraduate students, and no prior knowledge of Earth Science is required.  In this course, you will:
+
+- Learn the basics of Python programming
+- Explore fundamental Earth Science concepts
+- Apply data analysis techniques to real-world Earth Science problems
+- Gain hands-on experience with popular Python libraries such as NumPy, Pandas, Matplotlib, and scikit-learn
+- Develop skills in machine learning and its applications in Earth Science
+- Work on practical projects to reinforce your learning
+
+Twill consist of a combination of lectures and hands-on exercises from the basics of Python to advanced topics like neural networks and their applications in Earth Science. 
+By the end of this course, you'll have a foundation in both Python programming and Earth Science analysis techniques.
 
 ## [Syllabus](syllabus.md)
 
