@@ -1,0 +1,29 @@
+site_name: "EPS88 PyEarth: A Python Introduction to Earth Science"
+site_description: ""
+site_author: "Weiqiang Zhu"
+docs_dir: docs/
+repo_name: "AI4EPS/EPS88_PyEarth"
+repo_url: "https://github.com/AI4EPS/EPS88_PyEarth"
+edit_uri: blob/main/docs/
+
+nav:
+  - Overview: README.md
+
+theme:
+  name: "material"
+  features:
+    - content.code.annotate
+    - content.action.edit
+    - navigation.expand
+
+plugins:
+  - mkdocs-jupyter:
+      ignore_h1_titles: True
+      include: ["*.ipynb"]
+      ignore: ["docs/lectures/codes/QuakeFlow/*.ipynb","docs/lectures/codes/QuakeFlow/*/*.ipynb","docs/lectures/codes/QuakeFlow/*/*/*.ipynb","docs/lectures/codes/QuakeFlow/*/*/*.ipynb","docs/lectures/codes/QuakeFlow/*/*/*/*.ipynb"]
+
+extra:
+  generator: false
+  analytics:
+    provider: google
+    property: G-JHM5N31W8F

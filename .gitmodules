@@ -1,0 +1,3 @@
+[submodule "docs/EPS88-Spring-2023"]
+	path = docs/EPS88-Spring-2023
+	url = https://github.com/ds-connectors/EPS88-Spring-2023.git

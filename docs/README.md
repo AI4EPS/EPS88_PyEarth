@@ -24,20 +24,20 @@ The class will be a combination of lectures and hands-on exercises. We will use 
 
 ## Schedule
 
-| Date | Topic |
-| --- | --- |
-| 09/02 | Labor Day |
-| 09/09 | [Introduction && Python 101] | <!-- SEDC -->
-| 09/16 | [Numpy & Pandas] |
-| 09/23 | [Maplotlib & PyGMT & Cartopy] |
-| 09/30 | [SkLearn: Regression & Classificiation & Supervised Learning] |
-| 10/07 | [SkLearn: Model selection: Bias vs Variance trade-off] |
-| 10/14 | [Sklearn: Unsupervised Learning: cluster & Dimensionality reduction] |
-| 10/21 | [Sklearn: Bayes optimization, Uncertainy, MCMC] |
-| 10/28 | [Sklearn: Advanced models: SVM and Decision Tree] |
-| 11/04 | [PyTorch: Neural Networks] |
-| 11/11 | Veterans Day |
-| 11/18 | [PyTorch: Training neural networks] |
-| 11/25 | [PyTorch: Applications] |
-| 12/02 | [Project] |
-| 12/09 | [Project] |
+| Date | Topic | Notebooks |
+| --- | --- | --- |
+| 09/02 | Labor Day |  |
+| 09/09 | [Introduction && Python 101] |  |
+| 09/16 | [Numpy & Pandas] |  |
+| 09/23 | [Maplotlib & Cartopy & PyGMT] |  |
+| 09/30 | [SkLearn: Supervised Learning: Regression & Classification] |  |
+| 10/07 | [Sklearn: Advanced models: SVM & Decision Tree] |  |
+| 10/14 | [SkLearn: Model selection: Bias v.s. Variance trade-off] |  |
+| 10/21 | [Sklearn: Unsupervised Learning: Cluster & Dimensionality reduction] |  |
+| 10/28 | [Sklearn: Bayes optimization, Uncertainty, MCMC] |  |
+| 11/04 | [PyTorch: Neural Networks] |  |
+| 11/11 | Veterans Day |  |
+| 11/18 | [PyTorch: Training & Optimization] |  |
+| 11/25 | [PyTorch: Applications] |  |
+| 12/02 | [Project] |  |
+| 12/09 | [Project] |  |
