@@ -17,8 +17,6 @@ The class is designed for undergraduate students, and no prior knowledge of Eart
 The class will consist of a combination of lectures and hands-on exercises from the basics of Python to advanced topics like neural networks and their applications in Earth Science. 
 By the end of this course, you'll have a foundation in both Python programming and Earth Science analysis techniques.
 
-## [Syllabus](syllabus.md)
-
 ## Time and Location
 - Lecture: Monday 12:00 PM - 2:00 PM in McCone 265
 - Office Hour: Monday 2:00 PM - 3:00 PM in McCone 265
