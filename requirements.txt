@@ -1,4 +1,5 @@
 ipykernel
+notebook
 nbconvert
 pandas
 numpy
