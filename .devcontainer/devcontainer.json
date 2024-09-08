@@ -11,12 +11,12 @@
         "mathematic.vscode-pdf"
       ],
       "settings": {
-        "jupyter.defaultKernelSpec": "/home/codespace/.python/current/bin/python",
-        "python.defaultInterpreterPath": "/home/codespace/.python/current/bin/python",
-        "python.pythonPath": "/home/codespace/.python/current/bin/python"
+        "jupyter.defaultKernelSpec": "/usr/local/bin/python3",
+        "python.defaultInterpreterPath": "/usr/local/bin/python3",
+        "python.pythonPath": "/usr/local/bin/python3"
       }
     }
   },
-  "onCreateCommand": "sudo apt-get update && sudo apt-get install -y texlive-xetex texlive-fonts-recommended texlive-plain-generic pandoc git-lfs && sudo apt-get clean && sudo rm -rf /var/lib/apt/lists/*",
-  "postCreateCommand": "pip install -r requirements.txt"
+  "onCreateCommand": "sudo apt-get update && sudo apt-get install -y texlive-xetex texlive-fonts-recommended texlive-plain-generic pandoc git-lfs && sudo apt-get clean && sudo rm -rf /var/lib/apt/lists/* && /usr/local/bin/python3 -m pip install -r requirements.txt",
+  "postCreateCommand": "/usr/local/bin/python3 -m pip install -r requirements.txt"
 }
