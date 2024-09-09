@@ -4,3 +4,4 @@ nbconvert
 pandas
 numpy
 matplotlib
+pygmt

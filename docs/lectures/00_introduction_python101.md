@@ -7,7 +7,8 @@ paginate: true
 ---
 
 # PyEarth: A Python Introduction to Earth Science
-## Class 1: Introduction && Python 101
+
+## Lecture 1: Introduction && Python 101
 
 ---
 

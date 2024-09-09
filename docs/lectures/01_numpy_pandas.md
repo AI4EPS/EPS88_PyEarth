@@ -5,7 +5,7 @@ paginate: true
 ---
 
 # PyEarth: A Python Introduction to Earth Science
-## NumPy and Pandas
+## Lecture 2: NumPy and Pandas
 
 ---
 
