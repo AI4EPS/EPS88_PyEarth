@@ -4,4 +4,5 @@ nbconvert
 pandas
 numpy
 matplotlib
+cartopy
 pygmt

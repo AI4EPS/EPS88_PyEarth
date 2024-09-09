@@ -17,6 +17,6 @@
       }
     }
   },
-  "onCreateCommand": "sudo apt-get update && sudo apt-get install -y texlive-xetex texlive-fonts-recommended texlive-plain-generic gmt gmt-dcw gmt-gshh pandoc git-lfs && sudo apt-get clean && sudo rm -rf /var/lib/apt/lists/* && /usr/local/bin/python3 -m pip install -r requirements.txt",
+  "onCreateCommand": "sudo apt-get update && sudo apt-get install -y texlive-xetex texlive-fonts-recommended texlive-plain-generic gmt gmt-dcw gmt-gshhg ghostscript pandoc git-lfs && sudo ln -s /usr/lib/x86_64-linux-gnu/libgmt.so.6 /usr/lib/x86_64-linux-gnu/libgmt.so  && sudo apt-get clean && sudo rm -rf /var/lib/apt/lists/* && /usr/local/bin/python3 -m pip install -r requirements.txt",
   "postCreateCommand": "git pull && /usr/local/bin/python3 -m pip install -r requirements.txt"
 }
