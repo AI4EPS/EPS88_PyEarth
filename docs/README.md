@@ -23,6 +23,12 @@ By the end of this course, you'll have a foundation in both Python programming a
 
 ## Projects
 
+For the class project, students will work in teams of 1-3 to analyze an Earth Science dataset from Kaggle. The scope and evaluation of each project will be adjusted based on team size. The project includes three components:
+
+- Proposal: Outline the chosen dataset, research question, and analysis approach.
+- Presentation: Present key findings, methods, and insights, using visualizations to support your results.
+- Final Report: Provide a report covering the dataset, analysis, results, and conclusions, highlighting the Earth Science findings.
+
 [Kaggle Datasets](https://www.kaggle.com/datasets)
 
 
