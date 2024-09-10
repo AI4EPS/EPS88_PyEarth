@@ -21,6 +21,10 @@ By the end of this course, you'll have a foundation in both Python programming a
 - Lecture: Monday 12:00 PM - 2:00 PM in McCone 265
 - Office Hour: Monday 2:00 PM - 3:00 PM in McCone 265
 
+**Instructor**: Weiqiang Zhu (zhuwq@berkeley.edu)
+
+**Graduate student reader**:  Shivangi Tikekar (shivangi.tikekar@berkeley.edu)
+
 ## Projects
 
 For the class project, students will work in teams of 1-3 to analyze an Earth Science dataset from Kaggle. The scope and evaluation of each project will be adjusted based on team size. The project includes three components:
