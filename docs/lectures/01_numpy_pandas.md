@@ -9,6 +9,15 @@ paginate: true
 
 ---
 
+# Review of Lecture 1:
+
+- Introduction to Python, Jupyter, and Chatbots
+- Basic data types and structures
+- Control flow, loops, and functions
+
+
+---
+
 # Introduction to NumPy
 
 - NumPy: Numerical Python
@@ -24,6 +33,80 @@ paginate: true
 - Versatile: Supports various data types
 - Integrates well with other libraries
 - Essential for data analysis and scientific computing
+
+---
+
+# Linear Algebra and NumPy?
+
+Let's solve the classic "chickens and rabbits in the same cage" problem:
+
+- There are 35 heads and 94 legs in a cage of chickens and rabbits.
+- How many chickens and rabbits are there?
+
+---
+
+# Linear Algebra and NumPy?
+
+Let's solve the classic "chickens and rabbits in the same cage" problem:
+
+- There are 35 heads and 94 legs in a cage of chickens and rabbits.
+- How many chickens and rabbits are there?
+
+We can use linear algebra to solve this system of equations:
+1. x + y = 35 (total heads)
+2. 2x + 4y = 94 (total legs)
+
+Where x = number of chickens, y = number of rabbits
+
+---
+
+# Matrix Representation
+
+We can represent this system of equations in matrix form:
+
+$$
+\begin{bmatrix}
+1 & 1 \\
+2 & 4
+\end{bmatrix}
+\begin{bmatrix}
+x \\
+y
+\end{bmatrix}
+=
+\begin{bmatrix}
+35 \\
+94
+\end{bmatrix}
+$$
+
+Or more concisely:
+
+$$ A\vec{x} = \vec{b} $$
+
+Where:
+- $A$ is the coefficient matrix
+- $\vec{x}$ is the vector of unknowns (chickens and rabbits)
+- $\vec{b}$ is the constant vector
+
+---
+
+# Solving with NumPy
+
+```python
+import numpy as np
+
+# Define the coefficient matrix A and the constant vector b
+A = np.array([[1, 1],   # Coefficients for heads equation
+              [2, 4]])  # Coefficients for legs equation
+b = np.array([35, 94])  # Constants (total heads and legs)
+
+# Solve the system of equations
+solution = np.linalg.solve(A, b)
+
+print(f"Chickens: {int(solution[0])}")
+print(f"Rabbits: {int(solution[1])}")
+```
 
 ---
 
@@ -112,9 +195,9 @@ start = time.time()
 result_np = np_data**2 + 2*np_data + 1
 end = time.time()
 print(f"NumPy time: {end - start:.6f} seconds")
-```
 
-NumPy is significantly faster due to its optimized C implementation.
+# NumPy is significantly faster due to its optimized C implementation. 
+```
 
 ---
 

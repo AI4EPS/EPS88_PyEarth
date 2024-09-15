@@ -1,3 +1,6 @@
 [submodule "docs/EPS88-Spring-2023"]
 	path = docs/EPS88-Spring-2023
 	url = https://github.com/ds-connectors/EPS88-Spring-2023.git
+[submodule "tools/EPS88"]
+	path = tools/EPS88
+	url = git@hf.co:spaces/AI4EPS/EPS88
