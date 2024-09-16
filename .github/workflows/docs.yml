@@ -14,9 +14,9 @@ jobs:
         with:
           submodules: true
           lfs: true
-          sparse-checkout: |
-            .github
-            docs
+          # sparse-checkout: |
+          #   .github
+          #   docs
       
       - uses: actions/setup-node@v3
       - run: npx @marp-team/marp-cli@latest -I docs/lectures
