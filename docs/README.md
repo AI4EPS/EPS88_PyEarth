@@ -44,8 +44,8 @@ For the class project, students will work in teams of 1-3 to analyze an Earth Sc
 | 09/09 | [Introduction && Python 101] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/00_introduction_python101), [notebook](https://ai4eps.github.io/EPS88_PyEarth/exercises/00_introduction_python101) |
 | 09/16 | [Numpy & Pandas] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/01_numpy_pandas), [notebook](https://ai4eps.github.io/EPS88_PyEarth/exercises/01_numpy_pandas) |
 | 09/23 | [Matplotlib & Cartopy & PyGMT] |[slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/02_matplotlib_cartopy), [notebook](https://ai4eps.github.io/EPS88_PyEarth/exercises/02_matplotlib_cartopy) |
-| 09/30 | [SkLearn: Supervised Learning: Regression & Classification] |  |
-| 10/07 | [Sklearn: Advanced models: SVM & Decision Tree] |  |
+| 09/30 | [SkLearn: Supervised Learning: Regression] |  |
+| 10/07 | [Sklearn: Supervised Learning: Classification] |  |
 | 10/14 | [SkLearn: Model selection: Bias v.s. Variance trade-off] |  |
 | 10/21 | [Sklearn: Unsupervised Learning: Cluster & Dimensionality reduction] |  |
 | 10/28 | [Sklearn: Bayes optimization, Uncertainty, MCMC] |  |
