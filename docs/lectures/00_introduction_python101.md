@@ -28,8 +28,8 @@ paginate: true
 # Grading
 
 - Attendance: 10%
-- In-class and homework exercises: 50%
-- Project presentation: 20%
+- In-class and homework exercises: 60%
+- Project presentation: 10%
 - Project report: 20%
 
 Bonus points:
