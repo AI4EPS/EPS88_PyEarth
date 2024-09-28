@@ -13,7 +13,8 @@
       "settings": {
         "jupyter.defaultKernelSpec": "/usr/local/bin/python3",
         "python.defaultInterpreterPath": "/usr/local/bin/python3",
-        "python.pythonPath": "/usr/local/bin/python3"
+        "python.pythonPath": "/usr/local/bin/python3",
+        "extensions.autoUpdate": true
       }
     }
   },
