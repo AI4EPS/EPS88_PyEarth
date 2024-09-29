@@ -192,15 +192,12 @@ plt.show()
 
 ```python
 from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import train_test_split
 
 X = data[['logR']].values
 y = data['logPGA'].values
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
 model = LinearRegression()
-model.fit(X_train, y_train)
+model.fit(X, y)
 
 print(f"Slope (a): {model.coef_[0]:.4f}")
 print(f"Intercept (b): {model.intercept_:.4f}")

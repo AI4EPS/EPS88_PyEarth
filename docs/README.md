@@ -41,11 +41,11 @@ For the class project, students will work in teams of 1-3 to analyze an Earth Sc
 | Date | Topic | Links |
 | --- | --- | --- |
 | 09/02 | Labor Day |  |
-| 09/09 | [Introduction && Python 101] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/00_introduction_python101), [notebook](https://ai4eps.github.io/EPS88_PyEarth/exercises/00_introduction_python101) |
-| 09/16 | [Numpy & Pandas] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/01_numpy_pandas), [notebook](https://ai4eps.github.io/EPS88_PyEarth/exercises/01_numpy_pandas) |
-| 09/23 | [Matplotlib & Cartopy & PyGMT] |[slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/02_matplotlib_cartopy), [notebook](https://ai4eps.github.io/EPS88_PyEarth/exercises/02_matplotlib_cartopy) |
-| 09/30 | [SkLearn: Supervised Learning: Regression 1] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/03_regression), [notebook](https://ai4eps.github.io/EPS88_PyEarth/exercises/03_regression) |
-| 10/07 | [Sklearn: Supervised Learning: Regression 2] |  |
+| 09/09 | [Introduction && Python 101] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/00_introduction_python101), [assignment](https://ai4eps.github.io/EPS88_PyEarth/exercises/00_introduction_python101) |
+| 09/16 | [Numpy & Pandas] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/01_numpy_pandas), [assignment](https://ai4eps.github.io/EPS88_PyEarth/exercises/01_numpy_pandas) |
+| 09/23 | [Matplotlib & Cartopy & PyGMT] |[slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/02_matplotlib_cartopy), [assignment](https://ai4eps.github.io/EPS88_PyEarth/exercises/02_matplotlib_cartopy) |
+| 09/30 | [SkLearn: Supervised Learning: Regression 1] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/03_regression), [assignment](https://ai4eps.github.io/EPS88_PyEarth/exercises/03_regression) |
+| 10/07 | [Sklearn: Supervised Learning: Regression 2] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/04_regression), [assignment](https://ai4eps.github.io/EPS88_PyEarth/exercises/04_regression) |
 | 10/14 | [Sklearn: Supervised Learning: Classification 1] |  |
 | 10/21 | [Sklearn: Supervised Learning: Classification 2] |  |
 | 10/28 | [Sklearn: Unsupervised Learning: Clustering] |  |
