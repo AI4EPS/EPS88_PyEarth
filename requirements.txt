@@ -8,3 +8,6 @@ cartopy
 pygmt
 pykdtree
 fsspec
+scikit-learn
+requests
+aiohttp
