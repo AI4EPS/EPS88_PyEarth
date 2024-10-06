@@ -49,9 +49,9 @@ For the class project, students will work in teams of 1-3 to analyze an Earth Sc
 | 10/14 | [Sklearn: Supervised Learning: Classification 1] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/05_classification),  |
 | 10/21 | [Sklearn: Supervised Learning: Classification 2] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/06_classification),  |
 | 10/28 | [Sklearn: Unsupervised Learning: Clustering] |  |
-| 11/04 | [Probabilites] |  |
+| 11/04 | [Probabilites] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/08_probabilities), |
 | 11/11 | Veterans Day |  |
-| 11/18 | [PyTorch: Neural Networks 1] |  |
-| 11/25 | [PyTorch: Neural Networks 2] |  |
-| 12/02 | [Project] |  |
+| 11/18 | [AB Testing] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/09_ABTesting) |
+| 11/25 | [PyTorch: Neural Networks 1] |  |
+| 12/02 | [PyTorch: Neural Networks 2] |  |
 | 12/09 | [Project] |  |
