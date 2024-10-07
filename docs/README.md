@@ -25,16 +25,17 @@ By the end of this course, you'll have a foundation in both Python programming a
 
 **Graduate student reader**:  Shivangi Tikekar (shivangi.tikekar@berkeley.edu)
 
-## Projects
+<!-- ## Projects -->
 
-For the class project, students will work in teams of 1-3 to analyze an Earth Science dataset from Kaggle. The scope and evaluation of each project will be adjusted based on team size. The project includes three components:
+<!-- For the class project, students will work in teams of 1-3 to analyze an Earth Science datasets. The scope and evaluation of each project will be adjusted based on team size. The project includes three components:
 
 - Proposal: Outline the chosen dataset, research question, and analysis approach.
 - Presentation: Present key findings, methods, and insights, using visualizations to support your results.
-- Final Report: Provide a report covering the dataset, analysis, results, and conclusions, highlighting the Earth Science findings.
+- Final Report: Provide a report covering the dataset, analysis, results, and conclusions, highlighting the Earth Science findings. -->
 
-[Kaggle Datasets](https://www.kaggle.com/datasets)
+## [Final Projects](https://ai4eps.github.io/EPS88_PyEarth/exercises/project/)
 
+<!-- [Kaggle Datasets](https://www.kaggle.com/datasets) -->
 
 ## Schedule
 
