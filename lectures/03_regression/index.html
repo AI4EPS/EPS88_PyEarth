@@ -1,0 +1,617 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="Weiqiang Zhu">
+      
+      
+      
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.39">
+    
+    
+      
+        <title>PyEarth: A Python Introduction to Earth Science - EPS88 PyEarth: A Python Introduction to Earth Science</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.8c3ca2c6.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+<script id="__analytics">function __md_analytics(){function e(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],e("js",new Date),e("config","G-TLJF393667"),document.addEventListener("DOMContentLoaded",(function(){document.forms.search&&document.forms.search.query.addEventListener("blur",(function(){this.value&&e("event","search",{search_term:this.value})}));document$.subscribe((function(){var t=document.forms.feedback;if(void 0!==t)for(var a of t.querySelectorAll("[type=submit]"))a.addEventListener("click",(function(a){a.preventDefault();var n=document.location.pathname,d=this.getAttribute("data-md-value");e("event","feedback",{page:n,data:d}),t.firstElementChild.disabled=!0;var r=t.querySelector(".md-feedback__note [data-md-value='"+d+"']");r&&(r.hidden=!1)})),t.hidden=!1})),location$.subscribe((function(t){e("config","G-TLJF393667",{page_path:t.pathname})}))}));var t=document.createElement("script");t.async=!0,t.src="https://www.googletagmanager.com/gtag/js?id=G-TLJF393667",document.getElementById("__analytics").insertAdjacentElement("afterEnd",t)}</script>
+  
+    <script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+  
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#pyearth-a-python-introduction-to-earth-science" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="EPS88 PyEarth: A Python Introduction to Earth Science" class="md-header__button md-logo" aria-label="EPS88 PyEarth: A Python Introduction to Earth Science" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            EPS88 PyEarth: A Python Introduction to Earth Science
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              PyEarth: A Python Introduction to Earth Science
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/AI4EPS/EPS88_PyEarth" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    AI4EPS/EPS88_PyEarth
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="EPS88 PyEarth: A Python Introduction to Earth Science" class="md-nav__button md-logo" aria-label="EPS88 PyEarth: A Python Introduction to Earth Science" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    EPS88 PyEarth: A Python Introduction to Earth Science
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/AI4EPS/EPS88_PyEarth" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    AI4EPS/EPS88_PyEarth
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#lecture-4-scikit-learn-supervised-learning-regression" class="md-nav__link">
+    <span class="md-ellipsis">
+      Lecture 4: Scikit-learn: Supervised Learning: Regression
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+    <a href="https://github.com/AI4EPS/EPS88_PyEarth/blob/main/docs/lectures/03_regression.md" title="Edit this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="pyearth-a-python-introduction-to-earth-science">PyEarth: A Python Introduction to Earth Science</h1>
+<h2 id="lecture-4-scikit-learn-supervised-learning-regression">Lecture 4: Scikit-learn: Supervised Learning: Regression</h2>
+<hr />
+<h1 id="what-is-linear-regression">What is Linear Regression?</h1>
+<ul>
+<li>A statistical method to model the relationship between variables</li>
+<li>Predicts a dependent variable based on one or more independent variables</li>
+<li>Assumes a linear relationship between variables</li>
+</ul>
+<p><img alt="bg right:50% w:600px" src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Linear_regression.svg/1200px-Linear_regression.svg.png" /></p>
+<hr />
+<h2 id="examples-co2-concentration">Examples: CO2 Concentration</h2>
+<p><img alt="bg right:65% width:800px" src="https://upload.wikimedia.org/wikipedia/commons/1/15/Mauna_Loa_Carbon_Dioxide_Apr2013.svg" /></p>
+<hr />
+<h2 id="global-temperature-anomalies">Global Temperature Anomalies</h2>
+<p><img alt="bg right:65%  width:800px" src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Global_Temperature_Anomaly.svg/1200px-Global_Temperature_Anomaly.svg.png" /></p>
+<hr />
+<h2 id="arctic-sea-ice-extent">Arctic Sea Ice Extent</h2>
+<p><img alt="bg right:65%  width:800px" src="https://www.climate.gov/sites/default/files/2022-12/Arctic-Report-Card-2022_Sea-Ice_graph_1240.gif" /></p>
+<hr />
+<h2 id="sea-level-rise">Sea Level Rise</h2>
+<p><img alt="bg right:65%  width:800px" src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Recent_Sea_Level_Rise.png/1200px-Recent_Sea_Level_Rise.png" /></p>
+<hr />
+<ul>
+<li>How to quantify the relationship between variables?</li>
+<li>How to predict future values and interpret the results?</li>
+<li>How to use Python libraries to model and analyze data?</li>
+</ul>
+<hr />
+<h1 id="basic-statistics-mean-and-standard-deviation">Basic Statistics: Mean and Standard Deviation</h1>
+<ul>
+<li>
+<p><strong>Mean</strong>: Average of a set of numbers 
+$$\bar{x} = \frac{1}{n} \sum_{i=1}^{n} x_i$$</p>
+</li>
+<li>
+<p><strong>Standard Deviation</strong>: Measure of spread in a dataset
+$$\sigma = \sqrt{\frac{1}{n} \sum_{i=1}^{n} (x_i - \bar{x})^2}$$</p>
+</li>
+</ul>
+<p><img alt="bg right:45% w:550px" src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Standard_deviation_diagram.svg/1200px-Standard_deviation_diagram.svg.png" /></p>
+<hr />
+<h1 id="linear-regression">Linear Regression</h1>
+<p>$$y = Ax + b + \epsilon$$</p>
+<ul>
+<li>$y$: Dependent variable</li>
+<li>$x$: Independent variable</li>
+<li>$A$: Slope</li>
+<li>$b$: Intercept</li>
+<li>$\epsilon$: Error term</li>
+</ul>
+<p><img alt="bg right:50% w:550px" src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Linear_regression.svg/1200px-Linear_regression.svg.png" /></p>
+<hr />
+<h1 id="earthquake-example-2019-ridgecrest-earthquakes">Earthquake Example: 2019 Ridgecrest Earthquakes</h1>
+<ul>
+<li>July 4, 2019: M6.4 earthquake</li>
+<li>July 5, 2019: M7.1 earthquake</li>
+<li>Location: Ridgecrest, California, USA</li>
+</ul>
+<p>Link: <a href="https://en.wikipedia.org/wiki/2019_Ridgecrest_earthquakes">WIKI</a></p>
+<p><img alt="bg fit" src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Map_of_2019_Ridgecrest_earthquakes.svg/1920px-Map_of_2019_Ridgecrest_earthquakes.svg.png" /></p>
+<hr />
+<h2 id="ground-motion-data">Ground Motion Data</h2>
+<p>Earthquake information: <a href="https://earthquake.usgs.gov/earthquakes/eventpage/ci38443183/executive">USGS</a>
+ShakeMap: <a href="https://earthquake.usgs.gov/earthquakes/eventpage/ci38443183/shakemap/pga">PGA</a></p>
+<p><img alt="bg right:50% w:550px" src="https://earthquake.usgs.gov/product/shakemap/ci38443183/atlas/1594160017984/download/pga.jpg" /></p>
+<hr />
+<h1 id="accessing-peak-ground-acceleration-pga-data">Accessing Peak Ground Acceleration (PGA) Data</h1>
+<pre><code class="language-python">import json
+import pandas as pd
+import numpy as np
+import fsspec
+
+# M6.4 earthquake
+json_url = &quot;https://earthquake.usgs.gov/product/shakemap/ci38443183/atlas/1594160017984/download/stationlist.json&quot;
+# M7.1 earthquake
+# json_url = &quot;https://earthquake.usgs.gov/product/shakemap/ci38457511/atlas/1594160054783/download/stationlist.json&quot;
+
+with fsspec.open(json_url) as f:
+    data = json.load(f)
+
+def parse_data(data):
+    rows = []
+    for line in data[&quot;features&quot;]:
+        rows.append({
+            &quot;station_id&quot;: line[&quot;id&quot;],
+            &quot;longitude&quot;: line[&quot;geometry&quot;][&quot;coordinates&quot;][0],
+            &quot;latitude&quot;: line[&quot;geometry&quot;][&quot;coordinates&quot;][1],
+            &quot;pga&quot;: line[&quot;properties&quot;][&quot;pga&quot;], # unit: %g
+            &quot;pgv&quot;: line[&quot;properties&quot;][&quot;pgv&quot;], # unit: cm/s
+            &quot;distance&quot;: line[&quot;properties&quot;][&quot;distance&quot;],
+        }
+    )
+    return pd.DataFrame(rows)
+
+data = parse_data(data)
+data = data[(data[&quot;pga&quot;] != &quot;null&quot;) &amp; (data[&quot;pgv&quot;] != &quot;null&quot;)]
+data = data[~data[&quot;station_id&quot;].str.startswith(&quot;DYFI&quot;)]
+data = data.dropna()
+data = data.sort_values(by=&quot;distance&quot;, ascending=True)
+data[&quot;logR&quot;] = data[&quot;distance&quot;].apply(lambda x: np.log10(float(x)))
+data[&quot;logPGA&quot;] = data[&quot;pga&quot;].apply(lambda x: np.log10(float(x)))
+data[&quot;logPGV&quot;] = data[&quot;pgv&quot;].apply(lambda x: np.log10(float(x)))
+data
+</code></pre>
+<hr />
+<h1 id="visualizing-peak-ground-acceleration-pga-data">Visualizing Peak Ground Acceleration (PGA) Data</h1>
+<pre><code class="language-python">import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+
+fig, ax = plt.subplots(figsize=(10, 6), subplot_kw={'projection': ccrs.PlateCarree()})
+
+scatter = ax.scatter(data['longitude'], data['latitude'], c=data['pga'], 
+                     cmap='viridis', transform=ccrs.PlateCarree())
+
+ax.add_feature(cfeature.STATES)
+ax.add_feature(cfeature.COASTLINE)
+ax.set_extent([-120, -116, 34, 37], crs=ccrs.PlateCarree())
+
+plt.colorbar(scatter, label='PGA %g')
+plt.title('PGA Distribution - Ridgecrest Earthquake')
+plt.show()
+</code></pre>
+<hr />
+<h1 id="ground-motion-prediction-equations-gmpes">Ground Motion Prediction Equations (GMPEs)</h1>
+<p>$$\log(PGA) = a \log(R) + bM + c$$</p>
+<ul>
+<li>PGA: Peak Ground Acceleration</li>
+<li>R: Distance from earthquake source</li>
+<li>M: Earthquake magnitude</li>
+<li>a, b, c: Model parameters</li>
+</ul>
+<hr />
+<h1 id="visualizing-logpga-vs-logr">Visualizing log(PGA) vs. log(R)</h1>
+<pre><code class="language-python">plt.figure(figsize=(10, 6))
+plt.scatter(data['logR'], data['logPGA'])
+plt.xlabel('log(R)')
+plt.ylabel('log(PGA)')
+plt.title('log(PGA) vs. log(R)')
+plt.show()
+</code></pre>
+<hr />
+<h1 id="fitting-a-linear-model-using-scikit-learn">Fitting a Linear Model using Scikit-learn</h1>
+<pre><code class="language-python">from sklearn.linear_model import LinearRegression
+
+X = data[['logR']].values
+y = data['logPGA'].values
+
+model = LinearRegression()
+model.fit(X, y)
+
+print(f&quot;Slope (a): {model.coef_[0]:.4f}&quot;)
+print(f&quot;Intercept (b): {model.intercept_:.4f}&quot;)
+</code></pre>
+<hr />
+<h1 id="visualizing-the-linear-regression-model">Visualizing the Linear Regression Model</h1>
+<pre><code class="language-python">plt.figure(figsize=(10, 6))
+plt.scatter(X, y, color='blue', label='Data')
+plt.plot(X, model.predict(X), color='red', label='Regression Line')
+plt.xlabel('log(Distance)')
+plt.ylabel('log(PGA)')
+plt.title('Linear Regression Model')
+plt.legend()
+plt.show()
+</code></pre>
+<hr />
+<h1 id="interpreting-the-results">Interpreting the Results</h1>
+<ul>
+<li>Slope (a): Represents the rate of decay of PGA with distance</li>
+<li>Intercept (b): Related to the earthquake's magnitude and local site conditions</li>
+</ul>
+<p>Let's predict the shaking in Los Angeles:</p>
+<pre><code class="language-python">la_distance = 177  # km (approximate)
+la_logR = np.log10(la_distance)
+la_prediction = model.predict([[la_logR]])
+print(f&quot;Predicted log(PGA) in LA: {la_prediction[0]:.4f}&quot;)
+print(f&quot;Predicted PGA in LA: {10**la_prediction[0]:.4f} %g&quot;)
+</code></pre>
+<hr />
+<h1 id="compare-the-prediction-with-the-data">Compare the prediction with the data</h1>
+<p>USGS PGA data: <a href="https://earthquake.usgs.gov/earthquakes/eventpage/ci38443183/shakemap/pga">USGS</a></p>
+<ul>
+<li>Why is the prediction different from the observed PGA in Los Angeles?</li>
+</ul>
+<p><a href="https://www.youtube.com/watch?app=desktop&amp;v=DgN--agwu_8">M7.08 Ridgecrest Simulation</a></p>
+<hr />
+<h1 id="add-the-prediction-to-the-plot">Add the prediction to the plot</h1>
+<pre><code class="language-python">plt.figure(figsize=(10, 6))
+plt.scatter(X, y, color='blue', label='Data')
+plt.plot(X, model.predict(X), color='red', label='Regression Line')
+plt.scatter(la_logR, la_prediction, color='green', label='LA Prediction')
+plt.xlabel('log(Distance)')
+plt.ylabel('log(PGA)')
+plt.title('Linear Regression Model with LA Prediction')
+plt.legend()
+plt.show()
+</code></pre>
+<hr />
+<h1 id="residual-analysis">Residual Analysis</h1>
+<pre><code class="language-python">y_pred = model.predict(X)
+residuals = y - y_pred
+
+plt.figure(figsize=(10, 6))
+plt.scatter(X, residuals)
+plt.xlabel('log(Distance)')
+plt.ylabel('Residuals')
+plt.title('Residual Plot')
+plt.axhline(y=0, color='r', linestyle='--')
+plt.show()
+</code></pre>
+<hr />
+<h1 id="evaluating-model-quality-r-squared-r2">Evaluating Model Quality: R-squared (R²)</h1>
+<ul>
+<li>
+<p>R² measures the proportion of variance in the dependent variable explained by the independent variable(s)
+$$ R^2 = 1 - \frac{\sum (y_i - \hat{y}_i)^2}{\sum (y_i - \bar{y})^2} $$</p>
+</li>
+<li>
+<p>Ranges from 0 to 1, with 1 indicating a perfect fit</p>
+</li>
+</ul>
+<pre><code class="language-python">from sklearn.metrics import r2_score
+
+r2 = r2_score(y, y_pred)
+print(f&quot;R-squared: {r2:.4f}&quot;)
+
+# Calculate R-squared manually
+ss_res = np.sum((y - y_pred)**2)
+ss_tot = np.sum((y - y.mean())**2)
+r2_manual = 1 - ss_res / ss_tot
+print(f&quot;R-squared (manual): {r2_manual:.4f}&quot;)
+</code></pre>
+<hr />
+<h1 id="understanding-r2">Understanding R²</h1>
+<ul>
+<li>R² = 0: Model explains none of the variance in the dependent variable</li>
+<li>R² = 1: Model explains all the variance in the dependent variable</li>
+<li>R² &lt; 0: Model performs worse than a horizontal line</li>
+</ul>
+<p><img alt="" src="../images/R2.jpg" /></p>
+<hr />
+<h1 id="parameter-uncertainty">Parameter Uncertainty</h1>
+<ul>
+<li>Standard error of the slope (a):</li>
+</ul>
+<p>$$SE_a = \sqrt{\sigma^2 / \sum (x_i - \bar{x})^2}$$</p>
+<p>where $\sigma^2 = \sum (y_i - \hat{y}_i)^2 / (n - p)$, $n$ is the number of observations, and $p$ is the number of predictors</p>
+<ul>
+<li>Standard error of the intercept (b):</li>
+</ul>
+<p>$$SE_b = \sqrt{\sigma^2 (1/n + \bar{x}^2 / \sum (x_i - \bar{x})^2)}$$</p>
+<hr />
+<h1 id="calculating-parameter-uncertainty">Calculating Parameter Uncertainty</h1>
+<pre><code class="language-python">import numpy as np
+from scipy import stats
+
+n = len(X)
+p = len(model.coef_) + 1
+dof = n - p
+
+sigma = np.sum((y - y_pred)**2) / dof
+
+se_a = np.sqrt(sigma / np.sum((X - X.mean())**2))
+se_b = np.sqrt(sigma * (1/n + (X.mean()**2) / np.sum((X - X.mean())**2)) )
+
+print(f&quot;Standard error of slope (a): {se_a:.4f}&quot;)
+print(f&quot;Standard error of intercept (b): {se_b:.4f}&quot;)
+</code></pre>
+<hr />
+<!-- # Plotting Prediction Intervals
+
+
+<pre><code class="language-python">from scipy import stats
+
+t_value = stats.t.ppf(0.975, dof)
+y_err = t_value * np.sqrt(mse * (1 + 1/n + (X - X.mean())**2 / np.sum((X - X.mean())**2)))
+
+plt.figure(figsize=(10, 6))
+plt.scatter(X, y, color='blue', label='Data')
+plt.plot(X, y_pred, color='red', label='Regression Line')
+plt.fill_between(X.flatten(), y_pred.flatten() - y_err.flatten(), y_pred.flatten() + y_err.flatten(), 
+                 color='gray', alpha=0.2, label='95% confidence interval')
+plt.xlabel('log(Distance)')
+plt.ylabel('log(PGA)')
+plt.title('Linear Regression with Prediction Intervals')
+plt.legend()
+plt.show()
+</code></pre>
+
+
+--- -->
+
+<h1 id="summary">Summary</h1>
+<ul>
+<li>Linear regression is a powerful tool for modeling relationships in Earth Science data</li>
+<li>We applied it to model ground motion attenuation in earthquakes</li>
+<li>Important considerations:</li>
+<li>Model assumptions</li>
+<li>Residual analysis</li>
+<li>Model evaluation (R²)</li>
+<li>Parameter uncertainty</li>
+<li>Prediction intervals</li>
+</ul>
+
+
+
+
+
+
+
+  
+  
+
+
+
+  
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.annotate", "content.action.edit", "navigation.expand"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.525ec568.min.js"></script>
+      
+    
+  </body>
+</html>

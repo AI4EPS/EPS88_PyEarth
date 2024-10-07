@@ -1,0 +1,697 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="Weiqiang Zhu">
+      
+      
+      
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.39">
+    
+    
+      
+        <title>PyEarth: A Python Introduction to Earth Science - EPS88 PyEarth: A Python Introduction to Earth Science</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.8c3ca2c6.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+<script id="__analytics">function __md_analytics(){function e(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],e("js",new Date),e("config","G-TLJF393667"),document.addEventListener("DOMContentLoaded",(function(){document.forms.search&&document.forms.search.query.addEventListener("blur",(function(){this.value&&e("event","search",{search_term:this.value})}));document$.subscribe((function(){var t=document.forms.feedback;if(void 0!==t)for(var a of t.querySelectorAll("[type=submit]"))a.addEventListener("click",(function(a){a.preventDefault();var n=document.location.pathname,d=this.getAttribute("data-md-value");e("event","feedback",{page:n,data:d}),t.firstElementChild.disabled=!0;var r=t.querySelector(".md-feedback__note [data-md-value='"+d+"']");r&&(r.hidden=!1)})),t.hidden=!1})),location$.subscribe((function(t){e("config","G-TLJF393667",{page_path:t.pathname})}))}));var t=document.createElement("script");t.async=!0,t.src="https://www.googletagmanager.com/gtag/js?id=G-TLJF393667",document.getElementById("__analytics").insertAdjacentElement("afterEnd",t)}</script>
+  
+    <script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+  
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#pyearth-a-python-introduction-to-earth-science" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="EPS88 PyEarth: A Python Introduction to Earth Science" class="md-header__button md-logo" aria-label="EPS88 PyEarth: A Python Introduction to Earth Science" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            EPS88 PyEarth: A Python Introduction to Earth Science
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              PyEarth: A Python Introduction to Earth Science
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/AI4EPS/EPS88_PyEarth" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    AI4EPS/EPS88_PyEarth
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="EPS88 PyEarth: A Python Introduction to Earth Science" class="md-nav__button md-logo" aria-label="EPS88 PyEarth: A Python Introduction to Earth Science" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    EPS88 PyEarth: A Python Introduction to Earth Science
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/AI4EPS/EPS88_PyEarth" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    AI4EPS/EPS88_PyEarth
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#lecture-3-matplotlib-cartopy-and-pygmt" class="md-nav__link">
+    <span class="md-ellipsis">
+      Lecture 3: Matplotlib, Cartopy, and PyGMT
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+    <a href="https://github.com/AI4EPS/EPS88_PyEarth/blob/main/docs/lectures/02_matplotlib_cartopy.md" title="Edit this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="pyearth-a-python-introduction-to-earth-science">PyEarth: A Python Introduction to Earth Science</h1>
+<h2 id="lecture-3-matplotlib-cartopy-and-pygmt">Lecture 3: Matplotlib, Cartopy, and PyGMT</h2>
+<hr />
+<h1 id="introduction-to-matplotlib">Introduction to Matplotlib</h1>
+<ul>
+<li>Matplotlib is a powerful plotting library for Python</li>
+<li>It allows you to create a wide variety of static, animated, and interactive visualizations</li>
+<li>Used extensively in scientific computing and data analysis</li>
+</ul>
+<hr />
+<h1 id="basic-matplotlib-structure">Basic Matplotlib Structure</h1>
+<pre><code class="language-python">import matplotlib.pyplot as plt
+
+# Create a figure and axis
+fig, ax = plt.subplots()
+
+x, y = [0, 1, 2, 3, 4], [0, 1, 4, 9, 16]
+
+# Plot data
+ax.plot(x, y, &quot;o-&quot;, color=&quot;blue&quot;, label=&quot;Data&quot;)
+
+# Add labels and title
+ax.set_xlabel('X-axis')
+ax.set_ylabel('Y-axis')
+ax.legend()
+ax.set_title('My Plot')
+
+# Show the plot
+plt.show()
+</code></pre>
+<hr />
+<h1 id="common-matplotlib-functions">Common Matplotlib Functions</h1>
+<ol>
+<li>Line Plot: <code>plt.plot(x, y)</code></li>
+<li>Scatter Plot: <code>plt.scatter(x, y)</code></li>
+<li>Bar Plot: <code>plt.bar(x, y)</code></li>
+<li>Histogram: <code>plt.hist(data)</code></li>
+<li>Box Plot: <code>plt.boxplot(data)</code></li>
+<li>Pie Chart: <code>plt.pie(sizes)</code></li>
+</ol>
+<hr />
+<h1 id="line-plot-example">Line Plot Example</h1>
+<pre><code class="language-python">import matplotlib.pyplot as plt
+import numpy as np
+
+x = np.linspace(0, 10, 100)
+y = np.sin(x)
+
+plt.plot(x, y)
+plt.xlabel('X-axis')
+plt.ylabel('Y-axis')
+plt.title('Sine Wave')
+plt.show()
+</code></pre>
+<hr />
+<h1 id="scatter-plot-example">Scatter Plot Example</h1>
+<pre><code class="language-python">import matplotlib.pyplot as plt
+import numpy as np
+
+x = np.random.rand(50)
+y = np.random.rand(50)
+colors = np.random.rand(50)
+sizes = 1000 * np.random.rand(50)
+
+plt.scatter(x, y, c=colors, s=sizes, alpha=0.5)
+plt.xlabel('X-axis')
+plt.ylabel('Y-axis')
+plt.title('Scatter Plot')
+plt.show()
+</code></pre>
+<hr />
+<h1 id="bar-plot-example">Bar Plot Example</h1>
+<pre><code class="language-python">import matplotlib.pyplot as plt
+
+categories = ['A', 'B', 'C', 'D']
+values = [3, 7, 2, 5]
+
+plt.bar(categories, values)
+plt.xlabel('Categories')
+plt.ylabel('Values')
+plt.title('Bar Plot')
+plt.show()
+</code></pre>
+<hr />
+<h1 id="histogram-example">Histogram Example</h1>
+<pre><code class="language-python">import matplotlib.pyplot as plt
+import numpy as np
+
+data = np.random.randn(1000)
+
+plt.hist(data, bins=30)
+plt.xlabel('Value')
+plt.ylabel('Frequency')
+plt.title('Histogram')
+plt.show()
+</code></pre>
+<hr />
+<h1 id="box-plot-example">Box Plot Example</h1>
+<pre><code class="language-python">import matplotlib.pyplot as plt
+import numpy as np
+
+data = [np.random.normal(0, std, 100) for std in range(1, 4)]
+
+plt.boxplot(data)
+plt.xlabel('Group')
+plt.ylabel('Value')
+plt.title('Box Plot')
+plt.show()
+</code></pre>
+<hr />
+<h1 id="pie-chart-example">Pie Chart Example</h1>
+<pre><code class="language-python">import matplotlib.pyplot as plt
+
+sizes = [30, 20, 25, 15, 10]
+labels = ['A', 'B', 'C', 'D', 'E']
+
+plt.pie(sizes, labels=labels, autopct='%1.1f%%')
+plt.title('Pie Chart')
+plt.axis('equal')
+plt.show()
+</code></pre>
+<hr />
+<h1 id="global-earthquake-dataset-example">Global Earthquake Dataset Example</h1>
+<pre><code class="language-python">import matplotlib.pyplot as plt
+import pandas as pd
+
+# Read the earthquake data
+df = pd.read_csv('data/earthquakes.csv')
+
+plt.figure(figsize=(12, 8))
+plt.scatter(df['longitude'], df['latitude'], 
+            s=df['magnitude']*10, alpha=0.5, c=&quot;red&quot;)
+plt.xlabel('Longitude')
+plt.ylabel('Latitude')
+plt.title('Global Earthquakes')
+plt.show()
+</code></pre>
+<hr />
+<h1 id="introduction-to-cartopy">Introduction to Cartopy</h1>
+<ul>
+<li>Cartopy is a library for cartographic projections and geospatial data visualization</li>
+<li>It provides object-oriented map projection definitions</li>
+<li>Allows easy manipulation of geospatial data and creation of map plots</li>
+</ul>
+<hr />
+<h1 id="cartopy-plotting-earthquakes">Cartopy: Plotting Earthquakes</h1>
+<pre><code class="language-python">import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+import pandas as pd
+
+df = pd.read_csv('data/earthquakes.csv')
+
+fig = plt.figure(figsize=(12, 8))
+ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
+
+ax.add_feature(cfeature.LAND)
+ax.add_feature(cfeature.OCEAN)
+ax.add_feature(cfeature.COASTLINE)
+
+scatter = ax.scatter(df['longitude'], df['latitude'], 
+                     s=df['magnitude']*10, alpha=0.5, c=&quot;red&quot;,
+                     transform=ccrs.PlateCarree())
+
+ax.set_global()
+plt.title('Global Earthquakes (Cartopy)')
+plt.show()
+</code></pre>
+<hr />
+<h1 id="common-map-projections">Common Map Projections</h1>
+<ol>
+<li>Plate Carrée (Equirectangular)</li>
+<li>Mercator</li>
+<li>Lambert Conformal Conic</li>
+<li>Orthographic</li>
+</ol>
+<hr />
+<h1 id="plate-carree-projection">Plate Carrée Projection</h1>
+<ul>
+<li>Simplest projection</li>
+<li>Latitude and longitude lines are equally spaced</li>
+<li>Distorts shape and size, especially near poles</li>
+</ul>
+<pre><code class="language-python">import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+
+fig = plt.figure(figsize=(12, 8))
+ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
+ax.coastlines()
+ax.gridlines()
+plt.title(&quot;PlateCarree Projection&quot;)
+plt.show()
+</code></pre>
+<hr />
+<h1 id="mercator-projection">Mercator Projection</h1>
+<ul>
+<li>Conformal projection (preserves angles)</li>
+<li>Used for navigation</li>
+<li>Severely distorts size near poles</li>
+</ul>
+<pre><code class="language-python">import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+
+fig = plt.figure(figsize=(12, 8))
+ax = fig.add_subplot(1, 1, 1, projection=ccrs.Mercator())
+ax.coastlines()
+ax.gridlines()
+plt.title(&quot;Mercator Projection&quot;)
+plt.show()
+</code></pre>
+<hr />
+<h1 id="lambert-conformal-conic-projection">Lambert Conformal Conic Projection</h1>
+<ul>
+<li>Conformal projection</li>
+<li>Good for mid-latitude regions</li>
+<li>Used for aeronautical charts</li>
+</ul>
+<pre><code class="language-python">import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+
+fig = plt.figure(figsize=(12, 8))
+ax = fig.add_subplot(1, 1, 1, projection=ccrs.LambertConformal())
+ax.coastlines()
+ax.gridlines()
+plt.title(&quot;Lambert Conformal Conic Projection&quot;)
+plt.show()
+</code></pre>
+<hr />
+<h1 id="orthographic-projection">Orthographic Projection</h1>
+<ul>
+<li>Perspective projection (as seen from space)</li>
+<li>Shows one hemisphere at a time</li>
+<li>Useful for visualizing global phenomena</li>
+</ul>
+<pre><code class="language-python">import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+
+fig = plt.figure(figsize=(12, 8))
+ax = fig.add_subplot(1, 1, 1, projection=ccrs.Orthographic())
+ax.coastlines()
+ax.gridlines()
+plt.title(&quot;Orthographic Projection&quot;)
+plt.show()
+</code></pre>
+<hr />
+<h1 id="when-to-use-each-projection">When to Use Each Projection</h1>
+<ul>
+<li>Plate Carrée: Simple global views, data in lat/lon coordinates</li>
+<li>Mercator: Navigation, web maps (e.g., Google Maps)</li>
+<li>Lambert Conformal Conic: Regional maps, especially mid-latitudes</li>
+<li>Orthographic: Visualizing Earth as a globe, planetary science</li>
+</ul>
+<hr />
+<h1 id="example-plate-carree">Example: Plate Carrée</h1>
+<pre><code class="language-python">import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+import pandas as pd
+
+df = pd.read_csv('data/earthquakes.csv')
+region = [-125, -114, 32, 42]
+df = df[(df['longitude'] &gt;= region[0]) &amp; (df['longitude'] &lt;= region[1]) &amp;
+        (df['latitude'] &gt;= region[2]) &amp; (df['latitude'] &lt;= region[3])]
+
+fig = plt.figure(figsize=(10, 8))
+ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
+
+ax.set_extent(region)
+ax.add_feature(cfeature.LAND)
+ax.add_feature(cfeature.OCEAN)
+ax.add_feature(cfeature.COASTLINE)
+ax.gridlines(draw_labels=True)
+
+ax.scatter(df['longitude'], df['latitude'], 
+           s=df['magnitude']*10, alpha=0.5, c=&quot;red&quot;, 
+           transform=ccrs.PlateCarree())
+
+plt.title('California Earthquakes (Plate Carrée)')
+plt.show()
+</code></pre>
+<hr />
+<h1 id="adding-topography-with-cartopy">Adding Topography with Cartopy</h1>
+<pre><code class="language-python">import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+import pandas as pd
+
+df = pd.read_csv('data/earthquakes.csv')
+region = [-125, -114, 32, 42]
+df = df[(df['longitude'] &gt;= region[0]) &amp; (df['longitude'] &lt;= region[1]) &amp;
+        (df['latitude'] &gt;= region[2]) &amp; (df['latitude'] &lt;= region[3])]
+
+fig = plt.figure(figsize=(10, 8))
+ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
+
+ax.set_extent(region)
+ax.add_feature(cfeature.LAND)
+ax.add_feature(cfeature.OCEAN)
+ax.add_feature(cfeature.COASTLINE)
+ax.gridlines(draw_labels=True)
+
+# Add topography
+ax.stock_img()
+
+ax.scatter(df['longitude'], df['latitude'], 
+           s=df['magnitude']*10, alpha=0.5, c=&quot;red&quot;, 
+           transform=ccrs.PlateCarree())
+
+plt.title('California Earthquakes (Plate Carrée)')
+plt.show()
+</code></pre>
+<hr />
+<h1 id="introduction-to-pygmt">Introduction to PyGMT</h1>
+<ul>
+<li>PyGMT is a Python interface for the Generic Mapping Tools (GMT)</li>
+<li>Provides access to GMT's powerful mapping and data processing capabilities</li>
+<li>Can handle high-resolution topography data</li>
+</ul>
+<hr />
+<h1 id="pygmt-downloading-topography-data">PyGMT: Downloading Topography Data</h1>
+<pre><code class="language-python">import pygmt
+
+# Download topography data for California
+region = [-125, -114, 32, 42]
+grid = pygmt.datasets.load_earth_relief(resolution=&quot;30s&quot;, region=region)
+
+# Plot the topography
+fig = pygmt.Figure()
+fig.grdimage(grid=grid, projection=&quot;M15c&quot;, frame=True, cmap=&quot;geo&quot;)
+fig.colorbar(frame=[&quot;a1000&quot;, &quot;x+lElevation&quot;, &quot;y+lm&quot;])
+fig.coast(shorelines=&quot;1/0.5p&quot;)
+fig.show()
+</code></pre>
+<hr />
+<h1 id="combining-pygmt-and-cartopy">Combining PyGMT and Cartopy</h1>
+<pre><code class="language-python">import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+import pygmt
+import numpy as np
+import pandas as pd
+
+# Download topography data
+region = [-125, -114, 32, 42]
+df = pd.read_csv('data/earthquakes.csv')
+df = df[(df['longitude'] &gt;= region[0]) &amp; (df['longitude'] &lt;= region[1]) &amp;
+        (df['latitude'] &gt;= region[2]) &amp; (df['latitude'] &lt;= region[3])]
+
+grid = pygmt.datasets.load_earth_relief(resolution=&quot;30s&quot;, region=region)
+
+# Create a Cartopy plot
+fig = plt.figure(figsize=(15, 10))
+ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
+ax.set_extent(region)
+
+# Plot the topography
+img_extent = (grid.lon.min(), grid.lon.max(), grid.lat.min(), grid.lat.max())
+ax.set_extent(region, crs=ccrs.PlateCarree())
+ax.scatter(df['longitude'], df['latitude'], 
+           s=df['magnitude']*10, alpha=0.5, c=&quot;red&quot;, 
+           transform=ccrs.PlateCarree())
+
+# Plot the earthquake data
+ax.imshow(grid.data, extent=img_extent, transform=ccrs.PlateCarree(), 
+          cmap='terrain', origin='lower')
+
+# Add coastlines and borders
+ax.add_feature(cfeature.COASTLINE)
+ax.add_feature(cfeature.BORDERS)
+ax.add_feature(cfeature.STATES)
+ax.gridlines(draw_labels=True)
+
+plt.colorbar(ax.images[0], label='Elevation (m)')
+plt.title('California Topography (PyGMT + Cartopy)')
+plt.show()
+</code></pre>
+<hr />
+<h1 id="summary">Summary</h1>
+<ul>
+<li>Matplotlib: Versatile plotting library for various chart types</li>
+<li>Cartopy: Geospatial data visualization with map projections</li>
+<li>PyGMT: Access to high-resolution topography data and GMT capabilities</li>
+<li>Combining these tools allows for powerful Earth science visualizations</li>
+</ul>
+
+
+
+
+
+
+
+  
+  
+
+
+
+  
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.annotate", "content.action.edit", "navigation.expand"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.525ec568.min.js"></script>
+      
+    
+  </body>
+</html>
