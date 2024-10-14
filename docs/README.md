@@ -47,8 +47,8 @@ By the end of this course, you'll have a foundation in both Python programming a
 | 09/23 | [Matplotlib & Cartopy & PyGMT] |[slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/02_matplotlib_cartopy), [assignment](https://github.com/AI4EPS/EPS88_PyEarth/blob/main/docs/exercises/02_matplotlib_cartopy.ipynb) |
 | 09/30 | [SkLearn: Supervised Learning: Regression 1] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/03_regression), [assignment](https://github.com/AI4EPS/EPS88_PyEarth/blob/main/docs/exercises/03_regression.ipynb) |
 | 10/07 | [Sklearn: Supervised Learning: Regression 2] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/04_regression), [assignment](https://github.com/AI4EPS/EPS88_PyEarth/blob/main/docs/exercises/04_regression.ipynb) |
-| 10/14 | [Sklearn: Supervised Learning: Classification 1] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/05_classification),  |
-| 10/21 | [Sklearn: Supervised Learning: Classification 2] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/06_classification),  |
+| 10/14 | [Sklearn: Supervised Learning: Classification 1] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/05_classification), [assignment](https://github.com/AI4EPS/EPS88_PyEarth/blob/main/docs/exercises/05_classification.ipynb) |
+| 10/21 | [Sklearn: Supervised Learning: Classification 2] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/06_classification), [assignment](https://github.com/AI4EPS/EPS88_PyEarth/blob/main/docs/exercises/06_classification.ipynb) |
 | 10/28 | [Sklearn: Unsupervised Learning: Clustering] |  |
 | 11/04 | [Probabilites] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/08_probabilities), |
 | 11/11 | Veterans Day |  |
