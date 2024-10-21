@@ -25,7 +25,7 @@ By the end of this course, you'll have a foundation in both Python programming a
 
 **Graduate student reader**:  Shivangi Tikekar (shivangi.tikekar@berkeley.edu)
 
-[DataHub](https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https://github.com/AI4EPS/EPS88_PyEarth)
+[DataHub]([https://datahub.berkeley.edu/hub/user-redirect/lab/git-pull?repo=https://github.com/AI4EPS/EPS88_PyEarth](https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https://github.com/AI4EPS/EPS88_PyEarth&urlpath=lab/workspaces/auto-L/tree/EPS88_PyEarth/exercises))
 
 <!-- ## Projects -->
 
