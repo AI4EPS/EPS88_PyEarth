@@ -18,9 +18,13 @@ theme:
 
 plugins:
   - mkdocs-jupyter:
-      ignore_h1_titles: True
+      ignore_h1_titles: true
       include: ["*.ipynb"]
       ignore: []
+      execute: false
+      allow_errors: true
+      include_requirejs: true
+      custom_mathjax_url: "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS_CHTML-full,Safe"
 
 extra:
   generator: false
