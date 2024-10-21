@@ -25,6 +25,8 @@ By the end of this course, you'll have a foundation in both Python programming a
 
 **Graduate student reader**:  Shivangi Tikekar (shivangi.tikekar@berkeley.edu)
 
+[DataHub](https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https://github.com/AI4EPS/EPS88_PyEarth)
+
 <!-- ## Projects -->
 
 <!-- For the class project, students will work in teams of 1-3 to analyze an Earth Science datasets. The scope and evaluation of each project will be adjusted based on team size. The project includes three components:
