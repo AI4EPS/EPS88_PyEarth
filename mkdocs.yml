@@ -21,10 +21,6 @@ plugins:
       ignore_h1_titles: true
       include: ["*.ipynb"]
       ignore: []
-      execute: false
-      allow_errors: true
-      include_requirejs: true
-      custom_mathjax_url: "https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"
 
 extra:
   generator: false
@@ -37,5 +33,9 @@ markdown_extensions:
       generic: true
 
 extra_javascript:
-  - javascripts/mathjax.js
-  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+  - javascripts/katex.js
+  - https://unpkg.com/katex@0/dist/katex.min.js
+  - https://unpkg.com/katex@0/dist/contrib/auto-render.min.js
+
+extra_css:
+  - https://unpkg.com/katex@0/dist/katex.min.css
