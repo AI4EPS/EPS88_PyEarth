@@ -17,6 +17,8 @@ The class is designed for undergraduate students, and no prior knowledge of Eart
 The class will consist of a combination of lectures and hands-on exercises from the basics of Python to advanced topics like neural networks and their applications in Earth Science. 
 By the end of this course, you'll have a foundation in both Python programming and Earth Science analysis techniques.
 
+**Like to [Data 8](https://www.data8.org/fa24/)**: 
+
 ## Time and Location
 - Lecture: Monday 12:00 PM - 2:00 PM in McCone 265
 - Office Hour:
@@ -27,7 +29,7 @@ By the end of this course, you'll have a foundation in both Python programming a
 
 **Graduate student reader**:  Shivangi Tikekar (shivangi.tikekar@berkeley.edu)
 
-[DataHub Link](https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https://github.com/AI4EPS/EPS88_PyEarth&urlpath=lab/workspaces/auto-L/tree/EPS88_PyEarth/exercises)
+## [DataHub Link](https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https://github.com/AI4EPS/EPS88_PyEarth&urlpath=lab/workspaces/auto-L/tree/EPS88_PyEarth/exercises)
 
 <!-- ## Projects -->
 
