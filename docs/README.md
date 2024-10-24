@@ -19,7 +19,9 @@ By the end of this course, you'll have a foundation in both Python programming a
 
 ## Time and Location
 - Lecture: Monday 12:00 PM - 2:00 PM in McCone 265
-- Office Hour: Monday 2:00 PM - 3:00 PM in McCone 265
+- Office Hour:
+  - Monday 2:00 PM - 3:00 PM in McCone 265
+  - Thursday 10:00 AM - 11:00 AM in McCone 285
 
 **Instructor**: Weiqiang Zhu (zhuwq@berkeley.edu)
 
