@@ -11,3 +11,4 @@ fsspec
 scikit-learn
 requests
 aiohttp
+seaborn
