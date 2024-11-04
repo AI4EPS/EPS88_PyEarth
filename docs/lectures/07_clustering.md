@@ -295,7 +295,7 @@ Does your clustering method match the true rock types?
 
 ---
 
-# Exercise
+# Extra Exercise
 
 1. Try different numbers of clusters for K-Means and Hierarchical Clustering.
 2. Experiment with different `eps` and `min_samples` values for DBSCAN.
