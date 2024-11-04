@@ -55,10 +55,10 @@ By the end of this course, you'll have a foundation in both Python programming a
 | 10/07 | [Sklearn: Supervised Learning: Regression 2] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/04_regression), [assignment](https://github.com/AI4EPS/EPS88_PyEarth/blob/main/docs/exercises/04_regression.ipynb) |
 | 10/14 | [Sklearn: Supervised Learning: Classification 1] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/05_classification), [assignment](https://github.com/AI4EPS/EPS88_PyEarth/blob/main/docs/exercises/05_classification.ipynb) |
 | 10/21 | [Sklearn: Supervised Learning: Classification 2] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/06_classification), [assignment](https://github.com/AI4EPS/EPS88_PyEarth/blob/main/docs/exercises/06_classification.ipynb) |
-| 10/28 | [Sklearn: Unsupervised Learning: Clustering] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/07_clustering), [assignment](https://github.com/AI4EPS/EPS88_PyEarth/blob/main/docs/exercises/07_clustering.ipynb) |
-| 11/04 | [Probabilites] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/08_probabilities), |
-| 11/11 | Veterans Day |  |
-| 11/18 | [AB Testing] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/09_ABTesting) |
-| 11/25 | [PyTorch: Neural Networks 1] |  |
-| 12/02 | [PyTorch: Neural Networks 2] |  |
-| 12/09 | [Project] |  |
+| 10/28 | Midterm review |  |
+| 11/04 | [Sklearn: Unsupervised Learning: Clustering] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/07_clustering), [assignment](https://github.com/AI4EPS/EPS88_PyEarth/blob/main/docs/exercises/07_clustering.ipynb) |
+| 11/11 |  Veterans Day |  |
+| 11/18 | [Probabilites] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/08_probabilities), [assignment](https://github.com/AI4EPS/EPS88_PyEarth/blob/main/docs/exercises/08_probabilities.ipynb) |
+| 11/25 | [PyTorch: Neural Networks 1] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/09_neural_networks1), [assignment](https://github.com/AI4EPS/EPS88_PyEarth/blob/main/docs/exercises/09_neural_networks1.ipynb) |
+| 12/02 | [PyTorch: Neural Networks 2] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/10_neural_networks2), [assignment](https://github.com/AI4EPS/EPS88_PyEarth/blob/main/docs/exercises/10_neural_networks2.ipynb) |
+| 12/09 | Final Project |  |

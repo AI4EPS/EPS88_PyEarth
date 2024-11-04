@@ -13,3 +13,4 @@ requests
 aiohttp
 seaborn
 torch
+tqdm
