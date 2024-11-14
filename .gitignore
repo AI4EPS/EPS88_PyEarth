@@ -171,3 +171,7 @@ docs/scripts/data/GlobalLandTemperaturesByMajorCity.csv
 docs/scripts/data/GlobalLandTemperaturesByState.csv
 docs/scripts/data/GlobalTemperatures.csv
 *_bak
+LiCS.zip
+LiCS/
+best_model_params.pt
+.DS_Store
