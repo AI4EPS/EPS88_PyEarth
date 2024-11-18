@@ -61,4 +61,4 @@ By the end of this course, you'll have a foundation in both Python programming a
 | 11/18 | [Probabilites] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/08_probabilities), [assignment](https://github.com/AI4EPS/EPS88_PyEarth/blob/main/docs/exercises/08_probabilities.ipynb) |
 | 11/25 | [PyTorch: Neural Networks 1] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/09_neural_networks1), [assignment](https://github.com/AI4EPS/EPS88_PyEarth/blob/main/docs/exercises/09_neural_networks1.ipynb) |
 | 12/02 | [PyTorch: Neural Networks 2] | [slides](https://ai4eps.github.io/EPS88_PyEarth/lectures/10_neural_networks2), [assignment](https://github.com/AI4EPS/EPS88_PyEarth/blob/main/docs/exercises/10_neural_networks2.ipynb) |
-| 12/09 | Final Project |  |
+| 12/09 | Final Project (RRR Week) |  |
