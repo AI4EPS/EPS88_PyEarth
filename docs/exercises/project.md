@@ -15,6 +15,7 @@ The final project for the class is to use the tools we have developed regarding 
 - a polished Jupyter notebook that contains your data analysis, visualizations and explanatory text.
 - the underlying data sets you used in your analysis
 - exported PDF of the Jupyter notebook
+- each person is required to upload one submission. If it is a collaborative project, please note that and inclue names of the group mebers, limted to a maximum of three members.
 
 **Choice of problems and data**
 
