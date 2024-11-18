@@ -14,7 +14,7 @@ The final project for the class is to use the tools we have developed regarding 
 
 - a polished Jupyter notebook that contains your data analysis, visualizations and explanatory text.
 - the underlying data sets you used in your analysis
-- exported html of the Jupyter notebook
+- exported PDF of the Jupyter notebook
 
 **Choice of problems and data**
 
