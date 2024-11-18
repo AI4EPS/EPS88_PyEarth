@@ -83,10 +83,5 @@ Specific data sets we have used so far:
 
 - global elevation data
 - a comprehensive seismic catalog
-- geomagnetic polarity timescale
-- ice flow data from British Columbia 
-- wind direction and other weather data
 - Mauna Loa CO2
-- ice core CO2
-- benthic oxygen isotope record
 - igneous geochemistry data (additional data can be downloaded from EarthChem.org)
