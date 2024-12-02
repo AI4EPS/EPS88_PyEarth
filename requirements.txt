@@ -13,5 +13,6 @@ requests
 aiohttp
 seaborn
 torch
+torchvision
 tqdm
 geopy
