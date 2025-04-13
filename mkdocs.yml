@@ -8,6 +8,31 @@ edit_uri: blob/main/docs/
 
 nav:
   - Overview: README.md
+  # - Lectures:
+  - Introduction & Python 101: lectures/00_introduction_python101
+  - Numpy & Pandas: lectures/01_numpy_pandas
+  - Matplotlib & Cartopy & PyGMT: lectures/02_matplotlib_cartopy
+  - Supervised Learning - Regression 1: lectures/03_regression
+  - Supervised Learning - Regression 2: lectures/04_regression
+  - Supervised Learning - Classification 1: lectures/05_classification
+  - Supervised Learning - Classification 2: lectures/06_classification
+  - Unsupervised Learning - Clustering: lectures/07_clustering
+  - Probabilities: lectures/08_probabilities
+  - Neural Networks 1: lectures/09_neural_networks1
+  - Neural Networks 2: lectures/10_neural_networks2
+  # - Exercises:
+  #   - Introduction & Python 101: exercises/00_introduction_python101.ipynb
+  #   - Numpy & Pandas: exercises/01_numpy_pandas.ipynb
+  #   - Matplotlib & Cartopy: exercises/02_matplotlib_cartopy.ipynb
+  #   - Regression 1: exercises/03_regression.ipynb
+  #   - Regression 2: exercises/04_regression.ipynb
+  #   - Classification 1: exercises/05_classification.ipynb
+  #   - Classification 2: exercises/06_classification.ipynb
+  #   - Clustering: exercises/07_clustering.ipynb
+  #   - Probabilities: exercises/08_probabilities.ipynb
+  #   - Neural Networks 1: exercises/09_neural_networks1.ipynb
+  #   - Neural Networks 2: exercises/10_neural_networks2.ipynb
+  #   - Neural Networks 3: exercises/11_neural_networks3.ipynb
 
 theme:
   name: "material"
@@ -27,10 +52,6 @@ extra:
   analytics:
     provider: google
     property: G-TLJF393667
-
-markdown_extensions:
-  - pymdownx.arithmatex:
-      generic: true
 
 markdown_extensions:
   - pymdownx.arithmatex:
