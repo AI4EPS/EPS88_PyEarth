@@ -8,18 +8,21 @@ edit_uri: blob/main/docs/
 
 nav:
   - Overview: README.md
-  # - Lectures:
-  - Introduction & Python 101: lectures/00_introduction_python101
-  - Numpy & Pandas: lectures/01_numpy_pandas
-  - Matplotlib & Cartopy & PyGMT: lectures/02_matplotlib_cartopy
-  - Supervised Learning - Regression 1: lectures/03_regression
-  - Supervised Learning - Regression 2: lectures/04_regression
-  - Supervised Learning - Classification 1: lectures/05_classification
-  - Supervised Learning - Classification 2: lectures/06_classification
-  - Unsupervised Learning - Clustering: lectures/07_clustering
-  - Probabilities: lectures/08_probabilities
-  - Neural Networks 1: lectures/09_neural_networks1
-  - Neural Networks 2: lectures/10_neural_networks2
+  - Python Introduction:
+    - Introduction & Python 101: lectures/00_introduction_python101.md
+    - Numpy & Pandas: lectures/01_numpy_pandas.md
+    - Matplotlib & Cartopy & PyGMT: lectures/02_matplotlib_cartopy.md
+  - Supervised Learning:
+    - Regression1: lectures/03_regression.md
+    - Regression2: lectures/04_regression.ipynb
+    - Classification1: lectures/05_classification.ipynb
+    - Classification2: lectures/06_classification.ipynb
+  - Unsupervised Learning:
+    - Clustering: lectures/07_clustering.md
+  - Statistics: lectures/08_probabilities.ipynb
+  - Deep Learning:
+    - Neural Networks 1: lectures/09_neural_networks1.ipynb
+    - Neural Networks 2: lectures/10_neural_networks2.ipynb
   # - Exercises:
   #   - Introduction & Python 101: exercises/00_introduction_python101.ipynb
   #   - Numpy & Pandas: exercises/01_numpy_pandas.ipynb
