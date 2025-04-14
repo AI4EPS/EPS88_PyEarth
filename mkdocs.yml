@@ -47,8 +47,22 @@ theme:
 plugins:
   - mkdocs-jupyter:
       ignore_h1_titles: true
-      include: ["*.ipynb"]
-      ignore: []
+      # include_source: true
+      allow_errors: true
+
+markdown_extensions:
+  - footnotes
+  - pymdownx.arithmatex:
+      generic: true
+
+extra_javascript:
+  - javascripts/katex.js
+  - https://unpkg.com/katex@0/dist/katex.min.js
+  - https://unpkg.com/katex@0/dist/contrib/auto-render.min.js
+
+extra_css:
+  - https://unpkg.com/katex@0/dist/katex.min.css
+
 
 extra:
   generator: false
@@ -56,10 +70,3 @@ extra:
     provider: google
     property: G-TLJF393667
 
-markdown_extensions:
-  - pymdownx.arithmatex:
-      generic: true
-
-extra_javascript:
-  - javascripts/mathjax.js
-  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
