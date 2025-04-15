@@ -40,9 +40,14 @@ nav:
 theme:
   name: "material"
   features:
+    - navigation.expand
+    - navigation.sections
+    # - navigation.tabs
+    # - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
     - content.code.annotate
     - content.action.edit
-    - navigation.expand
 
 plugins:
   - mkdocs-jupyter:
