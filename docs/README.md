@@ -1,5 +1,6 @@
 # [PyEarth: A Python Introduction to Earth Science](https://ai4eps.github.io/EPS88_PyEarth/)
 
+[![docs](https://github.com/AI4EPS/EPS88_PyEarth/actions/workflows/docs.yml/badge.svg)](https://github.com/AI4EPS/EPS88_PyEarth/actions/workflows/docs.yml)
 ![Visitors](https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&label=views&labelColor=%23d9e3f0&countColor=%23263759&style=flat)
 
 <!-- [![documentation](https://github.com/ai4eps/EPS207_Observational_Seismology/actions/workflows/docs.yml/badge.svg)](https://ai4eps.github.io/EPS207_Observational_Seismology/) -->
