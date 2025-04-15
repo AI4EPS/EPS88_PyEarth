@@ -1,4 +1,4 @@
-# PyEarth: A Python Introduction to Earth Science
+# [PyEarth: A Python Introduction to Earth Science](https://ai4eps.github.io/EPS88_PyEarth/)
 
 <!-- [![documentation](https://github.com/ai4eps/EPS207_Observational_Seismology/actions/workflows/docs.yml/badge.svg)](https://ai4eps.github.io/EPS207_Observational_Seismology/) -->
 
