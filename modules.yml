@@ -77,8 +77,8 @@ modules:
       - {name: "plt.xlabel / ylabel / title / show", does: "label it, then draw it"}
       - {name: "round(x, 1)",              does: "trim a long decimal — 9.1 rather than sixteen digits"}
       - {name: "plt.xlim(a, b) / plt.ylim(a, b)", does: "fix how far the map reaches, so the world is always the whole world"}
-      - {name: 'plt.gca().set_aspect("equal")', does: "one degree across = one degree up, so the map is not stretched"}
-      - {name: 'plt.locator_params(axis="y", integer=True)', does: "whole numbers on a count axis — half an earthquake is not a thing"}
+      - {name: 'plt.gca().set_aspect("equal")', does: "one degree across = one degree up, so the map is not stretched", remember: false}
+      - {name: 'plt.locator_params(axis="y", integer=True)', does: "whole numbers on a count axis — half an earthquake is not a thing", remember: false}
     harvest: "offerings/2023-spring_swansonhysell/Week01_Birthquake_intro/W1_inclass_finding_birthquakes.ipynb"
     harvest_changes: >
       The 2023 notebook is 39 cells, imports pandas ONLY, and draws NO FIGURES AT ALL. What was

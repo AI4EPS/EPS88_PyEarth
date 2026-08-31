@@ -67,6 +67,8 @@ STANDARDS = [
 
     # --- tier 3: does it TEACH? ---------------------------------------------------------------
     (3, "every question serves a named takeaway or teaches: item", False),
+    (3, "the summary lists what a student must remember, not everything the notebook touched",
+        False),
     (3, "every takeaway is exercised by a question, and the homework touches all of them", False),
     (3, "the week's question is answered FOR THE STUDENT, on their own data or their own choice",
         False),
@@ -117,6 +119,18 @@ top. That is never the wrong thing to do.
 # Only {question} and {hook} change between weeks. Everything else a student reads on the way in
 # — where to click, how to submit, what a pencil means, how to recover — is the same in week 13
 # as in week 1, so it is written once here rather than re-invented thirteen times.
+
+# A self-check ends with this line and nothing else. The shape is the point: submissions are
+# PDFs read in SpeedGrader, and a stable "✓ <label> — " prefix is what lets a grader find the
+# same fact in 46 documents. Every week uses it, so what is learned reading week 3 transfers.
+CHECK_LINE = '✓ {label} — {summary}'
+
+# Rebuilding the state a section needs, for anyone who arrived late or restarted the kernel.
+# Silent by design: it is scaffolding, not a result.
+CHECKPOINT = """# ── Checkpoint ── run this if you restarted the kernel or fell behind ──
+{body}"""
+
+CLOSING_HEADING = "## The question, answered"
 
 SETUP_CELL = """import pandas as pd
 import matplotlib.pyplot as plt
@@ -192,7 +206,11 @@ def week_cheatsheet(week_n, module_ids=None):
         out += ["", "### The ideas, in plain words", "", "| Idea | Means |", "|---|---|"]
         out += [f"| **{d['idea']}** | {d['words']} |" for d in ideas]
 
-    fns = [f for mid in module_ids for f in by_id.get(mid, {}).get("functions", [])]
+    # `remember: false` marks a call the notebook legitimately uses but a student never needs
+    # again — set_aspect on a map, integer tick locators. check_prior_knowledge still counts them
+    # as taught; the summary does not, because a summary listing everything teaches nothing.
+    fns = [f for mid in module_ids for f in by_id.get(mid, {}).get("functions", [])
+           if f.get("remember", True)]
     if fns:
         out += ["", "### Code you met this week", "", "| Function | What it does |", "|---|---|"]
         out += [f"| `{f['name']}` | {f['does']} |" for f in fns]

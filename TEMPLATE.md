@@ -46,17 +46,24 @@ nobody finds an unfinished cell the night before it is due.
 2. **What you'll be able to do** — the science *and* the technical skill, naming the functions.
 3. **Setup** — one imports cell, one data cell. Use `weekkit.SETUP_CELL`: it carries the plot
    defaults and the live-source-with-cached-fallback pattern, so every week's setup is identical.
-4. **Sections** — prose → a worked example typed together → a question. Roughly every 8–10 minutes.
+4. **Sections** — prose → a worked example typed together → a question. Roughly every 8–10
+   minutes. A section that needs state from an earlier one opens with `weekkit.CHECKPOINT`.
 5. **The buffer.** `modules.yml` calls it `extension`; it is a budget for you, not a section for
    students, and it is **invisible in the notebook** — no label, no banner, and no sentence about
    possibly not reaching it. "EXTENSION", "Buffer", "If we have time" and "we may not get to this
    in class" all read as a third category and make a student wonder whether that part is really
    theirs. It is. The last section looks exactly like the others and is graded like the others.
    **Nothing later in the course may depend on it.**
-6. **The question, answered** — one sentence.
+6. **The question, answered** — `weekkit.CLOSING_HEADING`, then one sentence.
 7. **The week summary** — `weekkit.week_cheatsheet(n, [module ids])`, placed **before** the
    homework. Because it sits there, its `takeaways:` must cover only what class taught: a takeaway
    that states the homework's discovery gives it away.
+
+   **Ask of every function in it: will a student need to remember this?** If not, mark it
+   `remember: false` in `modules.yml` — the notebook may still use it and `check_prior_knowledge`
+   still counts it as taught, but it stays out of the table. `set_aspect("equal")` and
+   `locator_params(integer=True)` are formatting; a summary that lists them alongside `max()`
+   tells a student the two matter equally, and a summary that lists everything teaches nothing.
 
 ### Two devices that must appear
 

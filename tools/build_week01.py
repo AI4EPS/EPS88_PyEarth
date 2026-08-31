@@ -50,24 +50,22 @@ def answer_md(text):
     cells.append(("markdown", text.strip("\n"), True))
 
 
+def check_print(label, *parts):
+    """one weekkit.CHECK_LINE print, wrapped so no source line runs past the page"""
+    line = weekkit.CHECK_LINE.format(label=label, summary=parts[0])
+    if len(parts) == 1:
+        return f'print(f"{line}")'
+    rest = "".join(f'\n      f"{q}"' for q in parts[1:])
+    return f'print(f"{line} "{rest})'
+
+
 # ---------------------------------------------------------------- 0. front matter
-md(f"""
-# What was your birthquake?
-
-**EPS 88 · PyEarth.** Open your own copy on DataHub: [click here]({DATAHUB}).
-
-Somewhere in the world, on the day you were born, the ground broke. This notebook finds that
-earthquake — yours, not an example — and then asks what the whole catalogue of them looks like.
-
-**Nine places where you write something: five in class, and four at home.** Every one opens with
-a pencil icon and the words *Your turn*, and is followed by an empty cell. Fill them all in, then
-export the notebook as a PDF and upload that.
-
-Two habits from the first minute. A cell runs when you press **Shift+Enter**, and the notebook
-remembers everything it has already run — so when something breaks and you cannot see why,
-**Kernel → Restart Kernel and Run All Cells** throws the memory away and rebuilds it from the top.
-That is never the wrong thing to do.
-""")
+md(weekkit.OPENING.format(
+    question=WEEK["question"],
+    datahub=DATAHUB,
+    hook="Somewhere in the world, on the day you were born, the ground broke. This notebook finds "
+         "that earthquake — yours, not an example — and then asks what the whole catalogue of "
+         "them looks like."))
 
 md("""
 ## The question
@@ -269,39 +267,9 @@ print(times[4], mags[4], places[4])
 print(times[6], mags[6], places[6])
 ''')
 
-# ---------------------------------------------------------------- 3. your own birthday
+# ---------------------------------------------------------------- 3. maps
 md("""
-## 3. Your own birthday
-
-Everything so far ran on one day in 1983, so that forty-six screens show the same numbers. Now
-take the same three moves — load, `max`, `.index` — and point them at your own birthday.
-
-Your birthday is yours, so there is no cached copy of it anywhere in this repository. `load_yours`
-goes to the catalogue live and, if it cannot get there, says so and stops, rather than quietly
-handing you somebody else's day. It wants a start date, an end date and a magnitude floor, and the
-end date is the **next** day:
-
-```python
-my_day = load_yours("2007-09-15", "2007-09-16", 4.5)
-```
-
-✏️ **Your turn.** Load your own birthday at magnitude 4.5 and above, unpack it with `columns` the
-way the checkpoint cells do, and print your birthquake: its magnitude, where it was, and how deep.
-
-**Use these names**, because the homework reuses them: `my_mags`, `my_places`, `my_depths`.
-""")
-
-answer_code('''
-my_day = load_yours("2008-03-12", "2008-03-13", 4.5)
-my_times, my_lats, my_lons, my_depths, my_mags, my_places = columns(my_day)
-my_biggest = max(my_mags)
-mine = my_mags.index(my_biggest)
-print(f"My birthquake: M{my_biggest}, {my_places[mine]}, {my_depths[mine]} km deep.")
-''')
-
-# ---------------------------------------------------------------- 4. maps
-md("""
-## 4. Putting earthquakes on a map
+## 3. Putting earthquakes on a map
 
 A map is a scatter plot: longitude across, latitude up. `plt.scatter(lons, lats)` puts one dot at
 every pair. On its own that would be dots in a white rectangle, so every map in this course first
@@ -310,7 +278,7 @@ joins points up with a line.
 """)
 
 code('''
-# ── Checkpoint 4 ── run this if you're behind ──
+# ── Checkpoint ── run this if you restarted the kernel or fell behind ──
 times, lats, lons, depths, mags, places = columns(load("1983-12-02", "1983-12-03", 4.5))
 ''')
 
@@ -378,7 +346,7 @@ came out of four thousand dots, and it is the reason a catalogue is worth readin
 
 # ---------------------------------------------------------------- 5. counting by magnitude
 md("""
-## 5. Counting by magnitude
+## 4. Counting by magnitude
 
 Magnitude is a step scale, not a count: an M6.5 is not slightly bigger than an M5.5, it is in a
 different league. The year you just loaded runs from 4.5 at the bottom to 7.6 at the top. So are
@@ -395,7 +363,7 @@ many earthquakes fall in each.
 """)
 
 code('''
-# ── Checkpoint 5 ── run this if you're behind ──
+# ── Checkpoint ── run this if you restarted the kernel or fell behind ──
 times, lats, lons, depths, mags, places = columns(load("1983-01-01", "1984-01-01", 4.5))
 ''')
 
@@ -444,7 +412,7 @@ print("one step, 5.5 to 6.5:", round(n_55 / n_65, 1))
 
 # ---------------------------------------------------------------- 6. wider windows
 md("""
-## 6. The same ratio in other windows
+## 5. The same ratio in other windows
 
 Nine, and eight and a half, against a rule of thumb that says ten. Close enough to be encouraging —
 and one year is one year. Before believing any number measured in one window of a catalogue, the
@@ -498,7 +466,7 @@ falls apart at the scale where there is not. Both halves of that sentence are th
 
 # ---------------------------------------------------------------- 7. 1940
 md("""
-## 7. The catalogue in 1940
+## 6. The catalogue in 1940
 
 Walter Alvarez is a geologist at Berkeley. He and his father found the thin worldwide layer of
 iridium that is the evidence for an asteroid striking the Earth at the end of the Cretaceous, and
@@ -516,12 +484,22 @@ runs: how many do you think the catalogue lists for the whole of 1940? Same plan
 floor, forty-three years earlier.
 """)
 
-code('''
+md("""
+✏️ **Your turn.** Now find out. Count the earthquakes at M4.5 and above on 3 October 1940, and
+then in the whole of 1940, and print both — then print how many times as many 1983 had, to one
+decimal place. `n_45` is still the 1983 count from section 4.
+
+**Use these names**: `n_1940`.
+""")
+
+answer_code('''
 n_1940 = count("1940-01-01", "1941-01-01", 4.5)
 print("earthquakes on 3 October 1940:", count("1940-10-03", "1940-10-04", 4.5))
 print("earthquakes in all of 1940:", n_1940)
 print("times as many in 1983:", round(n_45 / n_1940, 1))
+''')
 
+code('''
 times, lats, lons, depths, mags, places = columns(load("1940-01-01", "1941-01-01", 4.5))
 
 plt.plot(coast.lon, coast.lat, color="0.6", lw=0.6)
@@ -547,7 +525,7 @@ The mid-ocean ridges did not, so their earthquakes are not in the file.
 
 **Catalogue completeness.** A catalogue lists what somebody's instruments recorded, not what happened. Where there are no seismometers there are no earthquakes in the file.
 
-Which puts section 5 in a different light. Those first histogram bars, lower than the ones just
+Which puts section 4 in a different light. Those first histogram bars, lower than the ones just
 above them, are the same effect at a smaller scale: not fewer M4.5 earthquakes in 1983, just fewer
 of them written down.
 """)
@@ -556,10 +534,10 @@ of them written down.
 md("""
 ## The question, answered
 
-Your birthquake is whatever your own cell in section 3 printed — that one is yours and nobody
-else's. For the shared day the whole room loaded, it was the magnitude 7.0 twenty-five kilometres
-south of Champerico, Guatemala, at 03:09 UTC, sixty-seven kilometres down; and the three later
-earthquakes that named the same town look like its aftershocks.
+For the one day the whole room loaded together, the birthquake was the magnitude 7.0 twenty-five
+kilometres south of Champerico, Guatemala, at 03:09 UTC, sixty-seven kilometres down — and the
+three later earthquakes that named the same town look like its aftershocks. Yours is the first
+thing the homework asks for, and it will be a different earthquake on every screen in the room.
 """)
 
 md(weekkit.week_cheatsheet(1))
@@ -568,45 +546,61 @@ md(weekkit.week_cheatsheet(1))
 md("""
 ## Homework
 
-Three parts, all on your own birthday. Everything you need is above: the same two loading
-functions, the same map recipe. Part 1 is the one everybody finishes.
+Three parts, all on your own birthday. Everything you need is above: the same loading move, the
+same `max` and `.index`, the same map recipe. Part 1 is the one everybody finishes.
 
 Your birthday has no cached copy, so if the network is down when you sit down to this, nothing
 here will run. Come back to it when you are online.
 """)
 
 md("""
-✏️ **Part 1 — how many earthquakes were there really?**
+✏️ **Part 1 — your own birthquake, and how many earthquakes there really were.**
 
-In class you loaded your birthday at magnitude 4.5 and above. That floor was a choice, and it threw
-away everything smaller. Take it off.
+Class ran on one shared day so that forty-six screens printed the same numbers. This one is yours,
+and nobody else in the room will get your answer.
 
-First commit to a guess, and write it down before you run anything: with no magnitude floor at all,
-how many earthquakes do you think the catalogue lists for your one day?
+Your birthday has no cached copy anywhere in this repository, so `load_yours` goes to the catalogue
+live and, if it cannot get there, says so and stops rather than quietly handing you somebody else's
+day. It wants a start date, an end date and a magnitude floor, and the end date is the **next** day:
 
-Then load your day again with the floor removed. `load_yours` takes a magnitude floor, so pass
-`-10` — no catalogue on Earth holds anything that small, so nothing gets cut. Unpack it with
-`columns` exactly as before, and print three things: how many earthquakes there were at M4.5 and
-above (you still have `my_mags` from section 3), how many with no floor at all, and the smallest
-magnitude of the day.
+```python
+my_day = load_yours("2007-09-15", "2007-09-16", 4.5)
+```
 
-**Use these names**, because the self-check looks for them: `my_guess` and `all_mags`.
+**First**, load your own birthday at magnitude 4.5 and above, unpack it with `columns`, and print
+your birthquake — its magnitude, where it was and how deep — with the same `max` and `.index` move
+class used in section 2.
+
+**Then** commit to a guess, and write it down before you run anything else: with no magnitude floor
+at all, how many earthquakes do you think the catalogue lists for that same one day? Load the day
+again with the floor removed — `load_yours` takes a magnitude floor, so pass `-10`; no catalogue on
+Earth holds anything that small, so nothing gets cut — and print how many there are and the
+smallest magnitude among them.
+
+**Use these names**, because the self-check looks for them: `my_mags`, `my_places`, `my_depths`,
+`my_guess` and `all_mags`.
 """)
 
 answer_code('''
+my_day = load_yours("2008-03-12", "2008-03-13", 4.5)
+my_times, my_lats, my_lons, my_depths, my_mags, my_places = columns(my_day)
+my_biggest = max(my_mags)
+mine = my_mags.index(my_biggest)
+print(f"My birthquake: M{my_biggest}, {my_places[mine]}, {my_depths[mine]} km deep.")
+
 my_guess = 40
 all_day = load_yours("2008-03-12", "2008-03-13", -10)
 all_times, all_lats, all_lons, all_depths, all_mags, all_places = columns(all_day)
-print("at M4.5 and above:", len(my_mags))
 print("with no magnitude floor:", len(all_mags))
 print("the smallest magnitude of the day:", min(all_mags))
 ''')
 
-code('''
+code(f'''
 assert len(all_mags) > len(my_mags), "the no-floor day should hold more than the M4.5+ day"
 assert min(all_mags) < 4.5, "the floor is still on — pass -10 as the magnitude floor"
-print("you guessed", my_guess, "and the catalogue lists", len(all_mags))
-print("the smallest of them is magnitude", min(all_mags))
+{check_print("Homework 1",
+             "birthquake M{max(my_mags)}, guessed {my_guess},",
+             "catalogue lists {len(all_mags)}, smallest M{min(all_mags)}")}
 ''')
 
 md("""
@@ -623,7 +617,8 @@ Here is the decision, and it is yours to make. **How far down do you extrapolate
 
 Both are defensible — the day you loaded in part 1 does have earthquakes below magnitude 1 in it.
 Pick one, say which in a comment, and print three things: the prediction, the number you actually
-counted (`all_mags`), and how many times too big the prediction turned out to be.
+counted (`all_mags`), and how many times too big the prediction turned out to be. Your M4.5+ count
+is `len(my_mags)`, from part 1.
 
 **Use these names**: `predicted` and `actual`.
 """)
@@ -637,10 +632,11 @@ print("the catalogue actually lists:", actual)
 print("too big by a factor of:", round(predicted / actual, 1))
 ''')
 
-code('''
+code(f'''
 assert predicted != actual, "predicted is the rule's number, not the one you counted"
-print("rule of thumb:", predicted, "· catalogue:", actual,
-      "· the rule is out by a factor of", round(predicted / actual, 1))
+{check_print("Homework 2",
+             "the rule predicts {predicted}, the catalogue lists {actual}:",
+             "out by a factor of {round(predicted / actual, 1)}")}
 ''')
 
 md("""
@@ -651,7 +647,7 @@ the two is the smallest amount of data that would have convinced you, and nobody
 where — this part is you finding out, on your own birthday.
 
 Draw three maps, all at magnitude 4.5 and above, all with the coastline, all the same recipe as
-section 4 with the dates and the title changed:
+section 3 with the dates and the title changed:
 
 1. your birthday alone;
 2. your birthday and the six days after it — a week;
@@ -710,9 +706,9 @@ plt.gca().set_aspect("equal")
 plt.show()
 ''')
 
-code('''
+code(f'''
 assert n_day < n_month, "a month should hold more earthquakes than one day — check your dates"
-print("earthquakes on each map — day:", n_day, "· week:", n_week, "· month:", n_month)
+{check_print("Homework 3", "day {n_day}, week {n_week}, month {n_month} earthquakes")}
 ''')
 
 answer_md("""

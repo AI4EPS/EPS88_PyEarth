@@ -175,6 +175,24 @@ def check_opening(cells):
                         f"{want[:64]}...")
 
 
+def check_conventions(cells):
+    """The shapes that must be identical in every week: the self-check line and the closing.
+
+    Grading is 46 PDFs per week read on screen. A self-check that states its result in a
+    different shape each week makes the grader re-learn where to look thirteen times.
+    """
+    text = " ".join(src(c) for c in cells)
+    if weekkit.CLOSING_HEADING not in text:
+        errs.append(f"no '{weekkit.CLOSING_HEADING}' section")
+    for i, c in enumerate(cells):
+        s = src(c)
+        if c["cell_type"] != "code" or "assert " not in s:
+            continue
+        if "✓" not in s:
+            errs.append(f"cell {i}: a self-check with no '✓ <label> — ...' line; a grader reading "
+                        f"46 PDFs needs the same shape every week (weekkit.CHECK_LINE)")
+
+
 def check_predict(cells):
     """TEMPLATE 1: at least one cell headed exactly '### Predict before you run'."""
     if not any(c["cell_type"] == "markdown"
@@ -317,7 +335,7 @@ def main():
     cells = student["cells"]
     figs = check_pair(student, solution)
     check_banned(cells); qs = check_questions(cells); check_order(cells)
-    check_opening(cells); check_predict(cells); check_plain_words(cells, n)
+    check_opening(cells); check_conventions(cells); check_predict(cells); check_plain_words(cells, n)
     check_asserts(cells); check_imports(cells)
     # Figures live in the SOLUTION too: a model answer that draws a map was never
     # checked for labels or coastlines, because only the student copy was passed in.

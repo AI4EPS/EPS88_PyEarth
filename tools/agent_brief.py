@@ -109,7 +109,7 @@ def past_defects():
     # but the judgement ones only accumulate, and a brief nobody finishes teaches nothing.
     d = [x for x in yaml.safe_load(f.read_text())["defects"]
          if x.get("scope") == "build" and not x.get("mechanised")
-         and not x.get("promoted")]
+         and not x.get("promoted") and not x.get("superseded")]
     d = sorted(d, key=lambda x: str(x.get("date", "")), reverse=True)[:8]
     if not d:
         return ""
