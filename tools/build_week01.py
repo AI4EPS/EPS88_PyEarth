@@ -113,6 +113,11 @@ they do without reading how.
 
 One line below does something you have not seen: `times, lats, lons, depths, mags, places =
 columns(...)` gives six names their values in one go, in the order they are written.
+
+The day we work through together is **2 December 1983** — the birthday of **Aaron Rodgers**, who
+played quarterback at Cal before a twenty-year NFL career. It is a real person's day, chosen so
+that the whole class starts from the same one; yours comes in the homework, and it will not be
+this one.
 """)
 
 code(weekkit.SETUP_CELL.format(
