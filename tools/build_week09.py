@@ -27,6 +27,7 @@ import json
 import pathlib
 import subprocess
 import sys
+import textwrap
 import time
 
 import numpy as np
@@ -263,6 +264,12 @@ def answer_prose(model):
                   "*(Double-click this cell and replace this line with your answer.)*"))
 
 
+def note(sentence):
+    """The one-sentence answer a part asks for, wrapped as a comment for the solution."""
+    return textwrap.fill(" ".join(sentence.split()), width=96,
+                         initial_indent="# ", subsequent_indent="# ")
+
+
 # What class builds and every later section reads: the three functions and the split. A
 # checkpoint has to rebuild the scalars and the functions too, not only the dataframes — the
 # section it opens is what a student who restarted the kernel runs next, and a missing helper is
@@ -323,6 +330,13 @@ record does and does not let you say about when it reaches {TARGET_PPM} ppm.
 years you fit on and years you keep back; and read the two error curves that tell you when a
 model has stopped learning the pattern and started memorising the data.
 
+**The four questions this week works through:**
+
+1. Is a straight line enough?
+2. How much bend does the record want?
+3. How do you choose a degree when a flexible curve always fits better?
+4. Does it matter which years you hide?
+
 **Eight places where you write something: five in class, three at home.** Each one is headed
 *Your turn*, with an empty cell under it.
 """)
@@ -359,7 +373,7 @@ code(setup)
 
 # --- section 1 -------------------------------------------------------------
 md("""
-## The record
+## Is a straight line enough?
 
 Three lines of pandas turned every monthly reading into one number per complete year. Draw both
 and you can see why we bothered — and why the setup cell threw two years away.
@@ -525,7 +539,7 @@ A straight line has one rate of rise and cannot change it. This record changes i
 
 # --- section 2 -------------------------------------------------------------
 md("""
-## Letting the curve bend
+## How much bend does the record want?
 
 The **degree** of a polynomial is how many bends it is allowed. Degree 1 is a straight line, no
 bends. Degree 2 is a parabola: one bend, one steady change of slope. Degree 3 can bend twice,
@@ -576,7 +590,8 @@ separate straight line to each decade and read off its slope.
 code("""
 for start in [1960, 1970, 1980, 1990, 2000, 2010]:
     decade = annual[(annual["year"] >= start) & (annual["year"] < start + 10)]
-    print(str(start) + "s: CO2 rose", round(fit_curve(decade, 1)[0], 2), "ppm per year")
+    decade_line = fit_curve(decade, 1)
+    print(str(start) + "s: CO2 rose", round(decade_line[0], 2), "ppm per year")
 """)
 
 md(f"""
@@ -594,7 +609,7 @@ should we allow — and how would we know?
 
 # --- section 3 -------------------------------------------------------------
 md(f"""
-## Keeping some years back
+## How do you choose a degree when a flexible curve always fits better?
 
 The trouble with judging a curve by how close it sits to the data is that the data has already
 been used. The fix is the oldest trick in the subject and it is one sentence: **Hide some data
@@ -699,7 +714,7 @@ the noise.* The held-out years are the only thing on that plot that can tell the
 
 # --- section 4 -------------------------------------------------------------
 md(f"""
-## Choosing how much bend
+## Which degree do the held-out years choose?
 
 One year of checking is thin. Score each curve on all {M['n_later']} held-out years instead, and
 score it on its training years too, so the two can be compared.
@@ -774,9 +789,14 @@ see whether the answer moves with it.
 
 code(f"""
 for cut in {OTHER_SPLITS}:
-    tr = annual[annual["year"] <= cut]
-    te = annual[annual["year"] > cut]
-    misses = [typical_miss(te["co2"], curve_value(fit_curve(tr, d), te["year"])) for d in degrees]
+    before_cut = annual[annual["year"] <= cut]
+    after_cut = annual[annual["year"] > cut]
+
+    misses = []
+    for degree in degrees:
+        coeffs = fit_curve(before_cut, degree)
+        misses.append(typical_miss(after_cut["co2"], curve_value(coeffs, after_cut["year"])))
+
     print("splitting at", cut, "the best degree is", degrees[misses.index(min(misses))])
 """)
 
@@ -815,7 +835,7 @@ cuts rules out the flexible end completely.
 
 # --- section 5 -------------------------------------------------------------
 md(f"""
-## Choosing which years to hide
+## Does it matter which years you hide?
 
 We held back the *last* {M['n_later']} years. The obvious alternative is to hold back
 {M['n_later']} years chosen at random from anywhere in the record — that is what most textbook
@@ -942,9 +962,14 @@ Write `crossing_year(coeffs)`. It should walk the years from 2027 to 2300 in a l
 `curve_value(coeffs, year)` what CO2 is in each, and `return` the first year that reaches
 {TARGET_PPM} or more. If none of them does, return `None`. Give it a docstring.
 
-Then fit degrees 1, 2 and 3 to the **whole** of `annual` and print what each says.
+Then fit degrees 1, 2 and 3 to the **whole** of `annual`, collect the three years in a list
+called `whole_record_crossings`, and print what each degree says.
 
-**Use these names**, because the self-check looks for them: `crossing_year`.
+Then, as a comment at the end of your cell, say in one sentence how far apart your three answers
+are, and whether "when do we reach {TARGET_PPM} ppm" has one answer in this record.
+
+**Use these names**, because the self-check looks for them: `crossing_year`,
+`whole_record_crossings`.
 """)
 
 answer(f"""
@@ -956,17 +981,25 @@ def crossing_year(coeffs):
     return None
 
 
+whole_record_crossings = []
 for degree in [1, 2, 3]:
-    print("degree", degree, "reaches {TARGET_PPM} ppm in", crossing_year(fit_curve(annual, degree)))
+    coeffs = fit_curve(annual, degree)
+    whole_record_crossings.append(crossing_year(coeffs))
+    print("degree", degree, "reaches {TARGET_PPM} ppm in", whole_record_crossings[-1])
+
+{note(f"My three answers run from {M['cross_full'][3]} to {M['cross_full'][1]}, "
+       f"{M['cross_full'][1] - M['cross_full'][3]} years apart, so this record does not give "
+       f"one date for {TARGET_PPM} ppm — the degree I allow the curve moves it by a quarter of "
+       f"a century.")}
 """, f"""
-assert crossing_year(fit_curve(annual, 1)) is not None, \\
+assert whole_record_crossings[0] is not None, \\
     "crossing_year gave back nothing for the straight line, which does reach {TARGET_PPM} ppm \\
 inside the loop: a function that prints the year hands back None instead, so end it with \\
 return, not print"
-assert 2027 <= crossing_year(fit_curve(annual, 1)) <= 2300, \\
+assert 2027 <= whole_record_crossings[0] <= 2300, \\
     "crossing_year should hand back a YEAR, not a position in the loop"
 print("✓ the {TARGET_PPM} ppm crossing — a straight line through the whole record puts it in",
-      crossing_year(fit_curve(annual, 1)))
+      whole_record_crossings[0])
 """)
 
 ask(f"""
@@ -981,23 +1014,32 @@ Build `crossings`, a list of four years: degree 1 and degree 2, each fitted to `
 `train`. Print all four with a label saying which is which, print the spread between the earliest and the
 latest, and finally print the one year you would quote.
 
+Then, as a comment at the end of your cell, say in one sentence why you chose that one — the two
+facts in the paragraph above pull in opposite directions, so say which of them decided it.
+
 This part re-uses `crossing_year` from part 1; its self-check tells you whether that is working.
 
 **Use these names**, because the self-check looks for them: `crossings`.
 """)
 
-answer("""
+answer(f"""
 crossings = []
 
 for table, label in [(annual, "the whole record"), (train, "the training years only")]:
     for degree in [1, 2]:
-        year = crossing_year(fit_curve(table, degree))
+        coeffs = fit_curve(table, degree)
+        year = crossing_year(coeffs)
         crossings.append(year)
         print("degree", degree, "fitted on", label, "reaches it in", year)
 
 print("earliest", min(crossings), " latest", max(crossings),
       " spread", max(crossings) - min(crossings), "years")
 print("I would quote:", crossings[1])
+
+{note(f"I quote the parabola fitted to the whole record: the parabola is the one degree "
+       f"whose forecasting has been tested — on the {SPLIT_YEAR} split it missed the held-out "
+       f"years by {M['test_miss'][2]} ppm — and fitting it to every year I have lets it use "
+       f"the decades the {M['first_year']}–{SPLIT_YEAR} fit never saw.")}
 """, """
 assert max(crossings) - min(crossings) > 40, \\
     "four years within forty of each other means the degree or the training table did not \\

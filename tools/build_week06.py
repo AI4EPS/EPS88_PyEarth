@@ -21,6 +21,7 @@ import pathlib
 import shutil
 import subprocess
 import sys
+import textwrap
 
 import numpy as np
 import pandas as pd
@@ -278,6 +279,12 @@ def answer_prose(model):
                   "*(Double-click this cell and replace this line with your answer.)*"))
 
 
+def note(sentence):
+    """The one-sentence answer a part asks for, wrapped as a comment for the solution."""
+    return textwrap.fill(" ".join(sentence.split()), width=96,
+                         initial_indent="# ", subsequent_indent="# ")
+
+
 datahub = (f"{PLATFORM['datahub']}/hub/user-redirect/git-pull"
            f"?repo={PLATFORM['repo'].replace(':', '%3A').replace('/', '%2F')}"
            f"&branch={PLATFORM['branch']}"
@@ -316,6 +323,13 @@ get **residuals**, and look at them. And fit a line that is not allowed an inter
 `LinearRegression(fit_intercept=False)`, when physics has already told you one point it must pass
 through.
 
+**The four questions this week works through:**
+
+1. Is the expansion rate one number, or thirty-six?
+2. Where does the line have to cross zero, and how old is the universe once it does?
+3. How fast is the Pacific-Antarctic Ridge spreading?
+4. Do the two ridge files mean the same thing by "distance"?
+
 **Nine places where you write something: six in class, three at home.** Each one is headed
 *Your turn*, with an empty cell under it.
 """)
@@ -344,7 +358,7 @@ code(setup)
 
 # --- section 1: the supernova table ---------------------------------------
 md("""
-## Thirty-six exploding stars
+## Is the expansion rate one number, or thirty-six?
 
 The table is small enough to read. It is the Type Ia supernova table from the *Hubble Space
 Telescope* Key Project (Freedman et al., *The Astrophysical Journal* **553**, 47, 2001), the study
@@ -439,7 +453,7 @@ its speed and its distance.
 
 What we want is one number that uses all thirty-six at once.
 
-## One line through all of them
+## What does one line through all thirty-six say?
 
 Draw the best straight line. Best means the smallest total miss. For each point, the miss is the
 vertical gap between the real speed and the speed the line claims; square each gap so that
@@ -545,7 +559,7 @@ side of zero to the other as you move right. So the straight line is a fair desc
 data, and a curve would not obviously do better. That settles the *shape*. It does not settle the
 *position*.
 
-## Where the line crosses zero
+## Where does the line have to cross zero, and how old is the universe once it does?
 
 Go back to the intercept, which is the number your prediction was about. The fitted line says
 that at a distance of zero — right here, no distance at all — a galaxy is already receding at
@@ -687,7 +701,7 @@ nobody told where to start.
 
 # --- section 3: the same decision on the ocean floor ----------------------
 md(f"""
-## The same question on the ocean floor
+## How fast is the Pacific-Antarctic Ridge spreading?
 
 Nothing in the last three sections was about astronomy. Two columns, a straight line, a slope with
 a time in it, and one physical constraint on where the line has to pass. That pattern is
@@ -828,7 +842,7 @@ moves the answer from {M['par_free_slope'] / 10:.2f} to {M['par_forced_slope'] /
 {abs(M['par_forced_slope'] - M['par_free_slope']) / 10:.2f} cm/yr of difference produced by an
 argument rather than by any new data.
 
-## A second ridge
+## Do the two ridge files mean the same thing by "distance"?
 
 One ridge is not a result, and the Mid-Atlantic table has {M['mar_n']} picks waiting. But the two
 rates cannot be set side by side until the question left hanging earlier is settled: does
@@ -1022,11 +1036,15 @@ Sort the table by distance with `sn.sort_values("D(Mpc)")`, take the nearest 18 
 and the farthest 18 with `.tail(18)`, and fit each half through the origin. Print both Hubble
 constants, and put both through your `age_of_universe` function from class to get two ages.
 
+Then, as a comment at the end of your cell, answer in one sentence: your two halves disagree by
+some number of billions of years — is that gap small enough that the age of the universe can be
+quoted as one number from this table?
+
 **Use these names**, because the self-check looks for them: `H0_near`, `H0_far`, `age_near`,
 `age_far`.
 """)
 
-answer("""
+answer(f"""
 ordered = sn.sort_values("D(Mpc)")
 near = ordered.head(18)
 far = ordered.tail(18)
@@ -1041,6 +1059,10 @@ age_far = age_of_universe(H0_far)
 
 print("nearest 18: ", round(H0_near, 2), "km/s/Mpc ->", round(age_near, 2), "billion years")
 print("farthest 18:", round(H0_far, 2), "km/s/Mpc ->", round(age_far, 2), "billion years")
+
+{note(f"The halves land {M['age_half_gap']:.2f} billion years apart, about "
+       f"{M['age_half_gap'] / M['age_near'] * 100:.0f} % of either age, so this table does "
+       f"support one quoted age — which the {M['n_sn']} supernovae taken one at a time did not.")}
 """, """
 assert H0_near != H0_far, \\
     "two different halves of the table cannot give the identical fit — check you split it"
@@ -1071,7 +1093,11 @@ with your three lines on top.
 The fork is in the older window, and this time the two answers are both defensible. Forcing
 through the origin says *the ridge existed at age zero, so the line must start there*. Fitting
 free says *I am asking how fast this ridge moved between 20 and {M['par_age_max']:.0f} million
-years ago, and the origin is outside that window*. Part 3 is where you choose.
+years ago, and the origin is outside that window*. Part 3 is where you choose between them.
+
+Before you get there, say in a comment at the end of your cell which of your three slopes is
+furthest from the whole-ridge rate class fitted, {M['par_forced_slope'] / 10:.2f} cm/yr, and
+whether the older and the younger window look like the same ridge.
 
 **Use these names**, because the self-check looks for them: `old`, `young`, `old_free`,
 `old_forced`, `young_free`.
@@ -1104,6 +1130,11 @@ plt.ylabel("full spreading distance, both flanks (km)")
 plt.title("Pacific-Antarctic Ridge split at 20 Ma, {M['par_n']} picks")
 plt.legend()
 plt.show()
+
+{note(f"The older window fitted free, {M['old_free_slope'] / 10:.2f} cm/yr, is the furthest "
+       f"from the whole-ridge {M['par_forced_slope'] / 10:.2f} cm/yr. The younger window is "
+       f"faster than either, so the two halves of this file do not look like one ridge running "
+       f"at one speed.")}
 """, """
 assert old_forced.intercept_ == 0, \\
     "the forced model should have no intercept at all — did you pass fit_intercept=False?"

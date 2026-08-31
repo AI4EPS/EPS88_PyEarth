@@ -28,6 +28,7 @@ import json
 import pathlib
 import subprocess
 import sys
+import textwrap
 import time
 
 import numpy as np
@@ -110,9 +111,9 @@ def fetch(url, name, volatile=False):
     return pd.read_csv(out)
 
 
-def levels_between(lowest, highest):
-    """The magnitudes lowest, lowest + 0.1, ... highest, built from whole numbers."""
-    return np.arange(round(lowest * 10), round(highest * 10) + 1) / 10
+def levels_between(lowest, highest, step):
+    """The levels lowest, lowest + step, ... highest, built from whole numbers."""
+    return np.arange(round(lowest * 10), round(highest * 10) + 1, round(step * 10)) / 10
 
 
 def count_at_least(values, level):
@@ -129,9 +130,9 @@ def fit_line(values, levels):
 
 
 def predict_count(values, levels, target):
-    """The slope of that line, and the count it predicts at target."""
+    """How many events at or above target the fitted line expects."""
     model, _ = fit_line(values, levels)
-    return model.coef_[0], 10 ** model.predict([[target]])[0]
+    return 10 ** model.predict([[target]])[0]
 
 
 quakes = fetch(EQ_URL, EQ_CACHE)
@@ -174,7 +175,7 @@ M["n6_low"] = M["n6"] - M["n6_scatter"]
 M["n6_high"] = M["n6"] + M["n6_scatter"]
 M["ratio56_low"] = round(M["n5"] / M["n6_low"], 2)
 
-MAG_LEVELS = levels_between(3.5, 5.0)
+MAG_LEVELS = levels_between(3.5, 5.0, 0.1)
 eq_model, eq_counts = fit_line(mags, MAG_LEVELS)
 M["n_at_3_5"] = int(eq_counts[0])
 M["n_at_4_5"] = int(eq_counts[10])
@@ -209,7 +210,7 @@ M["n_naive_3_8"] = int(count_at_least(mags, naive[3]))
 M["lost_to_float"] = M["n_at_3_8"] - M["n_naive_3_8"]
 
 EQ_RANGES = [(3.5, 5.0), (4.0, 5.5), (4.5, 6.0)]
-M["eq_predictions"] = [round(float(predict_count(mags, levels_between(lo, hi), 7.0)[1]), 2)
+M["eq_predictions"] = [round(float(predict_count(mags, levels_between(lo, hi, 0.1), 7.0)), 2)
                        for lo, hi in EQ_RANGES]
 M["pred_main"] = M["eq_predictions"][0]
 M["under_by"] = round(M["n_big"] / M["pred_main"], 1)
@@ -226,7 +227,7 @@ M["vei_exact2"] = int((vei == 2).sum())
 M["vei_exact3"] = int((vei == 3).sum())
 M["span"] = 2026 - VOLCANO_FROM
 
-VEI_LEVELS = np.array([2, 3, 4])
+VEI_LEVELS = levels_between(2, 4, 1)
 vei_model, _ = fit_line(vei, VEI_LEVELS)
 M["vei_slope"] = round(float(vei_model.coef_[0]), 3)
 M["vei_step_factor"] = round(float(10 ** -vei_model.coef_[0]), 2)
@@ -261,14 +262,17 @@ M["window_counts"] = [int(((hist_years >= s) & (hist_years < s + WINDOW)).sum())
 M["n_history"] = len(big_history)
 M["window_mean"] = round(float(np.mean(M["window_counts"])), 2)
 M["busiest_window"] = WINDOW_STARTS[int(np.argmax(M["window_counts"]))]
+M["windows_as_busy"] = sum(1 for c in M["window_counts"] if c >= M["n_big"])
 
 M["fork"] = {}
 for year in FORK_YEARS:
     sub = rated[rated["StartDateYear"] >= year]["ExplosivityIndexMax"].values
-    slope, pred = predict_count(sub, VEI_LEVELS, 7.0)
-    M["fork"][year] = {"n": len(sub), "slope": round(float(slope), 3),
-                       "pred": round(float(pred), 2),
+    fork_model, _ = fit_line(sub, VEI_LEVELS)
+    M["fork"][year] = {"n": len(sub), "slope": round(float(fork_model.coef_[0]), 3),
+                       "pred": round(float(predict_count(sub, VEI_LEVELS, 7.0)), 2),
                        "obs": int(count_at_least(sub, 7))}
+M["fork_factor"] = round(max(M["fork"][y]["pred"] for y in FORK_YEARS)
+                         / min(M["fork"][y]["pred"] for y in FORK_YEARS), 1)
 
 
 # ---------------------------------------------------------------------------
@@ -302,6 +306,12 @@ def answer_prose(model):
                   "*(Double-click this cell and replace this line with your answer.)*"))
 
 
+def note(sentence):
+    """The one-sentence answer a part asks for, wrapped as a comment for the solution."""
+    return textwrap.fill(" ".join(sentence.split()), width=96,
+                         initial_indent="# ", subsequent_indent="# ")
+
+
 datahub = (f"{PLATFORM['datahub']}/hub/user-redirect/git-pull"
            f"?repo={PLATFORM['repo'].replace(':', '%3A').replace('/', '%2F')}"
            f"&branch={PLATFORM['branch']}"
@@ -333,6 +343,13 @@ happens, and say honestly how much that number is worth.
 each level. Put those counts on a **log axis** so a hopeless curve becomes a straight line. Fit
 that line with `LinearRegression`, read its slope, and use `predict` to ask it about a size that is
 not in your data at all.
+
+**The four questions this week works through:**
+
+1. Why can't we just count the Tamboras?
+2. How many small earthquakes for each large one?
+3. Does the line hold where it was never fitted?
+4. So how often does a Tambora happen — and how much is that number worth?
 
 **Eight places where you write something: five in class, three at home.** Each one is headed
 *Your turn*, with an empty cell under it.
@@ -372,7 +389,7 @@ code(setup)
 
 # --- section 1 -------------------------------------------------------------
 md(f"""
-## Looking Tambora up in the catalogue
+## Why can't we just count the Tamboras?
 
 The Smithsonian Institution's Global Volcanism Program keeps a table of every eruption it can
 document — the setup cell printed how many rows of it came back — and rates most of those on the
@@ -411,7 +428,7 @@ catalogue on Earth is a seismic network, so we go there first.
 
 # --- section 2 -------------------------------------------------------------
 md(f"""
-## The shape of a catalogue of earthquakes
+## How many small earthquakes for each large one?
 
 `quakes` is every earthquake of magnitude {EQ_FLOOR} and above that the USGS recorded between
 {EQ_START} and {EQ_END} inside a box around California: latitude 32 to 42 north, longitude 125 to
@@ -505,7 +522,7 @@ by roughly their own square root, so that {M['n6']} could as easily have come ou
 {M['ratio45']}. Two ratios that might be one is worth measuring properly instead of at three
 points.
 
-## Counting upwards, at every level
+## What do the counts do at every level, not just three?
 
 The histogram above counted earthquakes **in** each magnitude bin. What Your turn 1 counted is
 different and more useful: how many are **at or above** a level. That is a *cumulative* count, and
@@ -513,16 +530,18 @@ it is the natural thing to ask of a hazard — nobody wants to know how many ear
 5.9 and 6.0, they want to know how many were 6 or worse.
 
 Doing it at every level from 3.5 to 5.0 needs the list of levels first. There is a trap in building
-it, so we build it in a function and use that function all week.
+it, so we build it in a function and use that function all week — every list of levels below comes
+out of it, including the whole-numbered ones the volcanoes want, which is why the step is an
+argument rather than always a tenth.
 """)
 
 code("""
-def levels_between(lowest, highest):
-    \"\"\"The magnitudes lowest, lowest + 0.1, ... highest, built from whole numbers.\"\"\"
-    return np.arange(round(lowest * 10), round(highest * 10) + 1) / 10
+def levels_between(lowest, highest, step):
+    \"\"\"The levels lowest, lowest + step, ... highest, built from whole numbers.\"\"\"
+    return np.arange(round(lowest * 10), round(highest * 10) + 1, round(step * 10)) / 10
 
 
-mag_levels = levels_between(3.5, 5.0)
+mag_levels = levels_between(3.5, 5.0, 0.1)
 print(mag_levels)
 
 the_obvious_way = np.arange(3.5, 5.05, 0.1)      # looks the same, and is not
@@ -616,7 +635,7 @@ count by the same factor — which lets you predict the sizes you have never see
 this the Gutenberg–Richter relation, after the two Caltech seismologists who described it in the
 1940s, and it holds with the same shape in essentially every region anybody has looked at.
 
-## Measuring the line
+## What is that factor, measured rather than eyeballed?
 
 A straight line is what least squares is for. The log axis was a change of drawing and not of
 data, so the counts themselves are still a curve; what is straight is `np.log10(counts)` plotted
@@ -701,7 +720,7 @@ resting on that {M['r2']} is resting on the shape of a cumulative count rather t
 What would be worth something is the line holding up somewhere it was never fitted. That is
 testable, so test it.
 
-## Reading the line off past the end of the data
+## Does the line hold where it was never fitted?
 
 The line was measured between magnitude 3.5 and 5.0. Nothing stops us evaluating it somewhere else,
 and `model.predict` will do it without complaint — so the next cell draws the line right across the
@@ -709,7 +728,7 @@ plot, well past the last dot it was fitted to.
 """)
 
 code(f"""
-line_x = levels_between(3.5, 7.5)
+line_x = levels_between(3.5, 7.5, 0.1)
 line_y = 10 ** model.predict(line_x.reshape(-1, 1))
 
 plt.scatter(mag_levels, counts, label="counted")
@@ -765,11 +784,11 @@ Your turn 3:
 
 - build the cumulative count of `values` at each level in `levels`, using your `count_at_least`
 - fit a `LinearRegression` to `levels.reshape(-1, 1)` and `np.log10` of those counts
-- **return two things**: the slope, and `10 ** model.predict([[target]])[0]`
+- **return** `10 ** model.predict([[target]])[0]` — the count the line expects at `target`
 
 Give it a docstring. Then loop over the three fitting ranges `(3.5, 5.0)`, `(4.0, 5.5)` and
-`(4.5, 6.0)`, building the levels for each with `levels_between`, and print the slope and the
-predicted number at magnitude 7 for each. Collect the three predictions in a list called
+`(4.5, 6.0)`, building the levels for each with `levels_between(lowest, highest, 0.1)`, and print
+the predicted number at magnitude 7 for each. Collect the three predictions in a list called
 `predictions`.
 
 The first range is the one you already did by hand, so its answer is a check on your function.
@@ -779,21 +798,20 @@ The first range is the one you already did by hand, so its answer is a check on 
 
 answer("""
 def predict_count(values, levels, target):
-    \"\"\"The slope of the fitted line, and the count it predicts at target.\"\"\"
+    \"\"\"How many events at or above target the fitted line expects.\"\"\"
     counts = []
     for level in levels:
         counts.append(count_at_least(values, level))
     model = LinearRegression()
     model.fit(levels.reshape(-1, 1), np.log10(counts))
-    return model.coef_[0], 10 ** model.predict([[target]])[0]
+    return 10 ** model.predict([[target]])[0]
 
 
 predictions = []
 for lowest, highest in [(3.5, 5.0), (4.0, 5.5), (4.5, 6.0)]:
-    slope, predicted = predict_count(mags, levels_between(lowest, highest), 7.0)
+    predicted = predict_count(mags, levels_between(lowest, highest, 0.1), 7.0)
     predictions.append(predicted)
     print("fitted on", lowest, "to", highest,
-          "  slope", round(slope, 3),
           "  expects", round(predicted, 2), "at magnitude 7 or above")
 """, """
 assert len(predictions) == 3, "three fitting ranges, three predictions"
@@ -825,7 +843,7 @@ small-event line allows is a live argument in seismology rather than a settled q
 counting could be off. Hold the question open; the first part of the homework goes after the first
 of those three.
 
-## The same line, drawn for volcanoes
+## So how often does a Tambora happen?
 
 VEI is a magnitude scale, so the same machinery applies without changing a thing: cumulative counts
 at each level, log axis, straight line, and then read the line off at VEI 7 where the catalogue has
@@ -838,18 +856,25 @@ code(weekkit.CHECKPOINT.format(body=f"""# Re-run your own count_at_least (Your t
 # Those two are your code, so this cell cannot rebuild them for you; the rest of the week uses them.
 rated = eruptions.dropna(subset=["ExplosivityIndexMax"])
 recent = rated[rated["StartDateYear"] >= {VOLCANO_FROM}]
-vei = recent["ExplosivityIndexMax"].values"""))
+vei = recent["ExplosivityIndexMax"].values
+
+
+def levels_between(lowest, highest, step):
+    \"\"\"The levels lowest, lowest + step, ... highest, built from whole numbers.\"\"\"
+    return np.arange(round(lowest * 10), round(highest * 10) + 1, round(step * 10)) / 10"""))
 
 code("""
+counted_levels = levels_between(0, 6, 1)
+
 counts_by_vei = []
-for level in range(0, 7):
+for level in counted_levels:
     counts_by_vei.append(count_at_least(vei, level))
     print("VEI", level, "and above:", counts_by_vei[-1])
 
 print()
-for level in range(1, 7):
-    print("from VEI", level - 1, "to VEI", level, ": divided by",
-          round(counts_by_vei[level - 1] / counts_by_vei[level], 1))
+for position in range(1, len(counted_levels)):
+    print("from VEI", counted_levels[position - 1], "to VEI", counted_levels[position],
+          ": divided by", round(counts_by_vei[position - 1] / counts_by_vei[position], 1))
 """)
 
 md(f"""
@@ -871,24 +896,21 @@ ask(f"""
 
 Fit the line to VEI 2, 3 and 4 only, and ask it about VEI 7.
 
-Build `vei_levels = np.array([2, 3, 4])`, call your `predict_count` on `vei` with `target` 7, and
-print the slope, the predicted number of VEI 7 eruptions since {VOLCANO_FROM}, and — using
-`count_at_least` — how many the catalogue actually holds.
+Build `vei_levels = levels_between(2, 4, 1)` — whole numbers this time, because VEI comes in whole
+numbers — call your `predict_count` on `vei` with `target` 7, and print the predicted number of VEI
+7 eruptions since {VOLCANO_FROM} and, using `count_at_least`, how many the catalogue actually holds.
 
 **Use these names**, because the self-check and the cells below look for them: `vei_levels`,
-`vei_slope`, `vei_predicted`.
+`vei_predicted`.
 """)
 
 answer(f"""
-vei_levels = np.array([2, 3, 4])
-vei_slope, vei_predicted = predict_count(vei, vei_levels, 7)
+vei_levels = levels_between(2, 4, 1)
+vei_predicted = predict_count(vei, vei_levels, 7)
 
-print("slope:", round(vei_slope, 3))
 print("the line expects", round(vei_predicted, 2), "eruptions at VEI 7 since {VOLCANO_FROM}")
 print("the catalogue holds", count_at_least(vei, 7))
 """, """
-assert not isinstance(vei_predicted, tuple), \\
-    "predict_count hands back two things — unpack both: vei_slope, vei_predicted = predict_count(...)"
 assert 0.5 < vei_predicted < 2, \\
     ("a VEI 7 count outside 0.5 to 2 means something went into predict_count in the wrong slot — "
      "the order is the values, then the levels, then the target")
@@ -897,13 +919,13 @@ print("✓ the volcano line — it expects", round(vei_predicted, 2),
 """)
 
 code("""
-all_levels = np.arange(0, 8)
+all_levels = levels_between(0, 7, 1)
 
 vei_counted = []
 vei_on_the_line = []
 for level in all_levels:
     vei_counted.append(count_at_least(vei, level))
-    vei_on_the_line.append(predict_count(vei, vei_levels, level)[1])
+    vei_on_the_line.append(predict_count(vei, vei_levels, level))
     print("VEI", level, " counted", vei_counted[-1],
           "  the line says", round(vei_on_the_line[-1], 2))
 """)
@@ -934,7 +956,7 @@ eruptions never reached anybody's records; taken carefully it says the record ca
 down there at all, which is the same conclusion and a safer way to say it. Either way the missing
 thing is the data, not the line.
 
-## What one observation can settle
+## And how much is that number worth?
 
 About one predicted against exactly {M['vei_obs7']} observed looks like a triumph, and this is
 exactly the moment to be suspicious. A prediction is only impressive if it could have been
@@ -1020,7 +1042,14 @@ the top first, then the checkpoint below.
 code(weekkit.CHECKPOINT.format(body=f"""# Re-run your own count_at_least (Your turn 2) and predict_count (Your turn 4) cells as well.
 # Those two are your code, so this cell cannot rebuild them for you; every part below uses them.
 rated = eruptions.dropna(subset=["ExplosivityIndexMax"])
-vei_levels = np.array([2, 3, 4])"""))
+
+
+def levels_between(lowest, highest, step):
+    \"\"\"The levels lowest, lowest + step, ... highest, built from whole numbers.\"\"\"
+    return np.arange(round(lowest * 10), round(highest * 10) + 1, round(step * 10)) / 10
+
+
+vei_levels = levels_between(2, 4, 1)"""))
 
 ask(f"""
 ### ✏️ Your turn 6
@@ -1036,6 +1065,10 @@ window and we drew an unlucky one. That is checkable: count the other windows.
 year at or after `start` and before `start + {WINDOW}`. Collect the counts in a list called
 `window_counts`, print each window with its count, and print the mean.
 
+Then, as a comment at the end of your cell, answer in one sentence: how many of your six windows
+hold {M['n_big']} or more, and does that make the last {WINDOW} years look like an unlucky draw or
+like a line that is simply wrong about California?
+
 **Use these names**, because the self-check looks for them: `window_counts`, `big_history`.
 """)
 
@@ -1049,6 +1082,11 @@ for start in range({WINDOW_STARTS[0]}, 2026, {WINDOW}):
     print(start, "to", start + {WINDOW}, ":", in_window.sum())
 
 print("mean over the windows:", round(np.mean(window_counts), 2))
+
+{note(f"Only {M['windows_as_busy']} of the six windows holds {M['n_big']} or more, so the "
+       f"last {WINDOW} years were the busiest of them — but the six-window mean of "
+       f"{M['window_mean']} is still well above the {M['pred_main']} the line expected, so the "
+       f"line is low as well as the draw unlucky.")}
 """, """
 assert sum(window_counts) == len(big_history), \\
     "every event should land in exactly one window — check for < rather than <= at the top edge"
@@ -1069,6 +1107,9 @@ print the start year, how many eruptions the window holds, the predicted number 
 `count_at_least` — how many actually occurred in that window. Collect the predictions in a list
 called `fork_predictions`.
 
+Then, as a comment at the end of your cell, say which of the two start years you would use to
+quote a rate for Tambora-sized eruptions, and by what factor your choice moves the answer.
+
 **Use these names**, because the self-check looks for them: `fork_predictions`, `rated`,
 `vei_levels`.
 """)
@@ -1078,11 +1119,16 @@ fork_predictions = []
 for start_year in {FORK_YEARS}:
     window = rated[rated["StartDateYear"] >= start_year]
     window_vei = window["ExplosivityIndexMax"].values
-    fork_slope, fork_predicted = predict_count(window_vei, vei_levels, 7)
+    fork_predicted = predict_count(window_vei, vei_levels, 7)
     fork_predictions.append(fork_predicted)
     print("since", start_year, ":", len(window_vei), "eruptions,",
           "the line expects", round(fork_predicted, 2), "at VEI 7,",
           "and", count_at_least(window_vei, 7), "occurred")
+
+{note(f"I would quote the {FORK_YEARS[1]} window, because that is where the record is thick "
+       f"enough to trust the small eruptions the line is fitted to — and moving the start year "
+       f"from {FORK_YEARS[0]} to {FORK_YEARS[1]} moves the expected number at VEI 7 by a factor "
+       f"of {M['fork_factor']}.")}
 """, """
 assert len(fork_predictions) == 2, "two start years, two predictions"
 assert fork_predictions[0] != fork_predictions[1], \\

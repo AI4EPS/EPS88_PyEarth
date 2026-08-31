@@ -29,6 +29,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import textwrap
 import time
 import urllib.request
 
@@ -212,7 +213,7 @@ def predicted_m7(mags, edges=EDGES):
     for edge in edges:
         counts.append((mags >= edge).sum())
     line = LinearRegression().fit(edges.reshape(-1, 1), np.log10(counts))
-    return 10 ** (line.intercept_ + line.coef_[0] * 7.0)
+    return 10 ** line.predict([[7.0]])[0]
 
 
 M["rate"] = float(predicted_m7(quakes["mag"]))
@@ -381,7 +382,7 @@ def predicted_m7(mags):
     for edge in edges:
         counts.append((mags >= edge).sum())
     line = LinearRegression().fit(edges.reshape(-1, 1), np.log10(counts))
-    return 10 ** (line.intercept_ + line.coef_[0] * 7.0)'''
+    return 10 ** line.predict([[7.0]])[0]'''
 
 
 # ---------------------------------------------------------------------------
@@ -413,6 +414,12 @@ def answer(model, check=""):
 def answer_prose(model):
     CELLS.append(("markdown", model.strip("\n"),
                   "*(Double-click this cell and replace this line with your answer.)*"))
+
+
+def note(sentence):
+    """The one-sentence answer a part asks for, wrapped as a comment for the solution."""
+    return textwrap.fill(" ".join(sentence.split()), width=96,
+                         initial_indent="# ", subsequent_indent="# ")
 
 
 datahub = (f"{PLATFORM['datahub']}/hub/user-redirect/git-pull"
@@ -449,6 +456,13 @@ have, `np.percentile` turns a thousand answers into an interval, and a `for` loo
 together. You will put an error bar on a fitted slope, which is something a single call to
 `LinearRegression` will never give you.
 
+**The four questions this week works through:**
+
+1. Could the Bay's rise be zero?
+2. How much water is that by 2100?
+3. Was the forecast wrong, or were we unlucky?
+4. What did we assume without saying so?
+
 **Nine places where you write something: six in class, three at home.** Each one is headed
 *Your turn*, with an empty cell under it.
 """)
@@ -482,7 +496,7 @@ print("sea level:", sea.shape, " small earthquakes:", quakes.shape, " large ones
 
 # --- section 1 -------------------------------------------------------------
 md(f"""
-## A slope with nothing after it
+## Could the Bay's rise be zero?
 
 A tide gauge is a float in a stilling well, bolted to a pier, writing down where the water sits.
 The one in San Francisco — NOAA station 9414290 — has been doing that since before anyone thought
@@ -562,6 +576,7 @@ print("\u2713 the record cut five ways \u2014 slopes from", round(min(chunk_slop
       "to", round(max(chunk_slopes), 2), "mm/yr, against", round(slope, 2), "for the whole record")
 """)
 
+# --- section 2 -------------------------------------------------------------
 md(f"""
 Five pieces of the same record, and the slopes run from {M['chunk_low']:.2f} to
 {M['chunk_high']:.2f} mm/yr. The first quarter of the twentieth century says the Bay was barely
@@ -576,11 +591,8 @@ the data. Five numbers also cannot tell you what "95% of the time" means.
 
 What we want is the whole record's worth of answer, many times over. We only have one record. So
 we make more of it out of the one we have.
-""")
 
-# --- section 2 -------------------------------------------------------------
-md("""
-## Asking the data the same question a thousand times
+## How do you get an error bar out of one record?
 
 The trick has a name and one line of code. **Bootstrap:** *Ask the data the same question a
 thousand times, using a different random slice of itself each time.*
@@ -702,6 +714,7 @@ for start in [{CHUNK_STARTS[0]}, {CHUNK_STARTS[-1]}]:
     print(start, "-", start + 25, ": 95% interval", round(low, 2), "to", round(high, 2), "mm/yr")
 """)
 
+# --- section 3 -------------------------------------------------------------
 md(f"""
 [{M['ends'][0]['low']:.2f}, {M['ends'][0]['high']:.2f}] for the first quarter-century and
 [{M['ends'][1]['low']:.2f}, {M['ends'][1]['high']:.2f}] for the last. They do not overlap: there
@@ -714,11 +727,8 @@ has to fit through a quarter-century of weather. But that wobble is nowhere near
 open a gap of {M['ends_gap']:.2f}. Something in this record really did change, and
 {M['slope']:.3f} mm/yr is an average across a rate that was not constant. The interval around it
 says how well we know that average — not that the Bay rose steadily.
-""")
 
-# --- section 3 -------------------------------------------------------------
-md("""
-## From millimetres a year to centimetres of water
+## How much water is that by 2100?
 
 Millimetres per year is not a quantity anyone plans a seawall around. Two conversions get asked
 for, they are not the same number, and they are confused constantly:
@@ -764,6 +774,7 @@ print("\u2713 the same slope, two questions \u2014", round(cm_century, 1),
       "cm per century, but", round(cm_2100, 1), "cm between the end of the record and 2100")
 """)
 
+# --- section 4 -------------------------------------------------------------
 md(f"""
 {M['cm_century']:.1f} cm per century and {M['cm_2100']:.1f} cm by 2100 are the same slope answering
 two different questions, and quoting one for the other is a {M['cm_century'] - M['cm_2100']:.0f}-centimetre
@@ -775,11 +786,8 @@ plain reason to doubt that: the most recent twenty-five years came out at {M['ch
 mm/yr, more than twice the long-run figure. The interval [{M['cm_2100_low']:.1f},
 {M['cm_2100_high']:.1f}] cm is the uncertainty in *this straight line*, not the uncertainty in what
 the ocean will do. It is a floor, not a forecast.
-""")
 
-# --- section 4 -------------------------------------------------------------
-md(f"""
-## Wrong, or unlucky?
+## Was the forecast wrong, or were we unlucky?
 
 Back to the earthquakes, with the same six lines.
 
@@ -806,7 +814,7 @@ def predicted_m7(mags):
     for edge in edges:
         counts.append((mags >= edge).sum())
     line = LinearRegression().fit(edges.reshape(-1, 1), np.log10(counts))
-    return 10 ** (line.intercept_ + line.coef_[0] * 7.0)
+    return 10 ** line.predict([[7.0]])[0]
 
 
 print("events at magnitude 4.0 and above:", (quakes["mag"] >= 4.0).sum())
@@ -985,17 +993,58 @@ md(f"""
 {M['total_big']} against an expected {M['n_windows'] * M['rate']:.1f}, and {100 * M['frac_total']:.0f}%
 of simulated {M['span_years']}-year worlds do at least that well. On the long record the forecast
 is not in trouble at all.
+""")
+
+ask(f"""
+### ✏️ Your turn 6
+
+One last number out of that rate — and this time the interval comes with it from the start.
+
+In the probability week you counted earthquakes near campus, divided by the years to get a rate,
+and turned the rate into a chance of at least one with `1 - np.exp(-rate * years)`. You reported
+that chance as a single number, because a single rate was all you had. You now have {B:,} rates.
+
+`boot_rates` counts M7+ earthquakes per {WINDOW_YEARS} years, so `boot_rates / {WINDOW_YEARS}` is
+a rate per year, and `1 - np.exp(-boot_rates / {WINDOW_YEARS} * {AHEAD})` is the chance of at
+least one M7+ inside the box in the next {AHEAD} years — all {B:,} of them at once, no loop
+needed.
+
+Print the chance the class forecast gives, which is the same formula applied to
+`predicted_m7(quakes["mag"])`, and then the 95% interval from `np.percentile`.
+
+**Use these names**, because the self-check looks for them: `boot_probs`, `p_low`, `p_high`.
+""")
+
+answer(f"""
+boot_probs = 1 - np.exp(-boot_rates / {WINDOW_YEARS} * {AHEAD})
+p_low, p_high = np.percentile(boot_probs, [2.5, 97.5])
+
+print("chance of at least one M7+ in the next {AHEAD} years:",
+      round(1 - np.exp(-predicted_m7(quakes["mag"]) / {WINDOW_YEARS} * {AHEAD}), 3))
+print("95% interval:", round(p_low, 3), "to", round(p_high, 3))
+""", f"""
+assert p_low < 1 - np.exp(-predicted_m7(quakes["mag"]) / {WINDOW_YEARS} * {AHEAD}) < p_high, \\
+    "the interval should straddle the chance the class forecast gives"
+assert boot_probs.max() < 0.99, \\
+    "divide the rate by {WINDOW_YEARS} before multiplying it by {AHEAD}"
+print("✓ a probability with an interval — between", round(100 * p_low), "and",
+      round(100 * p_high), "% chance of at least one M7+ in the next {AHEAD} years")
+""")
+
+# --- section 5 -------------------------------------------------------------
+md(f"""
+## What did we assume without saying so?
 
 Four caveats you should carry, because none of them is settled by anything above. The box is a
 rectangle of latitude and longitude, not the state, so it collects earthquakes in Nevada and Baja
-California as well: of the {M['total_big']} the cell above listed, Fairview Peak is in Nevada and
-Sierra El Mayor is in Baja California. And the earlier windows
+California as well: of the {M['total_big']} large earthquakes listed above, Fairview Peak is in
+Nevada and Sierra El Mayor is in Baja California. And the earlier windows
 depend on a catalogue that was thinner: *A catalogue lists what somebody's instruments recorded,
 not what happened.* If those windows are undercounted, the true long-run rate is higher than
 {M['total_big']} in {M['span_years']} years, and that pushes the same way — it makes five look less
 exceptional, not more.
 
-The third is an assumption every `np.random.poisson` in this section made without saying so: that
+The third is an assumption every `np.random.poisson` above made without saying so: that
 large earthquakes arrive **independently**, one roll of the dice each. The gaps you printed say
 they do not. The shortest is {M['shortest_gap']} days — {M['pair'][0]} in April and
 {M['pair'][1]} in June, two months apart in a record whose typical gap is years — and the three
@@ -1045,46 +1094,7 @@ choice instead of a sample: when a conclusion rests on one round number, try the
 side of it and report what you find.
 """)
 
-ask(f"""
-### ✏️ Your turn 6
-
-One last number out of that rate — and this time the interval comes with it from the start.
-
-In the probability week you counted earthquakes near campus, divided by the years to get a rate,
-and turned the rate into a chance of at least one with `1 - np.exp(-rate * years)`. You reported
-that chance as a single number, because a single rate was all you had. You now have {B:,} rates.
-
-`boot_rates` counts M7+ earthquakes per {WINDOW_YEARS} years, so `boot_rates / {WINDOW_YEARS}` is
-a rate per year, and `1 - np.exp(-boot_rates / {WINDOW_YEARS} * {AHEAD})` is the chance of at
-least one M7+ inside the box in the next {AHEAD} years — all {B:,} of them at once, no loop
-needed.
-
-Print the chance the class forecast gives, which is the same formula applied to
-`predicted_m7(quakes["mag"])`, and then the 95% interval from `np.percentile`.
-
-**Use these names**, because the self-check looks for them: `boot_probs`, `p_low`, `p_high`.
-""")
-
-answer(f"""
-boot_probs = 1 - np.exp(-boot_rates / {WINDOW_YEARS} * {AHEAD})
-p_low, p_high = np.percentile(boot_probs, [2.5, 97.5])
-
-print("chance of at least one M7+ in the next {AHEAD} years:",
-      round(1 - np.exp(-predicted_m7(quakes["mag"]) / {WINDOW_YEARS} * {AHEAD}), 3))
-print("95% interval:", round(p_low, 3), "to", round(p_high, 3))
-""", f"""
-assert p_low < 1 - np.exp(-predicted_m7(quakes["mag"]) / {WINDOW_YEARS} * {AHEAD}) < p_high, \\
-    "the interval should straddle the chance the class forecast gives"
-assert boot_probs.max() < 0.99, \\
-    "divide the rate by {WINDOW_YEARS} before multiplying it by {AHEAD}"
-print("✓ a probability with an interval — between", round(100 * p_low), "and",
-      round(100 * p_high), "% chance of at least one M7+ in the next {AHEAD} years")
-""")
-
-# --- section 5 -------------------------------------------------------------
 md(f"""
-## One assumption we did not say out loud
-
 Back to the Bay for the assumption the bootstrap slipped past you. Resampling *months* treats each
 month as an independent draw — as if the sea level in March told you nothing about April. It
 plainly does. A wet winter, an El Niño, a warm year: those last longer than a month, so
@@ -1202,6 +1212,10 @@ Resample **months**, as your turn 2 did, not whole years. Class showed that mont
 interval that is too narrow — and too narrow is the direction that makes two intervals *miss* each
 other, so if these two overlap anyway, the wider honest version would only overlap more.
 
+Then, as a comment at the end of your cell, answer in one sentence from your own two intervals:
+does the conclusion that the rise really changed survive a cut that uses every month, or was it an
+artefact of comparing the two extremes of five?
+
 **Use these names**, because the self-check looks for them: `first`, `second`, `first_slope`,
 `first_low`, `first_high`, `second_slope`, `second_low`, `second_high`.
 """)
@@ -1232,6 +1246,12 @@ print("{HALVES[0][0]}-{HALVES[0][1]}:", len(first), "months, slope", round(first
 print("{HALVES[1][0]}-{HALVES[1][1]}:", len(second), "months, slope", round(second_slope, 2),
       "95% interval", round(second_low, 2), "to", round(second_high, 2))
 print("do the intervals overlap?", first_high > second_low)
+
+{note(f"My two halves overlap — {M['halves'][0]['low']:.2f} to "
+       f"{M['halves'][0]['high']:.2f} against {M['halves'][1]['low']:.2f} to "
+       f"{M['halves'][1]['high']:.2f} mm/yr — so a cut that uses every month does not on its "
+       f"own show the rise changing: each half averages slow decades in with fast ones, and "
+       f"the change class saw lives inside the second half rather than between the two.")}
 """, """
 assert len(first) + len(second) == len(sea), "every month belongs to exactly one half"
 assert first_low < first_slope < first_high, \\
@@ -1253,10 +1273,11 @@ barely any events left to fit.
 **Pick one:** fit between {LO['lo']} and {LO['hi']}, or between {HI['lo']} and {HI['hi']}. Change
 one line — `edges = np.arange(...).round(1)` — and re-run the whole argument on your choice:
 `predicted_m7`, the {B:,} bootstrap rates, the Poisson draw, and the fraction of simulated worlds
-reaching five.
+reaching five. Redefining `edges` is enough: `predicted_m7` reads it, so nothing else needs editing.
 
-Print your forecast, your 95% interval on the count, and your fraction. Notice that redefining
-`edges` is enough: `predicted_m7` reads it, so nothing else needs editing.
+Print your forecast, your 95% interval on the count, and your fraction. Then, as a comment at the
+end of your cell, say in one sentence why moving the fitting range moves the forecast at all —
+what changes about the line when you fit lower or higher.
 
 **Use these names**, because the self-check looks for them: `edges`, `my_counts`, `my_fraction`.
 """)
@@ -1267,7 +1288,8 @@ edges = np.arange({LO['lo']}, {LO['hi'] + 0.1:.1f}, 0.1).round(1)   # the low ch
 np.random.seed(88)
 my_rates = []
 for i in range({B}):
-    my_rates.append(predicted_m7(quakes["mag"].sample(len(quakes), replace=True)))
+    boot_mags = quakes["mag"].sample(len(quakes), replace=True)
+    my_rates.append(predicted_m7(boot_mags))
 my_rates = np.array(my_rates)
 
 np.random.seed(88)
@@ -1278,6 +1300,11 @@ print("fitting magnitude", edges[0], "to", edges[-1])
 print("forecast:", round(predicted_m7(quakes["mag"]), 2), "M7+ earthquakes")
 print("95% interval on the count:", np.percentile(my_counts, [2.5, 97.5]))
 print("fraction of simulated worlds with 5 or more:", round(my_fraction, 4))
+
+{note("Moving the range moves the slope of the fitted line, because a different stretch of "
+       "magnitudes gets to set it — and magnitude 7 lies well outside every one of those "
+       "stretches, so a small change in slope is stretched into a sizeable change in the count "
+       "the line reports at 7.")}
 """, f"""
 assert edges[0] != 4.0 or edges[-1] != 5.5, "change the range — this is class's fit, not a choice"
 assert 0 < my_fraction < 0.2, \\
