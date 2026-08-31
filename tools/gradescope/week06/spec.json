@@ -13,19 +13,19 @@
       "code_points": 5
     },
     {
-      "name": "Part 2 — the older half of the ridge",
-      "marker": "✓ the older half of the ridge",
+      "name": "Part 2 — two windows of one ridge",
+      "marker": "✓ two windows of one ridge",
       "checks": [
-        "assert old[\"Age\"].min() >= 20, \"old should keep the picks 20 Ma and OLDER\""
+        "assert old_forced.intercept_ == 0, \\"
       ],
       "check_points": 30,
       "code_points": 5
     }
   ],
   "released": {
-    "w06-c042": "# ── Checkpoint ── run this if you restarted the kernel or fell behind ──\nsn = load(STARS + \"Freedman2000_Supernova1a.csv\", \"week06_supernovae.csv\")\npar = load(RIDGES + \"PAR_east_age_dist.csv\", \"week06_par_age_distance.csv\")\n\n\ndef age_of_universe(H0):\n    \"\"\"A Hubble constant in km/s per Mpc, turned into an age in billions of years.\"\"\"\n    MPC_IN_KM = 3.0857e19\n    SECONDS_PER_YEAR = 60 * 60 * 24 * 365.25\n    seconds = MPC_IN_KM / H0\n    return seconds / SECONDS_PER_YEAR / 1e9",
-    "w06-q06-answer": "# ← your answer here\n\n\nassert H0_near != H0_far, \\\n    \"two different halves of the table cannot give the identical fit — check you split it\"\nprint(\"✓ near against far — the two halves differ by\",\n      round(abs(age_near - age_far), 2), \"billion years\")",
-    "w06-q07-answer": "# ← your answer here\n\n\nassert old[\"Age\"].min() >= 20, \"old should keep the picks 20 Ma and OLDER\"\nprint(\"✓ the older half of the ridge — free\", round(old_free.coef_[0] / 10, 2),\n      \"cm/yr against forced\", round(old_forced.coef_[0] / 10, 2), \"cm/yr\")"
+    "w06-c049": "# ── Checkpoint ── run this if you restarted the kernel or fell behind ──\nsn = load(STARS + \"Freedman2000_Supernova1a.csv\", \"week06_supernovae.csv\")\npar = load(RIDGES + \"PAR_east_age_dist.csv\", \"week06_par_age_distance.csv\")\n\n\ndef age_of_universe(H0):\n    \"\"\"A Hubble constant in km/s per Mpc, turned into an age in billions of years.\"\"\"\n    MPC_IN_KM = 3.0857e19\n    SECONDS_PER_YEAR = 60 * 60 * 24 * 365.25\n    seconds = MPC_IN_KM / H0\n    return seconds / SECONDS_PER_YEAR / 1e9",
+    "w06-q07-answer": "# ← your answer here\n\n\nassert H0_near != H0_far, \\\n    \"two different halves of the table cannot give the identical fit — check you split it\"\nprint(\"✓ near against far — the two halves differ by\",\n      round(abs(age_near - age_far), 2), \"billion years\")",
+    "w06-q08-answer": "# ← your answer here\n\n\nassert old_forced.intercept_ == 0, \\\n    \"the forced model should have no intercept at all — did you pass fit_intercept=False?\"\nprint(\"✓ two windows of one ridge — younger\", round(young_free.coef_[0] / 10, 2),\n      \"cm/yr, older\", round(old_free.coef_[0] / 10, 2), \"cm/yr free and\",\n      round(old_forced.coef_[0] / 10, 2), \"cm/yr forced\")"
   },
   "hygiene": {
     "points": 5

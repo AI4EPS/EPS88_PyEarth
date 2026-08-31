@@ -766,10 +766,33 @@ schedule:
           file students download, and a week must not claim it is. One side effect is real and
           teachable: 39 of 2,500 recordings are railed flat at the bound with zero variance.
       expect:
-        sta_lta_accuracy: "45.3% at the textbook setting, 60.2% at the best of four — an
-          event-grouped held-out set. The earlier 47-59% brackets rather than contains these."
-        unet_accuracy: 0.908             # picking is necessary; detection is decorative
-      verified: 2026-08-30
+        # WHAT THESE ARE: measurements of the SHIPPED notebook, not targets and not sanity bands.
+        # Every number below was produced by tools/build_week13.py on the release asset with its
+        # own seeds, and a rebuild that does not reproduce it is a defect to investigate rather
+        # than a tolerance to widen. Where a figure was measured on a DIFFERENT model the entry
+        # says so — the audit's 47k-parameter U-Net is NOT what this week ships.
+        sta_lta_accuracy: "45.3% at the textbook setting, 60.2% at the best of four, on an
+          event-grouped held-out set of 741 recordings. The earlier 47-59% brackets rather than
+          contains these."
+        sta_lta_dead_zone: >
+          The 45.3% -> 60.2% gap is NOT tuning, and the week now says so rather than crediting
+          the shorter windows. long=500 pins the ratio at zero for the first 5 s, so the 183 of
+          741 held-out traces (24.7%) whose P arrives before 4.5 s score exactly 0.000 at the
+          textbook setting however strong the arrival is. On the remaining 558 the textbook
+          setting scores 0.602 — the best-of-four number to three decimals. 59.1% of the traces
+          that "triggered on the S" are in that dead zone, so the S was simply the first arrival
+          the ratio was awake for. Also: the best setting (30/300) is NOT the shortest of the
+          four; 20/200 is, and it scores 0.586.
+        hand_filter_accuracy: >
+          The 20-weight onset filter scores 0.553 read by first crossing at threshold 3 — the
+          same rule STA/LTA is scored by — and 0.100 read by argmax, which lands on the S on
+          59.2%. The 5.5x is the DECISION RULE, not the weights. Scoring the hand filter by
+          argmax against STA/LTA by first crossing and presenting the gap as evidence that humans
+          choose weights badly was a defect; the week now scores both ways in one cell and uses
+          the argmax failure to motivate a network trained to output a bump.
+        unet_accuracy: 0.889             # the SHIPPED 3,857-weight net, seeded, 25 epochs
+        unet_accuracy_audit: 0.908       # a DIFFERENT model: the audit's 47k-parameter U-Net
+      verified: 2026-08-31
     exercise: "Final project."
     takeaways:
       - "A network learns waveform shape once amplitude is taken away from it."
@@ -925,7 +948,7 @@ project:
 
     - id: T3
       field: volcanology / data provenance
-      title: "July has 400 eruptions and March has 250. Is that the Earth, or the catalogue?"
+      title: "July has 400 eruptions and December has 212. Is that the Earth, or the catalogue?"
       data: "Smithsonian GVP, 2,977 eruptions since 1950 carrying a month, live"
       fork: >
         Which records do you trust? When only the year is known GVP writes a real-looking 2 July

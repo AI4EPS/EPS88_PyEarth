@@ -15,3 +15,6 @@ tools/_week*_spec.md
 
 # Week 13 downloads this from the data-v1 release at run time; it must never be committed
 phasenet_ncedc.npz
+
+# Gradescope zips staged by tools/gradescope_deploy.py --zip; rebuildable, never source
+build/

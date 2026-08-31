@@ -38,3 +38,5 @@ nav:
     - "Week 11: Where does a volcano get its magma?": notebooks/11_where_magma.ipynb
     - "Week 12: Can you find a fault that nobody mapped?": notebooks/12_hidden_fault.ipynb
     - "Week 13: Can a machine hear an earthquake?": notebooks/13_machine_hears.ipynb
+  - Projects:
+    - "T3: July has 400 eruptions and December has 212. Is that the Earth, or the catalogue?": notebooks/T3_july_or_the_catalogue.ipynb

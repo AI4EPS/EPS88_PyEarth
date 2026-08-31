@@ -50,7 +50,7 @@ Libraries, whole course: `python` · `numpy` · `pandas` · `matplotlib` · `sci
 |---|---|---|
 | 14.1 | seismology / engineering | **How hard will the ground shake at distance R from a magnitude M earthquake?** |
 | 14.2 | climate | **Is the CO2 seasonal cycle getting stronger?** |
-| 14.3 | volcanology / data provenance | **July has 400 eruptions and March has 250. Is that the Earth, or the catalogue?** |
+| 14.3 | volcanology / data provenance | **July has 400 eruptions and December has 212. Is that the Earth, or the catalogue?** |
 | 14.4 | planetary science | **Are we finding more Earth-like planets, or just better telescopes?** |
 | 14.5 | oceanography / hydrology | **Does El Nino really bring rain to California?** |
 | 14.6 | petrology / machine learning | **Can you tell where a basalt erupted from its chemistry alone?** |
