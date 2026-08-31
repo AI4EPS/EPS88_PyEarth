@@ -276,7 +276,7 @@ M["loss_last"] = round(float(losses[-1]), 5)
 M["acc_ep10"] = round(float(scores[9]), 3)
 M["acc_late_low"] = round(float(min(scores[10:])), 3)
 M["acc_late_high"] = round(float(max(scores[10:])), 3)
-M["acc_wobble"] = round(M["acc_late_high"] - M["acc_late_low"], 3)
+M["acc_wobble"] = round(float(max(scores[10:]) - min(scores[10:])), 3)
 
 # --- homework: does the network fail where the classical picker fails?
 best = tuple(int(x) for x in M["stalta_best_setting"].split(", "))
@@ -457,8 +457,8 @@ before each P, so the arrival lands anywhere from {M['p_min_s']} to {M['p_max_s'
 Nothing here can score well by always answering "sample {M['n_samples'] // 2}".
 
 Look at one. The three rows are drawn on the same axes, and the two vertical lines are the
-analyst's marks. The P is the first arrival, and the ground barely moves at first. The S comes
-later and is much bigger; it is the wave that does the damage.
+analyst's marks. Before the first line there is nothing but background. The P is the first
+arrival; the S, which follows it, shakes harder and is the wave that does the damage.
 """)
 
 code(f"""
@@ -649,11 +649,13 @@ plt.show()
 """)
 
 md(f"""
-The bulge is to the right of the line, not on it. Only {M['loudest_near_p']:.1%} of the loudest
-samples are near the P; {M['loudest_near_s']:.1%} of them are near the **S**, which arrives
-later and shakes harder. Loudness is a fine answer to *did something happen*. It is close to
-useless as an answer to *when did it start*, because the loudest moment is a different wave
-arriving.
+The tallest bar does sit against the line — but it holds only about a sixth of the recordings,
+and the rest are strung out for seconds afterwards, with a scatter to the left as well, on
+recordings where the loudest thing in the window happened before the earthquake got there at all.
+{M['loudest_near_p']:.1%} of the loudest samples are within half a second of the P;
+{M['loudest_near_s']:.1%} are within half a second of the **S**. Loudness is a fine answer to *did
+something happen*. It is close to useless as an answer to *when did it start*, because the loudest
+moment is usually a different wave arriving.
 
 Whatever finds the P has to work on the **shape** of the signal — the moment a quiet trace stops
 being quiet — and not on how big it gets.
@@ -671,7 +673,8 @@ fills with the new energy while the long window is still mostly old quiet — so
 Trigger the first time it crosses some level, and that is your pick.
 
 It is called STA/LTA, for short-term average over long-term average. Three numbers to choose: how
-short, how long, and how big a jump counts.
+short, how long, and how big a jump counts. The ratio below is left at zero until there is a full
+long window behind it to average over — five seconds, at this setting.
 """)
 
 code(f"""
@@ -725,9 +728,20 @@ def sta_lta_score(short, long, threshold):
     return hits / (~is_train).sum()
 
 
+never = 0
+on_the_s = 0
+for i in np.nonzero(~is_train)[0]:
+    pick = first_trigger(sta_lta(strength[i], 50, 500), 3)
+    if pick is None:
+        never = never + 1
+    elif abs(pick - s_index[i]) <= 50:
+        on_the_s = on_the_s + 1
+
 print("you guessed:", my_guess)
 print("textbook setting (0.5 s, 5 s, threshold 3):",
       round(sta_lta_score(50, 500, 3), 3))
+print("  fraction that never triggered:  ", round(never / (~is_train).sum(), 3))
+print("  fraction that hit the S instead:", round(on_the_s / (~is_train).sum(), 3))
 """)
 
 ask(f"""
@@ -773,6 +787,10 @@ Tuned as well as four tries can tune it, the classical picker lands within half 
 setting it never triggers at all on {M['stalta_never']:.1%} of them — the noise was too loud for
 the ratio to ever jump by three — and on another {M['stalta_near_s']:.1%} it triggers on the S
 instead of the P, having ignored a P that was too gentle to move the ratio.
+
+The setting that came out best is also the one with the shortest windows, and that is not a
+coincidence: a five-second long window has nothing to compare against until five seconds in, and
+the setup cell told you some of these P arrivals come earlier than that.
 
 That is the number to beat. Anything we build now has to beat {M['stalta_best']:.3f}, or we have
 built decoration.
@@ -1054,23 +1072,39 @@ print("✓ the network —", round(100 * net_accuracy, 1), "% of held-out traces
       "median error", round(np.median(np.abs(net_picks - p_test)) / SAMPLE_RATE, 3), "s")
 """)
 
+md("""
+Two of the held-out recordings, drawn: the one the network places most accurately and the one it
+places worst. Behind the network's answer in each panel is the liveliest of that recording's three
+rows, and the black line is where the analyst put the P.
+
+The lower panel is not a plotting mistake. The cell prints the standard deviation of each of that
+recording's three rows, and all three are zero — every channel is stuck at the end of its range,
+so there is no ground motion in the file to find. An archive of real instruments contains records
+like that, and no picker can be blamed for them.
+""")
+
 code(f"""
 closest = np.abs(net_picks - p_test).argmin()
 furthest = np.abs(net_picks - p_test).argmax()
 
 plt.figure(figsize=(7, 5))                      # two stacked traces need the extra height
 for panel, which in [(1, closest), (2, furthest)]:
+    liveliest = x_test[which].numpy().std(axis=1).argmax()   # the row with the most in it
     plt.subplot(2, 1, panel)
-    plt.plot(seconds, x_test[which][2].numpy() / 10, lw=0.5, label="up-down, scaled")
+    plt.plot(seconds, x_test[which][liveliest].numpy() / 10, lw=0.5, label="ground motion, scaled")
     plt.plot(seconds, picker(x_test[[which]]).squeeze().detach().numpy(), lw=1,
              label="the network's answer")
     plt.axvline(p_test[which] / SAMPLE_RATE, color="k")
     plt.ylabel("scaled to 1")
-plt.legend()
+    if panel == 1:
+        plt.legend()
 plt.xlabel("time (s)")
-plt.suptitle("the network on its closest and its furthest held-out trace of {{}} (black = analyst)"
+plt.suptitle("the network on its closest and its furthest of {{}} held-out recordings"
              .format(len(p_test)))
 plt.show()
+
+print("standard deviation of the three rows, worst recording:",
+      x_test[furthest].numpy().std(axis=1).round(3))
 """)
 
 # --- closing ----------------------------------------------------------------

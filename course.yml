@@ -680,10 +680,15 @@ schedule:
     pinned:
       slice: "data/phasenet_ncedc.npz — 2,500-trace NCEDC subset, in the data-v1 release, 42 MB"
       constants:
-        clipping: "np.clip(w, -10, 10) is REQUIRED — instrument glitches at 1.28e7 std silently
-          collapse U-Net training to 0.0% accuracy without it"
+        clipping: >
+          np.clip(w, -10, 10) is kept as a GUARD, not as the lesson. The release asset is already
+          clipped at write time — verified 2026-08-31: max|x| is exactly 10.0000 and 6.2% of
+          samples sit on the bound — so the 0.0%-accuracy collapse is NOT reproducible from the
+          file students download, and a week must not claim it is. One side effect is real and
+          teachable: 39 of 2,500 recordings are railed flat at the bound with zero variance.
       expect:
-        sta_lta_accuracy: "47-59%"
+        sta_lta_accuracy: "45.3% at the textbook setting, 60.2% at the best of four — an
+          event-grouped held-out set. The earlier 47-59% brackets rather than contains these."
         unet_accuracy: 0.908             # picking is necessary; detection is decorative
       verified: 2026-08-30
     exercise: "Final project."

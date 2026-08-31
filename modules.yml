@@ -516,6 +516,24 @@ modules:
     title: "Neural networks"
     topic: "Neural networks"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
     teaches: [perceptron, stacking, activation, loss, gradient descent, epochs, learning curves, 1-D convolution, PyTorch nn.Module]
+    functions:
+      - {name: "np.clip(a, low, high)", does: "trim every value into a range — here, cutting off instrument spikes"}
+      - {name: 'np.convolve(signal, weights, mode="same")', does: "slide a small pattern-detector along a signal"}
+      - {name: "np.unique(a)",          does: "each different value in an array, once"}
+      - {name: "array.std(axis=n)",     does: "the typical size of the wiggles, one number per row"}
+      - {name: "torch.tensor(array)",   does: "hand an array to PyTorch so it can be learned from"}
+      - {name: "torch.manual_seed(n)",  does: "fix the random start, so a training run repeats"}
+      - {name: "nn.Sequential(layers)", does: "a model that runs the layers you hand it, in order"}
+      - {name: "nn.Conv1d(in, out, width)", does: "a row of pattern-detectors slid along the signal, with weights the training chooses"}
+      - {name: "nn.ReLU()",             does: "the activation — the bend that makes a stack more than one straight line"}
+      - {name: "nn.Linear(in, out)",    does: "one layer of weighted sums — a row of perceptrons"}
+      - {name: "nn.MSELoss()",          does: "the loss: the average squared miss, the same one that fits a straight line"}
+      - {name: "torch.optim.Adam(model.parameters(), lr=)", does: "the thing that rolls the weights downhill"}
+      - {name: "loss.backward() / optimiser.step() / optimiser.zero_grad()", does: "work out which way each weight should move, move them, then clear the slate"}
+      - {name: "np.isin(a, values)",    does: "a mask marking which items appear in a list of allowed values", remember: false}
+      - {name: "np.nonzero(mask)[0]",   does: "the positions where a mask is True", remember: false}
+      - {name: "tensor.detach().numpy()", does: "take the numbers back out of PyTorch", remember: false}
+      - {name: "loss.item()",           does: "one number out of a one-number tensor", remember: false}
     requires: [ML3]
     harvest_gives: "harvest supplies the METHOD ONLY — the Earth-science content is new"
     minutes: 100
@@ -625,6 +643,10 @@ plain_words:
   - {idea: "Equilibrium temperature", module: P4, words: "The temperature a planet would sit at if starlight were the only thing heating it and it had no air."}
   - {idea: "Albedo",               module: P4, words: "The fraction of the starlight falling on a world that it reflects straight back into space; only the rest is absorbed and turned into heat."}
   - {idea: "The greenhouse effect", module: P4, words: "The difference between the temperature a world would have with no air and the temperature it actually has."}
+  - {idea: "Perceptron",           module: ML6, words: "One weighted sum, squashed into an answer — a single logistic regression, and the piece a network is built out of."}
+  - {idea: "Activation",           module: ML6, words: "The bend between two layers. Without it, a stack of straight lines is still one straight line."}
+  - {idea: "Loss",                 module: ML6, words: "The one number the network is trying to make small."}
+  - {idea: "Epoch",                module: ML6, words: "One pass through all of the training data."}
   - {idea: "Inertia",              module: ML5, words: "The total squared distance from each point to its own pin. It always falls as you add pins, so a small one on its own means nothing."}
   - {idea: "The noise label",      module: ML5, words: "DBSCAN marks a point that is in no crowd with -1. That is not a cluster; it is the algorithm saying it has no opinion about this one."}
   - {idea: "Explained variance",   module: ML5, words: "What share of the spread sits on each new axis. If the first one carries almost all of it, the cloud is really a line."}
@@ -646,6 +668,10 @@ plain_words:
   - {idea: "Logistic regression",  module: ML3, words: "The same straight line — but now it outputs a probability between 0 and 1."}
   - {idea: "Naive Bayes",          module: ML3, words: "What does a quarry blast usually look like? Shallow, weekday, mid-afternoon. Score each clue and multiply. Pretending the clues are independent is obviously wrong, and it works anyway."}
   - {idea: "Precision / recall",   module: ML3, words: "Of the ones you flagged, how many were right? Of the real ones, how many did you catch?"}
+  - {idea: "Perceptron",           module: ML6, words: "One weighted sum, squashed into an answer — a single logistic regression, and the piece a network is built out of."}
+  - {idea: "Activation",           module: ML6, words: "The bend between two layers. Without it, a stack of straight lines is still one straight line."}
+  - {idea: "Loss",                 module: ML6, words: "The one number the network is trying to make small."}
+  - {idea: "Epoch",                module: ML6, words: "One pass through all of the training data."}
   - {idea: "Inertia",              module: ML5, words: "The total squared distance from each point to its own pin. It always falls as you add pins, so a small one on its own means nothing."}
   - {idea: "The noise label",      module: ML5, words: "DBSCAN marks a point that is in no crowd with -1. That is not a cluster; it is the algorithm saying it has no opinion about this one."}
   - {idea: "Explained variance",   module: ML5, words: "What share of the spread sits on each new axis. If the first one carries almost all of it, the cloud is really a line."}
