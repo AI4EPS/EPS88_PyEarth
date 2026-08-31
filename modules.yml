@@ -489,6 +489,17 @@ modules:
     teaches: [k-means, inertia, choosing k, DBSCAN, eps and min_samples, clusters of arbitrary
               shape, the NOISE label, why k-means cannot say "this belongs to nothing",
               PCA, explained variance]
+    functions:
+      - {name: "KMeans(n_clusters=k, random_state=0)", does: "put k pins on the data; random_state pins where they start, or the answer moves"}
+      - {name: "model.fit_predict(x)",  does: "fit and hand back one group number per row"}
+      - {name: "model.inertia_",        does: "the total squared distance from each point to its own pin — it always falls as k grows"}
+      - {name: "DBSCAN(eps=..., min_samples=...)", does: "group by crowding instead of by pins; the label -1 means this one belongs to nothing"}
+      - {name: "PCA()",                 does: "find the directions the cloud is most stretched along, longest first"}
+      - {name: "pca.explained_variance_ratio_", does: "what share of the spread sits on each new axis"}
+      - {name: "pca.explained_variance_", does: "the spread on each axis, squared — its square root is a size in the data's own units"}
+      - {name: "pca.components_[0]",    does: "the recipe for axis 1, one weight per original column, so you can read its direction"}
+      - {name: "pca.transform(table)",  does: "every row's position on the new axes"}
+      - {name: "scaler.scale_",         does: "the spread the scaler divided each column by", remember: false}
     requires: [D2, S3, ML4, S4]
     harvest_gives: "harvest supplies the METHOD ONLY — the Earth-science content is new"
     minutes: 100
@@ -613,6 +624,9 @@ plain_words:
   - {idea: "Equilibrium temperature", module: P4, words: "The temperature a planet would sit at if starlight were the only thing heating it and it had no air."}
   - {idea: "Albedo",               module: P4, words: "The fraction of the starlight falling on a world that it reflects straight back into space; only the rest is absorbed and turned into heat."}
   - {idea: "The greenhouse effect", module: P4, words: "The difference between the temperature a world would have with no air and the temperature it actually has."}
+  - {idea: "Inertia",              module: ML5, words: "The total squared distance from each point to its own pin. It always falls as you add pins, so a small one on its own means nothing."}
+  - {idea: "The noise label",      module: ML5, words: "DBSCAN marks a point that is in no crowd with -1. That is not a cluster; it is the algorithm saying it has no opinion about this one."}
+  - {idea: "Explained variance",   module: ML5, words: "What share of the spread sits on each new axis. If the first one carries almost all of it, the cloud is really a line."}
   - {idea: "Leakage",              module: ML2, words: "Any route by which information about the data you are scoring on reaches the model before you score it."}
   - {idea: "Polynomial degree",    module: ML2, words: "The degree of a polynomial is how many bends it is allowed: degree 1 is a straight line, degree 2 bends once."}
   - {idea: "Feature importance",   module: ML4, words: "How much of a forest's decisions each column carried — the model's own account of what it used."}
@@ -631,6 +645,9 @@ plain_words:
   - {idea: "Logistic regression",  module: ML3, words: "The same straight line — but now it outputs a probability between 0 and 1."}
   - {idea: "Naive Bayes",          module: ML3, words: "What does a quarry blast usually look like? Shallow, weekday, mid-afternoon. Score each clue and multiply. Pretending the clues are independent is obviously wrong, and it works anyway."}
   - {idea: "Precision / recall",   module: ML3, words: "Of the ones you flagged, how many were right? Of the real ones, how many did you catch?"}
+  - {idea: "Inertia",              module: ML5, words: "The total squared distance from each point to its own pin. It always falls as you add pins, so a small one on its own means nothing."}
+  - {idea: "The noise label",      module: ML5, words: "DBSCAN marks a point that is in no crowd with -1. That is not a cluster; it is the algorithm saying it has no opinion about this one."}
+  - {idea: "Explained variance",   module: ML5, words: "What share of the spread sits on each new axis. If the first one carries almost all of it, the cloud is really a line."}
   - {idea: "Leakage",              module: ML3, words: "You got 99 percent. Be suspicious. Did one of your columns already know the answer?"}
   - {idea: "Baseline",             module: ML3, words: "Write the dumbest rule you can, first. Any model that cannot beat it is decoration."}
   - {idea: "Decision tree",        module: ML4, words: "A flowchart of yes/no questions, learned from the data instead of written by hand."}

@@ -290,6 +290,16 @@ M["network_only"] = int((~classic_ok & network_ok).sum())
 M["classic_only"] = int((classic_ok & ~network_ok).sum())
 M["both_wrong"] = int((~classic_ok & ~network_ok).sum())
 
+snr_test = data["snr"][~is_train]
+quiet_half = snr_test < np.median(snr_test)
+M["snr_median"] = round(float(np.median(snr_test)), 1)
+M["n_quiet"] = int(quiet_half.sum())
+M["n_loud"] = int((~quiet_half).sum())
+M["net_quiet"] = round(float(network_ok[quiet_half].mean()), 3)
+M["net_loud"] = round(float(network_ok[~quiet_half].mean()), 3)
+M["classic_quiet"] = round(float(classic_ok[quiet_half].mean()), 3)
+M["classic_loud"] = round(float(classic_ok[~quiet_half].mean()), 3)
+
 # --- homework: how wide should the label be?
 for sigma in (5, 40):
     hw_model, hw_losses, hw_scores = train_picker(sigma=sigma)
@@ -412,7 +422,8 @@ distance_km = data["distance_km"]
 event_id = data["event_id"]
 station = data["station"]
 magnitude = data["magnitude"]
-SAMPLE_RATE = 100                               # samples per second
+snr = data["snr"]                               # how many times louder the earthquake is than
+SAMPLE_RATE = 100                               # the background, on that recording
 
 print("recordings:      ", waveform.shape)
 print("earthquakes:     ", len(np.unique(event_id)), " stations:", len(np.unique(station)))
@@ -1078,8 +1089,9 @@ md(weekkit.week_cheatsheet(13))
 md("""
 ## Homework
 
-Three parts. The first is short; the second asks you to decide something and defend it; the third
-settles an argument the class left open.
+Three parts. The first asks something about the class result that class did not ask; the second
+asks you to decide something and defend the decision; the third settles an argument class left
+open.
 
 Two of the three train a network from scratch, so start them and let them run. If you restarted
 the kernel since class, run the checkpoint cell first — it rebuilds the trained picker without
@@ -1095,20 +1107,28 @@ net_picks = picks_from(picker, x_test)
 ask(f"""
 ### ✏️ Your turn 6
 
-Does the network simply do STA/LTA's job faster, or does it do a different job? If it were the
-same job, they would fail on the same traces.
+The two pickers were scored on the same held-out recordings, and those recordings are not equally
+easy: `snr` says how many times louder the earthquake is than the background on each one. An
+average over all of them hides that. So where does the network's advantage actually come from —
+is it ahead everywhere, or only where the signal is faint?
 
-Find out. For each held-out trace, work out whether STA/LTA at its best setting from Your turn 3
-— short {M['stalta_best_setting'].split(', ')[0]}, long {M['stalta_best_setting'].split(', ')[1]},
-threshold {M['stalta_best_setting'].split(', ')[2]} — landed within 50 samples of the analyst's
-pick, and whether the network did. Then print all four counts: both right, network only, STA/LTA
-only, and both wrong.
+Split the held-out recordings in half at the median of their `snr` and report four numbers: the
+network's accuracy and STA/LTA's on the quiet half, and both again on the loud half. Score
+STA/LTA at its best setting from Your turn 3 — short {M['stalta_best_setting'].split(', ')[0]},
+long {M['stalta_best_setting'].split(', ')[1]}, threshold
+{M['stalta_best_setting'].split(', ')[2]} — the way `sta_lta_score` does, except keeping one
+True/False per recording instead of one total.
 
-**Use these names**, because the self-check looks for them: `classic_ok` and `network_ok`, each a
-list or array of True/False, one per held-out trace.
+Finish by printing how much accuracy each method loses going from the loud half to the quiet half.
+
+**Use these names**, because the self-check looks for them: `classic_ok` and `network_ok`, each
+one True/False per held-out recording, and `quiet` for the mask picking out the quiet half.
 """)
 
 answer(f"""
+snr_test = snr[~is_train]
+quiet = snr_test < np.median(snr_test)
+
 classic_ok = []
 for i in np.nonzero(~is_train)[0]:
     pick = first_trigger(sta_lta(strength[i], {M['stalta_best_setting'].split(', ')[0]},
@@ -1119,15 +1139,19 @@ for i in np.nonzero(~is_train)[0]:
 classic_ok = np.array(classic_ok)
 network_ok = np.abs(net_picks - p_test) <= 50
 
-print("both right:  ", (classic_ok & network_ok).sum())
-print("network only:", (~classic_ok & network_ok).sum())
-print("STA/LTA only:", (classic_ok & ~network_ok).sum())
-print("both wrong:  ", (~classic_ok & ~network_ok).sum())
+print("quiet half,", quiet.sum(), "recordings: network", round(network_ok[quiet].mean(), 3),
+      " STA/LTA", round(classic_ok[quiet].mean(), 3))
+print("loud half, ", (~quiet).sum(), "recordings: network", round(network_ok[~quiet].mean(), 3),
+      " STA/LTA", round(classic_ok[~quiet].mean(), 3))
+print("lost going quiet: network",
+      round(network_ok[~quiet].mean() - network_ok[quiet].mean(), 3),
+      " STA/LTA", round(classic_ok[~quiet].mean() - classic_ok[quiet].mean(), 3))
 """, """
-assert len(classic_ok) == len(network_ok), "one True/False per held-out trace, for both methods"
-print("✓ agreement — the network rescues",
-      (~classic_ok & network_ok).sum(), "traces STA/LTA misses, and loses",
-      (classic_ok & ~network_ok).sum(), "that it finds")
+assert len(classic_ok) == len(network_ok) == len(quiet), \
+    "one True/False per held-out recording, for both methods"
+print("✓ by loudness — on the quiet half the network scores",
+      round(network_ok[quiet].mean(), 3), "against STA/LTA's",
+      round(classic_ok[quiet].mean(), 3))
 """)
 
 ask(f"""

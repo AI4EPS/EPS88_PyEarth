@@ -626,7 +626,8 @@ schedule:
       slice: "Ridgecrest M2+, 2019-07-01 to 2019-12-31, lat 35.0-36.5, lon -118.5 to -117.0 — 6,646"
       constants:
         scaler: "StandardScaler on lon, lat AND depth — three features, not two"
-        dbscan: {eps: 0.15, min_samples: 12}
+        dbscan: {eps: 0.15, min_samples: 12}   # 11 clusters is ONE EVENT from being 10:
+        # cluster 7 holds exactly 12 events, so min_samples sits on its own boundary.
       expect:
         dbscan: {clusters: 11, noise_fraction: 0.184, largest_cluster: 4670}
         kmeans_k3: [2361, 2223, 2062]    # three equal blobs; it must assign every event

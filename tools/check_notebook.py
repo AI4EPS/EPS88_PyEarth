@@ -352,7 +352,10 @@ def check_figures(cells):
             errs.append(f"cell {i}: a plot with no axis labels")
         # The lon/lat names must be PLOTTED, not merely mentioned: a checkpoint line that
         # unpacks six lists into a histogram cell made the histogram fail as a map.
-        if re.search(r"plt\.(scatter|plot)\(\s*lons?\b", s) and "coast" not in s:
+        # Only an unbounded map claims to show the world; a zoomed box may hold no coast at all
+        # (week 12's Ridgecrest box contains zero coastline points).
+        if (re.search(r"plt\.(scatter|plot)\(\s*lons?\b", s) and "coast" not in s
+                and "plt.xlim" not in s):
             errs.append(f"cell {i}: a map that does not draw data/coastlines.csv")
 
 
@@ -409,7 +412,13 @@ def check_code_quality(cells):
     # a block said three times is a function waiting to be written
     blocks = {}
     for i, s in code:
-        lines = [l for l in s.split("\n") if l.strip() and not l.strip().startswith("#")]
+        # Plot furniture is exempt: check_figures requires plt.xlabel/ylabel literally inside
+        # every plot cell, so a week with four maps MUST repeat them. Requiring the repetition
+        # and then flagging it is a rule fighting itself.
+        lines = [l for l in s.split("\n")
+                 if l.strip() and not l.strip().startswith("#")
+                 and not re.match(r"\s*plt\.(xlabel|ylabel|title|show|xlim|ylim|gca|"
+                                  r"locator_params|colorbar|legend|figure)\b", l)]
         for k in range(len(lines) - 2):
             blocks.setdefault("\n".join(lines[k:k + 3]), []).append(i)
     for blk, where in blocks.items():
