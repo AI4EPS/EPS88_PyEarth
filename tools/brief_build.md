@@ -1,15 +1,13 @@
 You are building **week {n}** of EPS 88 "PyEarth", a Fall 2026 UC Berkeley course for
 freshmen with no programming experience.
 
-**The question this week answers:** {question}
-
 ## Read the specification. It is binding, and it is the source of truth — not this brief.
 
 This brief tells you WHAT to produce and WHERE things are. It deliberately does not restate the
 rules, because a summary of them would compete with the real thing. Read these in order:
 
 1. `{EPS88}/CLAUDE.md` — section "To build a week"
-2. `{REPO}/TEMPLATE.md` — **read all of it.** §7 is the two gates your build must pass.
+2. `{REPO}/TEMPLATE.md` — **read all of it.** §7 is the gates your build must pass.
 3. `{REPO}/tools/_week{n:02d}_spec.md` — **week {n}'s entire specification**: its `course.yml`
    entry and its modules' `modules.yml` entries, copied verbatim, with the `plain_words` that
    apply. Four keys carry the week's design and you read all four: **`pinned:`** is settled data —
@@ -17,7 +15,7 @@ rules, because a summary of them would compete with the real thing. Read these i
    measuring for a better one; **`note:`** and **`note_critical:`** record decisions already made
    rather than ones to re-take; **`flagship:`** designs the week's central problem. You do NOT
    need to open course.yml or modules.yml; this file is those two files' week-{n} content.
-4. This week's dataset audit: {audits}
+4. The dataset audit the spec's `evidence:` names, in `{EPS88}/notes/dataset-audit/`.
    **Its measured numbers and traps outrank your expectations.**
 
 ## Know what students already know
@@ -26,9 +24,9 @@ Run this first and obey it:
 
     {PY} tools/prior_knowledge.py {n}
 
-Other weeks are being written at the same time as yours. You cannot read their notebooks; this
-contract is how you avoid using something a later week is supposed to introduce, and how you
-reuse the exact wording of an idea already named.
+You cannot read the other weeks' notebooks, and they may be built in any order. This contract is
+how you avoid using something a later week is meant to introduce, and how you reuse the exact
+wording of an idea already named.
 
 ## Environment
 
@@ -63,16 +61,20 @@ for, and do not re-decide anything the `pinned:` block settles.
 ## When you are done
 
 **Build it once.** You are not reviewing your own work — a separate reviewer does that, and does
-it better, because it did not write this. Your job ends at two gates, both objective:
+it better, because it did not write this. Your job ends at three gates, all objective, all run by `weekkit.gate({n})` at the end of your
+build script — which must refuse to finish if any fails:
 
 1. **The solution executes clean on a fresh kernel**, with no scaffolding cell, no redirect, and
    execution counts contiguous from 1.
 2. **`{PY} tools/check_notebook.py {n}{variant_flag}` reports OK.**
-   Your build script must run it and refuse to finish if it fails.
+3. **`{PY} tools/check_prior_knowledge.py {n}` reports OK** — nothing used before its week.
 
-Then stop and report. Do not re-read your own prose looking for defects; that pass has been tried
-and it produced a notebook self-graded PASS on every standard which the reviewer then returned
-with two blocking defects. Spend the time on getting the science right the first time instead.
+**Read your prose against your own outputs before you stop** — open every figure, check every
+sentence beside a number. That is writing, not reviewing, and it catches real errors.
+
+What you do NOT do is grade yourself against the standards below. That was tried: it produced a
+notebook self-graded PASS on 27 of 27 standards which the reviewer returned with two blocking
+defects, and it was where most of the build time went.
 
 The standards below are what the reviewer will grade you against. Build to them — but the check
 that they hold is not yours to make.
@@ -101,13 +103,14 @@ or `teaches:` item it serves. A question serving neither is a drill and should n
 
 **4. Rounds** — how many, and what each one fixed.
 
-**5. `functions:` and `plain_words:` entries** that should be added to a module: name, and the
-one-line description in the exact wording your notebook uses.
-
-**Length: cover the substance and stop.** No padding, no restating the brief back, no summary of
-your summary. Six sections; a table where a table is clearer than prose.
+**5. `functions:` and `plain_words:` entries a module is missing.** Give the name and a one-line
+description. For an idea `modules.yml` already records, the recorded sentence is binding and your
+notebook must use it verbatim — propose wording only for what is genuinely absent.
 
 **6. Anything in the specification that was ambiguous, missing, contradictory, or that you had to
 guess at.** This is worth as much as the notebook. Every previous round of these reports found
 real defects in the specification and all of them were fixed — assume more remain. Where you made
 a judgement call the spec does not cover, say what you chose and what it cost.
+
+**Length: cover the substance and stop.** No padding, no restating the brief back, no summary of
+your summary. Six sections; a table wherever a table is clearer than prose.

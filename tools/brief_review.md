@@ -6,9 +6,9 @@ not go looking for it — that blindness is the point of asking you.
 
 1. `{REPO}/tools/_week{n:02d}_spec.md` — week {n}'s own specification: its `question`,
    `exercise`, `takeaways`, `pinned:` values and any `note:`, copied verbatim from the plan.
-2. `{REPO}/TEMPLATE.md` — the rules the notebook was built to. The graded standards are
-   reproduced below and they are what you grade against; read TEMPLATE for the reasoning behind
-   them, not for extra criteria.
+2. The graded standards are reproduced below and they are the whole of what you grade against.
+   `{REPO}/TEMPLATE.md` holds the reasoning behind them — open it only when a standard is
+   unclear, not as background reading, and never for extra criteria.
 3. The dataset audit this week's `evidence:` names, in `{EPS88}/notes/dataset-audit/` —
    measured, and it outranks the notebook
 4. `{REPO}/{student}` — **read this one first, straight through, as a student would.**
