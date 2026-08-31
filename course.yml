@@ -243,7 +243,11 @@ schedule:
       # server fails certificate verification from Python. tools/make_elevation_grids.py
       # resamples both to 1 degree and writes plain CSV; students never touch PDS.
       slice: "data/earth_elevation.csv and data/mars_elevation.csv — (180, 360) each, 1 degree,
-        ~330 kB each, integer metres. Built by tools/make_elevation_grids.py."
+        ~330 kB each, integer metres, no header. BOTH SHIP ALIGNED in one convention: row 0 is
+        the northernmost band (Arctic, mean -3661 m), row 179 the southernmost (Antarctica, mean
+        +2810 m), column 0 the westernmost at about -180 degrees. Read them and plot them; no
+        flipping or rolling is needed, and a week-3 student could not invent it. Built by
+        tools/make_elevation_grids.py."
       resampling_note: >
         1 degree costs nothing the week needs. The fraction of Earth below sea level is 0.662 on
         the full 20-arcmin grid and 0.660 here; the bimodal shape is unchanged. 583,200 cells

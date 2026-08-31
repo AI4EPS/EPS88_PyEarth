@@ -27,7 +27,7 @@ both notebooks from one source so the student version cannot drift from the solu
 
 ## Running a build or a review
 
-Give the agent the COMMAND, not a copy of its output:
+Give the agent the COMMAND and nothing else:
 
     python tools/agent_brief.py build 3     # then follow what it prints
     python tools/agent_brief.py review 3
@@ -37,3 +37,14 @@ generator afterwards and the agent follows a stale brief. That happened once —
 running against a brief whose loop had already been deleted, and had to be stopped. Having the
 agent run the generator itself means it cannot read a version that no longer exists.
 
+**Never hand-write context into the agent prompt.** Not for the builder, not for the reviewer.
+Everything an agent needs about a week belongs in `course.yml` — `pinned:`, `note:`,
+`note_critical:` — where every future build reads it, the checkers can see it, and it survives
+the session. Context typed into a prompt is invisible to all three.
+
+The two failures this rule comes from. A reviewer was handed five bullets of design context
+including "do not report this as a defect", which destroys the signal twice over: if the reviewer
+is right you never hear it, and if the spec is unclear you never learn that either. And a builder
+was handed four points of week-specific setup, of which four were already in the spec and the
+fifth — the grids' orientation — was a real gap that should have been fixed in the plan rather
+than papered over in a prompt.
