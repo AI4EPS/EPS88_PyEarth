@@ -310,7 +310,10 @@ def main():
     figs = check_pair(student, solution)
     check_banned(cells); qs = check_questions(cells); check_order(cells)
     check_predict(cells)
-    check_asserts(cells); check_figures(cells); check_imports(cells)
+    check_asserts(cells); check_imports(cells)
+    # Figures live in the SOLUTION too: a model answer that draws a map was never
+    # checked for labels or coastlines, because only the student copy was passed in.
+    check_figures(cells); check_figures(solution['cells'])
     check_code_quality(cells); check_summary_is_generated(cells, n)
     check_write_count(cells)
     print(f"week {n} · {len(cells)} cells · {len(qs)} questions · {figs} figures")

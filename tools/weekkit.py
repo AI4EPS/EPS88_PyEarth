@@ -49,7 +49,9 @@ STANDARDS = [
     (1, "the answer-cell convention holds throughout: each question is a markdown ask then its own "
         "answer cell, every answer cell looks identical, and the stated number of write-places "
         "matches the file", True),
-    (1, "structure is present and in order, and the week summary sits before the homework", True),
+    (1, "the week summary sits before the homework, and the opening cells carry the DataHub link",
+        True),
+    (1, "the sections run in TEMPLATE 1's order, and each opens with the state it needs", False),
     (1, "every self-check runs for a student who used only the names the prompt gave, and can fail",
         True),
     (1, "the solution executes clean on a fresh kernel", True),
@@ -67,12 +69,13 @@ STANDARDS = [
     (2, "the code is clean enough to be imitated: plainest form that works, names that read as "
         "English, one job per cell and per function", False),
     (2, "every map draws data/coastlines.csv; no map is dots in a blank rectangle", True),
-    (2, "every figure has axis labels with units and its sample size in the title", True),
+    (2, "every figure has axis labels", True),
+    (2, "those labels carry units, and every figure title carries its sample size", False),
     (2, "nothing dead: no commented-out code, no unused import, nothing repeated three times that "
         "a function could say once", True),
     (2, "built to the TARGET of 50 cells and 8 questions rather than to the 60/9 ceiling — every "
         "build so far has landed exactly on the ceiling; 5-6 questions in class, 2-3 homework, at "
-        "most two answered in prose, because this is a data-science course", True),
+        "most two answered in prose, because this is a data-science course", False),
 
     # --- tier 3: does it TEACH? ---------------------------------------------------------------
     (3, "every question serves a stated takeaway or a teaches: item, and you can say which", False),

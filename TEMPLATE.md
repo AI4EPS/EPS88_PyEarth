@@ -171,8 +171,6 @@ boundaries"* executes perfectly and is false.
 
 ## 4. The homework
 
-Under a plain `## Homework` heading, after the class sections and after the week summary.
-
 **The homework is the question the class set up and deliberately did not answer.** Same data and
 same tools — a fresh dataset would make a beginner fight loading and cleaning instead of
 practising. A new question, because re-running the class code on your own birthday teaches typing.
@@ -223,9 +221,7 @@ theirs, and the prompt must say what to do when the network is down.
 
 **A self-check after every part where one is possible, catching the mistake a student will actually
 make** — did you replace the placeholder, did you change the parameter, did you commit before
-looking. Not one that cannot fail: `assert max(my_mags) >= 4.5` on data fetched with
-`minmagnitude=4.5` is true by construction. End with a `print` echoing their numbers, so a pass
-says something.
+looking. End with a `print` echoing their numbers, so a pass says something.
 
 Some parts cannot be checked — "did you draw a figure" is invisible from a variable. Ship no assert
 rather than a decorative one, and say in the prompt what a right answer looks like.
@@ -233,7 +229,7 @@ rather than a decorative one, and say in the prompt what a right answer looks li
 **No reflection essays.** *"Your model predicted 1.6 and reality gave 5 — do you believe the model
 or the data?"* is worth reading. *"What surprised you?"* is not.
 
-**No AI-disclosure cell.** The final project keeps one; a weekly notebook does not.
+The final project carries an AI-disclosure section; a weekly notebook does not.
 
 ---
 
@@ -322,11 +318,9 @@ as the prose. Write it to be **copied**, not admired.
 - **The plainest form that works.** Clarity to a beginner outranks brevity and outranks idiom: a
   `for` loop they can trace beats a comprehension they cannot, and neither belongs in a week
   before its module. Cleverness in a notebook is a cost paid by 46 people.
-- **Every line earns its place.** No dead code, no commented-out code, no variable assigned and
-  never read, no import nothing uses, no argument passed at its default value. If deleting a line
-  changes nothing a student sees, delete it.
-- **Names read as English.** `mags`, `lats`, `year_mags` — never `x`, `m1`, `tmp`, `data2`. The
-  same thing keeps the same name across the whole notebook and, where it recurs, across weeks.
+- **Every line earns its place.** If deleting a line changes nothing a student sees, delete it.
+  Names read as English — `mags`, `year_mags`, never `x`, `m1`, `tmp` — and the same thing keeps
+  the same name across the notebook and across weeks.
 - **One idea per cell**, and one job per function, with a single-line docstring saying what it is
   for. A helper that needs a paragraph to explain is two helpers.
 - **Say a thing once.** The same six lines appearing three times is a function — once functions
@@ -334,6 +328,13 @@ as the prose. Write it to be **copied**, not admired.
 - **The same shapes every week.** Setup, loading, plotting and checking look identical in week 12
   and week 1, so by December the only new thing on the screen is the science.
 
+- **It is graded as a PDF.** Students export the notebook and upload it to Canvas, and it is read
+  on screen, not run. So everything that earns marks has to be legible in print: no output wider
+  than the page (a printed line clipped at the right margin is ungradeable, and a twenty-column
+  DataFrame is exactly that), figures readable at page width and never relying on colour alone,
+  and every self-check ending in a `print` that states the student's own numbers — that line is
+  what the grader actually reads. The ✏️ headings and the identical answer cells are what make
+  46 PDFs navigable; they are not decoration.
 - **Six libraries only**: python, numpy, pandas, matplotlib, scikit-learn, pytorch. A ceiling on
   the whole course; the standard library is not a loophole.
 - **A live query that feeds a number written into prose must be reproducible.** Pin what can be
@@ -349,11 +350,9 @@ as the prose. Write it to be **copied**, not admired.
   `course.yml` and the notebooks outlive the offering. Dates that are *data* are fine and often
   necessary: a pinned `starttime`/`endtime`, a demo birthday, the year a catalogue covers. Pin
   them, and record them in `course.yml` so the numbers reproduce.
-- **Imports in one cell at the top.** Never mid-notebook.
-- **No local file paths** — always a URL. The cached fallback every live cell needs is a CSV
-  committed to `data/` and read from `platform: cache_base:`. **It must be pushed before the
-  notebook is released**; until then the fallback 404s and has never been exercised. The homework
-  is exempt: 46 unknown student dates cannot be cached, and that query should fail loudly.
+- **No local file paths** — always a URL. Every live cell reads its cached fallback from
+  `platform: cache_base:`, and the CSV must be pushed before release. Exempt: a query built from
+  data the student supplies, which cannot be cached and should fail loudly instead.
 - **One submission per week**, Sunday 23:59, the whole notebook. Participation is observed in the
   room, not uploaded.
 - **Never edit a released notebook in place.** nbgitpuller keeps the student's copy; fixes go in a
