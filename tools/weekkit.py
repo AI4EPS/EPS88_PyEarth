@@ -17,89 +17,72 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 # tier 2 = is it well made (figures and code)
 # tier 3 = does it teach (judgement)
 STANDARDS = [
-    # (tier, text, enforced_by_a_checker)
+    # (tier, one testable claim, enforced_by_a_checker)
     #
-    # The third field is why this list stays usable as it grows: an [auto] item is already
-    # settled by check_notebook.py or check_prior_knowledge.py, so a human reviewer reports the
-    # checker's output and moves on. Everything else needs a reader.
-    #
-    # Items marked NEW came from notes/defects.yml. STANDARDS was written before the ledger
-    # existed and the two had never been reconciled: six of seven reviewer-caught defects mapped
-    # to no standard at all, so the reviewer was graded against a list that omitted every lesson
-    # the reviewer itself had produced.
+    # One assertion each, no rationale and no history — TEMPLATE.md carries the reasoning and a
+    # builder reads it once, while this list gets read on every build and every review. An [auto]
+    # item is settled by check_notebook.py or check_prior_knowledge.py; a reader reports what they
+    # said and spends their attention on the rest. Items without a checker came from
+    # notes/defects.yml, which is where the ones that keep happening are recorded.
 
     # --- tier 1: is it TRUE, and is it a valid notebook? -------------------------------------
-    (1, "EVERY EARTH-SCIENCE CLAIM IS ONE A SPECIALIST IN THAT FIELD WOULD ACCEPT — the mechanism "
-        "and the interpretation, not only the arithmetic. A number can be computed correctly and "
-        "the physics around it still be wrong", False),
-    (1, "no claim outruns its evidence: a correlation is not called a cause, and a result from one "
-        "region or one year is not stated as general", False),
-    (1, "NEW — before concluding anything from one window of a catalogue (one year, one decade, one "
-        "region), compute the neighbouring windows. If the window you chose is the outlier, that "
-        "IS the lesson", False),
-    (1, "any constant taken from the literature rather than computed is cited with its value AND "
-        "the date you read it, and named as a convention rather than presented as derived", False),
-    (1, "NEW — every network read goes through the same cached fallback, including the ones that "
-        "feel like decoration; one bare read kills the whole notebook when the campus wifi drops",
-        False),
+    (1, "every Earth-science claim is one a specialist would accept — the mechanism, not only the "
+        "arithmetic", False),
+    (1, "no claim outruns its evidence: no cause from a correlation, no general result from one "
+        "region or one year", False),
+    (1, "before concluding anything from one window of a catalogue, compute the neighbouring "
+        "windows", False),
+    (1, "every literature constant is cited with its value and the date it was read, and named as "
+        "a convention", False),
+    (1, "every network read goes through the same cached fallback", False),
+    (1, "every cached fallback URL this week reads actually resolves", False),
     (1, "every question has a complete model answer in the solution, prose questions included",
         False),
-    (1, "every cached fallback URL this week reads actually RESOLVES — not merely that a file sits "
-        "in data/, which passed for weeks while every URL 404d", False),
-    (1, "the answer-cell convention holds throughout: each question is a markdown ask then its own "
-        "answer cell, every answer cell looks identical, and the stated number of write-places "
-        "matches the file", True),
+    (1, "the sections run in TEMPLATE 1's order, each opening with the state it needs", False),
+    (1, "the answer-cell convention holds throughout: a markdown ask, its own answer cell, "
+        "identical stubs, and a stated write-count that matches the file", True),
     (1, "the week summary sits before the homework, and the opening cells carry the DataHub link",
         True),
-    (1, "the sections run in TEMPLATE 1's order, and each opens with the state it needs", False),
-    (1, "every self-check runs for a student who used only the names the prompt gave, and can fail",
-        True),
+    (1, "every self-check uses only names the prompt gave, and can fail", True),
     (1, "the solution executes clean on a fresh kernel", True),
-    (1, "only the six libraries; the standard library is not a loophole", True),
+    (1, "only the six libraries", True),
     (1, "nothing arrives before its week except in a setup cell flagged 'Coming later'", True),
-    (1, "no AI-disclosure cell, no buffer banner or 'we may not get to this in class', no marker "
-        "comments, no offering dates", True),
+    (1, "no AI-disclosure cell, buffer banner, marker comment or offering date", True),
 
     # --- tier 2: is it WELL MADE? -------------------------------------------------------------
-    (2, "every claim in prose is supported by the output or figure beside it, and nothing is "
-        "asserted that was not computed in this session except a cited published constant", False),
-    (2, "NEW — every proper noun in a model answer (a place, a planet, an event) is a value some "
-        "cell actually printed", False),
-    (2, "no plot cell carries lines that do not change what the reader learns", False),
-    (2, "the code is clean enough to be imitated: plainest form that works, names that read as "
-        "English, one job per cell and per function", False),
-    (2, "every map draws data/coastlines.csv; no map is dots in a blank rectangle", True),
+    (2, "every prose claim is supported by the output beside it, and nothing is asserted that was "
+        "not computed", False),
+    (2, "every proper noun in a model answer is a value some cell printed", False),
+    (2, "no plot cell carries a line that does not change what the reader learns", False),
+    (2, "the code is plain enough to imitate: simplest form that works, English names, one job per "
+        "cell", False),
+    (2, "the axis labels carry units, and every figure title carries its sample size", False),
+    (2, "built to the target of 50 cells and 8 questions, not to the 60/9 ceiling", False),
+    (2, "every map draws data/coastlines.csv", True),
     (2, "every figure has axis labels", True),
-    (2, "those labels carry units, and every figure title carries its sample size", False),
-    (2, "nothing dead: no commented-out code, no unused import, nothing repeated three times that "
-        "a function could say once", True),
-    (2, "built to the TARGET of 50 cells and 8 questions rather than to the 60/9 ceiling — every "
-        "build so far has landed exactly on the ceiling; 5-6 questions in class, 2-3 homework, at "
-        "most two answered in prose, because this is a data-science course", False),
+    (2, "nothing dead: no commented-out code, no unused import, no block said three times", True),
 
     # --- tier 3: does it TEACH? ---------------------------------------------------------------
-    (3, "every question serves a stated takeaway or a teaches: item, and you can say which", False),
-    (3, "NEW — every takeaway is exercised by at least one question, and the homework between them "
-        "touches all of them; a takeaway stated in the summary and tested nowhere was abandoned",
+    (3, "every question serves a named takeaway or teaches: item", False),
+    (3, "every takeaway is exercised by a question, and the homework touches all of them", False),
+    (3, "the week's question is answered FOR THE STUDENT, on their own data or their own choice",
         False),
-    (3, "NEW — the week's question: is answered FOR THE STUDENT, on their own data or their own "
-        "choice, not merely answered somewhere in the file", False),
-    (3, "NEW — no worked cell prints the answer to the question below it, and no answer is stated "
-        "in the prose immediately under its own question", False),
-    (3, "NEW — a section heading names the territory, never the finding", False),
+    (3, "no worked cell prints the answer to the question below it", False),
+    (3, "no answer is stated in the prose under its own question", False),
+    (3, "a section heading names the territory, never the finding", False),
     (3, "the week contains a genuine surprise", False),
-    (3, "at least one '### Predict before you run' cell, and the guess it invites is one a real "
-        "student would get wrong", True),
-    (3, "each method appears only after something simpler has visibly failed at the same task — "
-        "N/A for a week that introduces no method", False),
-    (3, "the first class question is a win; the hardest thing in the week is its last homework part",
+    (3, "each method arrives only after something simpler has visibly failed — N/A if the week "
+        "teaches no method", False),
+    (3, "the first class question is a win; the hardest thing in the week is its last homework "
+        "part", False),
+    (3, "the homework asks what class did not; part 1 is not a class cell with one string changed",
         False),
-    (3, "the homework asks a question class did not answer — its first part cannot be done by "
-        "copying a class cell and changing one string, and an 'explain' part makes them produce "
-        "evidence rather than restate a definition the summary already gave them", False),
-    (3, "the science is a real question — one a working scientist would ask — even where the answer "
-        "is known and checkable", False),
+    (3, "an 'explain' part makes them produce evidence, not restate the summary", False),
+    (3, "the science is a real question, even where the answer is known and checkable", False),
+    (3, "at least one '### Predict before you run' cell, inviting a guess a real student gets "
+        "wrong", True),
 ]
+
 
 
 TIER_NAMES = {1: "is it true, and is it a valid notebook?",
