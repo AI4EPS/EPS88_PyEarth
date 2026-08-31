@@ -16,7 +16,4 @@ plugins:
 
 nav:
   - Home: README.md
-  - Schedule: SCHEDULE.md
   - Weeks:
-    - "Week 1: What was your birthquake?": notebooks/01_birthquake.ipynb
-    - "Week 2: Which of these worlds could have liquid water — and why does your test reject Earth?": notebooks/02_liquid_water.ipynb

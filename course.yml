@@ -120,9 +120,13 @@ schedule:
           "fifty years" without justifying the start. If a future build wants to justify it, that
           claim must be computed, not asserted.
     note_dates: >
-      The demo person must be born after ~1973. Measured: every year from 1942 to 1970 lists MORE
-      large earthquakes than small (1964 ratio 0.3), because only large ones were detectable
-      globally; 1975 onward is normal (7.7 and up). That rules out every famous Berkeley name —
+      The demo person must be born after ~1973. Measured with the CUMULATIVE ratio this week
+      teaches, N(M4.5+)/N(M5.5+): 1942 gives 1.12, 1964 gives 1.28, 1970 gives 1.41 — barely above
+      one, because before the global network almost every small earthquake is missing and the
+      catalogue is nearly all large events. 1975 gives 7.96, 1983 gives 9.1. (An earlier draft said
+      those years "list more large earthquakes than small" and quoted 0.3 and 7.7; both came from
+      INCREMENTAL bins, which the pinned block above bans. Under the taught ratio no year is
+      inverted — they are merely starved.) That rules out every famous Berkeley name —
       Alvarez 1940, Oppenheimer 1904, Lawrence 1901, and every Berkeley Nobel laureate, all born
       in the inverted zone. It is also why 1983's ratios are 9.1 and 8.5 rather than a suspiciously
       textbook ten: the year was chosen for whose birthday it is, NOT for its ratios. Teach the
@@ -174,7 +178,7 @@ schedule:
       92 bar, Mars +0.2 K at 0.006 bar. Same physics, three thicknesses of air. It also rejects the famous habitable-zone candidates — TRAPPIST-1 e,
       f and g, Proxima Cen b, TOI-700 d, Kepler-186 f, Kepler-442 b — and accepts TRAPPIST-1 c,
       a 340 K Venus analogue, and K2-18 b, a sub-Neptune.
-      Build toward that reveal: they write the test, trust it, then run it on Earth. The 33 K
+      Build toward that reveal: they write the test, trust it, then run it on Earth. The 34.0 K
       Earth gets from its atmosphere and the ~500 K Venus gets from its own is the greenhouse
       effect arriving as a measured discrepancy rather than a definition, and it is the cleanest
       possible setup for the CO2 weeks later in the term.

@@ -22,7 +22,7 @@ meta:
   audience: freshmen, no programming assumed
 
   # SLACK LIVES INSIDE MODULES, NOT BETWEEN THEM.
-  # The 13 live modules fill all 13 Mondays exactly, so there is no spare session to
+  # The 16 live modules fill all 13 Mondays (weeks 2, 3 and 4 each run two), so there is no spare session to
   # absorb a week that runs long — and P3 (loops) will run long for true beginners.
   # Every module is therefore budgeted in two parts:
   #   core       must be taught; later modules may depend only on this
@@ -30,8 +30,9 @@ meta:
   # THESE ARE INSTRUCTOR BUDGETS, NOT SECTIONS. Do not label an "EXTENSION" block in the
   # student notebook: it reads as a third category beside class work and homework, and a
   # student cannot tell whether it is theirs to do — it is, everything in the file is graded.
-  # The last section simply carries "we may not get to this in class; finish it at home if
-  # not". See TEMPLATE.md section 1, item 5.
+  # The last section carries NO marker of any kind — not a label, not a banner, and not a
+  # sentence about possibly not reaching it. See TEMPLATE.md section 1, item 5, which is the
+  # single statement of this rule; check_notebook.py fails the build on the old sentence.
   # Nothing later may depend on an extension. The checker does NOT verify this: `requires` is
   # a flat module-level list with no per-section granularity, so it is on you when you build.
   # The 70/30 below is the per-SESSION target. Individual modules are smaller and vary

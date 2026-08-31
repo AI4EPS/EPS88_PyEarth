@@ -58,6 +58,11 @@ nobody finds an unfinished cell the night before it is due.
 
 ### Two devices that must appear
 
+The first has a required heading, `### Predict before you run`, exactly as a question is marked
+with ✏️. Without a convention nothing can find it: the rule said "the predict-before-you-run cell"
+while one week used a heading and another put the ask in prose, and no two reviewers would have
+graded the same cell.
+
 **Predict before you run.** Before any surprising result, a cell asking them to commit to a number
 first. Committing to a wrong answer beats being shown the right one.
 
@@ -373,5 +378,7 @@ modules has an exercise · no duplicate YAML keys, which silently discard conten
 names no week numbers · every project track except T6 has an open question and an evidence file
 that exists · grading and rubric each sum to 100 · a warning above 100 session minutes.
 
-**It does not open a notebook.** Sections, figures, self-checks and the science are checked by you,
-in the loop in §7.
+**It does not open a notebook.** `tools/check_notebook.py` does that, and
+`tools/check_prior_knowledge.py` checks nothing arrives before its week — both run in the build
+gate. The science, the figures and whether the week teaches are checked by an independent
+reviewer, not by you.

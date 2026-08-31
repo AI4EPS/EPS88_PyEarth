@@ -111,7 +111,12 @@ def check_questions(cells):
                 errs.append(f"cell {i+1}: prose answer cell is missing the standard stub")
         elif "your answer here" not in s.lower():
             errs.append(f"cell {i+1}: code answer cell is missing the standard stub")
-    hw = sum(1 for i in qs if re.search(r"(?i)homework", src(cells[i])))
+    # Position, not wording: a class prompt that merely SAYS "you will need this in the
+    # homework" was silently counted as homework, and this file already had a second, correct
+    # definition twenty lines down.
+    hw_at = next((k for k, c in enumerate(cells) if c["cell_type"] == "markdown"
+                  and re.search(r"(?im)^##\s*Homework\s*$", src(c))), len(cells))
+    hw = sum(1 for i in qs if i > hw_at)
     cls = len(qs) - hw
     if not 7 <= len(qs) <= 9:
         errs.append(f"{len(qs)} questions — TEMPLATE 1 asks for 7-9")
@@ -127,6 +132,14 @@ def check_questions(cells):
 
 
 # --- the summary sits before the homework -------------------------------------
+def check_predict(cells):
+    """TEMPLATE 1: at least one cell headed exactly '### Predict before you run'."""
+    if not any(c["cell_type"] == "markdown"
+               and re.search(r"(?im)^#{2,4}\s*Predict before you run", src(c)) for c in cells):
+        errs.append("no '### Predict before you run' cell — TEMPLATE 1 requires one, and the "
+                    "heading is the convention that lets a reviewer find it")
+
+
 def check_order(cells):
     def find(pat):
         return next((i for i, c in enumerate(cells)
@@ -296,6 +309,7 @@ def main():
     cells = student["cells"]
     figs = check_pair(student, solution)
     check_banned(cells); qs = check_questions(cells); check_order(cells)
+    check_predict(cells)
     check_asserts(cells); check_figures(cells); check_imports(cells)
     check_code_quality(cells); check_summary_is_generated(cells, n)
     check_write_count(cells)

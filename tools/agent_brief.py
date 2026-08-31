@@ -93,7 +93,8 @@ def past_defects():
     # Newest first, capped: a mechanised defect drops out on its own (a checker catches it),
     # but the judgement ones only accumulate, and a brief nobody finishes teaches nothing.
     d = [x for x in yaml.safe_load(f.read_text())["defects"]
-         if x.get("scope") == "build" and not x.get("mechanised")]
+         if x.get("scope") == "build" and not x.get("mechanised")
+         and not x.get("promoted")]
     d = sorted(d, key=lambda x: str(x.get("date", "")), reverse=True)[:8]
     if not d:
         return ""
@@ -298,6 +299,9 @@ graded and it is not here, that is a defect in the specification, not in the not
 the last section rather than marking the notebook down for it.
 
 {weekkit.tiers()}
+**Items marked `[auto]` are already settled by the two checkers you ran.** Report what they said
+and move on; do not re-verify them by hand. Your attention belongs on the rest.
+{past_defects()}
 *Report EVERYTHING you find, then classify. Do not stop early, do not decide something is too
 minor to mention, and do not filter for severity as you go — filtering is a separate pass and it
 is not yours. A finding you withhold cannot be overruled; a finding you report costs one line.

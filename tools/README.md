@@ -10,10 +10,13 @@ Everything here runs instructor-side. Students never see any of it.
 | `weekkit.py` | The standards list (one source, rendered flat for the builder and as gated tiers for the reviewer) and `week_cheatsheet()`, the generated closing summary. |
 | `make_schedule.py` | Regenerates `SCHEDULE.md`. |
 | `make_mkdocs.py` | Regenerates `mkdocs.yml`. The nav comes from `course.yml`, so the site cannot drift from the plan — the previous repo's hand-written nav pointed at eleven notebooks that no longer existed. |
-| `make_docs.py` | Regenerates `docs/README.md` and `docs/syllabus.md`, including every week's DataHub link. |
+| `make_docs.py` | Regenerates `docs/README.md`, including every week's DataHub link. |
 | `make_coastlines.py` | Builds `data/coastlines.csv` — every map draws it. One `plt.plot`, no loop. |
 | `make_plate_boundaries.py` | Builds the plate-boundary CSV from shapefiles, stdlib only, so cartopy isn't needed. |
 | `make_phasenet_subset.py` | Builds `data/phasenet_ncedc.npz` for week 13 from `gs://quakeflow_dataset/NCEDC`. |
 
 A week's own build script is `build_weekNN.py`, written by whoever builds that week. It must emit
 both notebooks from one source so the student version cannot drift from the solution.
+| `check_notebook.py` | Validates a BUILT week: counts, banned strings, asserts that cannot fail, figures, imports, summary drift. Run by the build gate. |
+| `check_prior_knowledge.py` | Does week N use anything the course has not taught by week N? The only check that sees across weeks. |
+| `selftest_checks.py` | Proves every check_notebook rule fires on its motivating defect and stays quiet on the near-miss beside it. |

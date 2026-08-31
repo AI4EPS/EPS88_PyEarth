@@ -21,7 +21,10 @@ def link(slug):
     return f"{p['datahub']}/hub/user-redirect/git-pull?{q}"
 
 
-weeks = [s for s in c["schedule"] if s["modules"]]
+# Only weeks whose notebook exists. make_mkdocs.py has guarded this since the site was set up;
+# this generator did not, and published DataHub links for eleven weeks nobody has built.
+weeks = [s for s in c["schedule"] if s["modules"]
+         and (ROOT / "docs" / "notebooks" / f'{s["slug"]}.ipynb').exists()]
 _d = c["policy"]["drop_lowest"]
 drop_line = ("No weekly notebook is dropped." if _d == 0 else
              "The lowest weekly notebook is dropped." if _d == 1 else

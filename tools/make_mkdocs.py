@@ -10,7 +10,9 @@ import pathlib, yaml
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 course = yaml.safe_load((ROOT / "course.yml").read_text())
 
-nav = ["  - Home: README.md", "  - Schedule: SCHEDULE.md", "  - Weeks:"]
+# SCHEDULE.md lives at the repo root, outside docs_dir, so a nav entry for it 404s on the
+# built site. docs/README.md already carries the week table for students.
+nav = ["  - Home: README.md", "  - Weeks:"]
 for s in course["schedule"]:
     if not s["modules"]:
         continue
@@ -38,4 +40,4 @@ plugins:
 nav:
 {chr(10).join(nav)}
 """)
-print(f"mkdocs.yml — {len(nav) - 3} weeks in nav")
+print(f"mkdocs.yml — {len(nav) - 2} weeks in nav")
