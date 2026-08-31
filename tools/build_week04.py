@@ -16,11 +16,9 @@ the notebook reads, and formatted in. Nothing is typed from memory or copied fro
     python tools/build_week04.py
 """
 import json
-import os
 import pathlib
 import subprocess
 import sys
-import tempfile
 
 import numpy as np
 import pandas as pd
@@ -122,6 +120,7 @@ M["n_south_deep"] = len(south_deep)
 M["south_deep_lon"] = float(south_deep["longitude"].median())
 M["south_deep_lat"] = float(south_deep["latitude"].median())
 M["south_gap_deg"] = round(M["south_deep_lon"] - M["south_shallow_lon"], 1)
+M["south_deepest"] = round(float(south_arc["depth"].max()))
 M["south_gap_km"] = round(abs(M["south_deep_lon"] - M["south_shallow_lon"])
                           * 2 * np.pi * EARTH_RADIUS_KM / 360
                           * float(np.cos(np.deg2rad(M["south_deep_lat"]))))
@@ -280,7 +279,7 @@ code(setup)
 
 # --- section 1 -------------------------------------------------------------
 md("""
-## A map is a scatter plot
+## Longitude across, latitude up
 
 The earthquake catalogue has a `longitude` column and a `latitude` column. Longitude runs from
 -180 to 180 across the world and latitude from -90 to 90 up it, so putting one on the bottom axis
@@ -315,7 +314,7 @@ plt.ylim(-90, 90)
 plt.gca().set_aspect("equal")
 plt.xlabel("longitude (degrees east)")
 plt.ylabel("latitude (degrees north)")
-plt.title("{M['n_quakes']:,} earthquakes, M5.5 and above")
+plt.title(str(len(quakes)) + " earthquakes, M5.5 and above")
 plt.savefig("earthquake_map.png", dpi=150)   # a copy you can drop into a report; before show()
 plt.show()
 """)
@@ -427,7 +426,6 @@ earthquakes drew on their own, and the black trenches trace the Ring of Fire. Th
 to the first half of today's question, and it is worth noticing how little work it took: two
 scatter plots and three `plt.plot` calls.
 
-The volcanoes have their own opinion about which boundary they like, and the table will say so
 One caution about the black line before we use it. The file calls seven of its features trenches
 that are really continental collisions — the run of black across Asia through the Zagros and the
 Himalaya is India and Arabia driving into Eurasia, not one plate sinking under another. Keep it in
@@ -488,9 +486,10 @@ print("deepest:", quakes["depth"].max(), "km")
 """)
 
 md(f"""
-{M['frac_shallow']:.3f} of them are in the top 70 km, and the deepest is
-{M['deepest']} km down — a fifth of the way to the core-mantle boundary. Where those
-{M['n_deep']} deep ones are is the question, and a map can answer it if the colour of each dot
+{M['n_shallow']:,} of the {M['n_quakes']:,} are in the top 70 km, and the deepest is
+{M['deepest']} km down. At that depth rock under that much pressure and heat deforms by flowing
+rather than by breaking, so a deep earthquake is something that needs explaining. Where the
+{M['n_deep']} of them are is the question, and a map can answer it if the colour of each dot
 carries the depth.
 
 `plt.scatter` takes `c=` for the values to colour by and `cmap=` for the colour scheme;
@@ -539,10 +538,15 @@ print("✓ the depth map — the colours run from", round(quakes["depth"].min())
 
 md("""
 The ridges are uniformly pale: everything that happens at a spreading centre happens in the top
-few tens of kilometres. The dark dots — the deep ones — appear only in a handful of places, all of
-them near a trench, and every one of them sits *beside* the trench line rather than on it. South
-America, Japan, Indonesia, Tonga. That offset is the whole point, and it is easier to measure on
-one arc than on the whole world.
+few tens of kilometres. The dark dots — the deep ones — appear in only a handful of places, and
+every one of them is a place where the previous figure drew a trench: South America, Japan,
+Indonesia, Tonga. Notice also what is *not* dark. The black line across Asia has no dark dots
+anywhere along it, because the Himalaya and the Zagros are collisions with no plate going down —
+the caution from the last section, visible.
+
+And in the places that do go dark, the dark dots are not on the trench line; they are set back
+from it. That offset is the whole point, and it is easier to measure on one arc than on the whole
+world.
 """)
 
 # --- section 4 -------------------------------------------------------------
@@ -592,8 +596,8 @@ plt.show()
 
 shallow_lon = south[south["depth"] <= 70]["longitude"].median()
 deep_lon = south[south["depth"] > 300]["longitude"].median()
-print("shallow events, median longitude:", shallow_lon)
-print("deep events, median longitude:   ", deep_lon)
+print("shallow events, median longitude:", round(shallow_lon, 2))
+print("deep events, median longitude:   ", round(deep_lon, 2))
 """, """
 assert len(south) > 0, "no earthquakes in the box — check the four limits"
 print("✓ South America —", len(south), "earthquakes; the deep ones are",
@@ -619,13 +623,15 @@ km_per_degree = 2 * np.pi * {EARTH_RADIUS_KM} / 360 * np.cos(np.deg2rad(deep_lat
 
 print("one degree of longitude here:", round(km_per_degree), "km")
 print("the deep events sit", round((deep_lon - shallow_lon) * km_per_degree), "km inland")
+print("the deepest event in this box:", round(south["depth"].max()), "km")
 """)
 
 md(f"""
 About {M['south_gap_km']} kilometres. Put that beside the depths and the shape is forced: the
 earthquakes get deeper the further inland you go, from a few tens of kilometres at the coast to
-{M['deepest']} km under Bolivia and Argentina. They are not scattered through the mantle at random
-depths; they lie on a surface that starts at the trench and dips away under the continent. That
+{M['south_deepest']} km under the interior of the continent. They are not scattered through the
+mantle at random depths; they lie on a surface that starts at the trench and dips away under the
+continent. That
 surface is the plate. Cold ocean floor is bending down at the trench and sliding into the mantle,
 and because it is cold it is still brittle enough to break for several hundred kilometres down,
 while everything around it flows. Each deep earthquake is a snap inside the sinking sheet, and
@@ -660,7 +666,7 @@ print("you guessed", my_guess, "at VEI 0; the record holds", int(vei_counts.loc[
 
 md(f"""
 Fewer, not more — {M['vei0']:,} against {M['vei2']:,}. Hold that; it is the second surprise of the
-day and we come back to it in two cells.
+day, and we come back to it before the section is out.
 
 First, what the index means. VEI is not a volume, it is an *index*: each whole step stands for
 roughly ten times more erupted rock. From VEI 2 upwards the convention is that VEI *n* means at
@@ -728,14 +734,16 @@ md(f"""
 On the left, everything from VEI 4 up is a flat line on the floor. There are {M['vei7']} VEI 7
 eruptions in the record and the chart cannot show you that there are any at all. On the right, the
 same numbers on a log axis: *when the values span factors of a thousand, plot the exponents
-instead and a curve becomes a line.* Every class is now readable, and the bars from VEI 2 to VEI 7
-fall in a nearly straight line — each step up divides the count by roughly the same factor.
+instead and a curve becomes a line.* Every class is now readable, and the tops of the bars from
+VEI 2 to VEI 6 come down in near-equal steps — which on a log axis means each class is a roughly
+constant factor rarer than the one below it.
 
 And now the low end is impossible to miss. VEI 1 and VEI 0 sit *below* VEI 2, which is the wrong
-way round: smaller eruptions are more common than big ones, so the two shortest bars on the scale
-ought to be the two tallest on the chart. Either the world makes fewer small eruptions than large
-ones, or the record is missing them. There is a way to tell the two apart — look at a window of
-the catalogue where the recording is better.
+way round. The steps from VEI 2 upwards say that going one step *down* the scale should multiply
+the count, so the two smallest classes ought to be the two tallest bars on the chart, and instead
+they are shorter than the class above them. Either the world really does make fewer small
+eruptions than middling ones, or the record is missing them. There is a way to tell the two apart:
+look at a window of the catalogue where the recording is better.
 """)
 
 ask(f"""
@@ -817,8 +825,8 @@ md(f"""
 every volcano you plotted sits on the edge of a tectonic plate: the earthquakes drew the boundary
 lines before you loaded them, including the mid-Atlantic ridge, where no land marks it at all.
 {M['pct_subduction']}% of the volcanoes sit at subduction zones, where water carried down with the
-sinking plate melts the mantle above it. And the deep earthquakes — none of them at ridges, all of
-them near trenches — sit {M['south_gap_km']} km inland of the shallow ones in South America,
+sinking plate melts the mantle above it. And the deep earthquakes, absent from the ridges and
+clustered near the trenches, sit {M['south_gap_km']} km inland of the shallow ones in South America,
 because they are happening inside a cold plate that is still sinking, hundreds of kilometres past
 the point where it went under. One arc is one arc; the homework asks you to check a second one.
 """)
@@ -886,10 +894,11 @@ put longitude on the bottom axis and depth up the side, and the sinking plate dr
 - **Japan** — latitude {JAPAN[0]} to {JAPAN[1]}, longitude {JAPAN[2]} to {JAPAN[3]}
 
 Filter `quakes` to your box and call it `arc`. Plot `arc["longitude"]` against `-arc["depth"]` —
-the minus sign puts depth downwards, so the picture is the right way up — with labelled axes and a
-title carrying the arc's name and how many earthquakes are in it. Then work out `shallow_lon` and
-`deep_lon`, the median longitudes of the events at 70 km and less and of those below 300 km, the
-same two numbers you printed for South America.
+the minus sign turns a depth into a height, so the picture is the right way up and the axis label
+should say so. Label both axes and title the figure with the arc's name and how many earthquakes
+are in it. Then work out `shallow_lon` and
+`deep_lon`, the median longitudes of the events no deeper than 70 km and of those deeper than
+300 km — the same two numbers you printed for South America.
 
 The two boxes do not give the same answer, and both are right.
 
@@ -905,14 +914,14 @@ arc = quakes[(quakes["latitude"] >= south_lat) & (quakes["latitude"] <= north_la
 
 plt.scatter(arc["longitude"], -arc["depth"], s=8, color="crimson")
 plt.xlabel("longitude (degrees east)")
-plt.ylabel("depth below the surface (km)")
+plt.ylabel("height relative to the surface (km)")
 plt.title("Chile: " + str(len(arc)) + " earthquakes")
 plt.show()
 
 shallow_lon = arc[arc["depth"] <= 70]["longitude"].median()
 deep_lon = arc[arc["depth"] > 300]["longitude"].median()
-print("shallow events, median longitude:", shallow_lon)
-print("deep events, median longitude:   ", deep_lon)
+print("shallow events, median longitude:", round(shallow_lon, 2))
+print("deep events, median longitude:   ", round(deep_lon, 2))
 """, """
 assert len(arc) > 0, "no earthquakes in that box — check the four numbers"
 if deep_lon > shallow_lon:
@@ -957,40 +966,6 @@ earthquake is only recorded where somebody has already put an instrument close b
 # ---------------------------------------------------------------------------
 # 3. emit, execute, gate
 # ---------------------------------------------------------------------------
-def kernel_env():
-    """The environment the solution is executed in.
-
-    `data/plate_boundaries.csv` is a new repository asset, and like `data/coastlines.csv` the
-    notebook reads it straight from `cache_base` — it has no live source to fall back from. Until
-    it is pushed to `main` that URL 404s, and the notebook cannot execute at all. So when the URL
-    does not yet resolve, the file is served to the KERNEL from the identical local copy, through
-    a sitecustomize outside the notebook: the shipped source keeps the real URL, no cell is added,
-    and the shim disappears by itself the moment the CSV is on main. It is announced loudly,
-    because until the push the fallback is untested.
-    """
-    import urllib.error
-    import urllib.request
-
-    env = dict(os.environ)
-    url = CACHE_BASE + "/plate_boundaries.csv"
-    try:
-        urllib.request.urlopen(url, timeout=20).read(1)
-        return env
-    except urllib.error.HTTPError:
-        pass
-
-    shim = pathlib.Path(tempfile.mkdtemp(prefix="eps88-wk4-shim-"))
-    (shim / "sitecustomize.py").write_text(
-        "import pandas\n"
-        "_read_csv = pandas.read_csv\n"
-        f"_LOCAL = {{{url!r}: {str(ROOT / 'data/plate_boundaries.csv')!r}}}\n"
-        "pandas.read_csv = lambda f, *a, **k: _read_csv(_LOCAL.get(f, f), *a, **k)\n")
-    env["PYTHONPATH"] = str(shim)
-    print(f"!! {url} 404s — serving the identical local copy to the kernel.\n"
-          f"!! PUSH data/plate_boundaries.csv TO main BEFORE RELEASING THIS NOTEBOOK.")
-    return env
-
-
 def notebook(cells):
     return {"cells": cells, "metadata": {
         "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
@@ -1018,8 +993,7 @@ def main():
     print(f"executing {sol_path.name} ...")
     r = subprocess.run([sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook",
                         "--execute", "--inplace", "--ExecutePreprocessor.timeout=600",
-                        str(sol_path)], capture_output=True, text=True, cwd=ROOT,
-                       env=kernel_env())
+                        str(sol_path)], capture_output=True, text=True, cwd=ROOT)
     if r.returncode:
         print(r.stderr[-4000:])
         sys.exit("the solution did not execute")

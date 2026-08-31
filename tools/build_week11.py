@@ -441,7 +441,7 @@ missing = basalts[feature_columns].isna().sum() / len(basalts)
 print("best measured:")
 print(missing.sort_values().head(3))
 print("worst measured:")
-print(missing.sort_values().tail(3))
+print(missing.sort_values(ascending=False).head(3))
 """)
 
 code(f"""

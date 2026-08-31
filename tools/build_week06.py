@@ -338,8 +338,8 @@ md(f"""
 Thirty-six supernovae, {M['h_min']:.1f} to {M['h_max']:.1f} km/s/Mpc, the largest
 {M['h_max'] / M['h_min']:.2f} times the smallest. That is not one Hubble constant, it is
 thirty-six of them — and since H₀ has a time inside it, thirty-six different ages for the
-universe, the longest {M['h_max'] / M['h_min']:.2f} times the shortest. Dividing one supernova by
-itself throws away the other thirty-five, and every supernova carries measurement error in both
+universe, spread by that same factor. Dividing one supernova by itself throws away the other
+thirty-five, and every supernova carries measurement error in both
 its speed and its distance.
 
 What we want is one number that uses all thirty-six at once.
@@ -444,8 +444,8 @@ print("✓ residuals — the worst miss is", round(residuals.abs().max()),
 """)
 
 md(f"""
-The worst miss is about {M['resid_max']:,.0f} km/s above the line and {abs(M['resid_min']):,.0f}
-km/s below it, and both signs turn up at every distance rather than the picture sweeping from one
+The worst miss is {M['resid_max']:,.0f} km/s above the line and {abs(M['resid_min']):,.0f} km/s
+below it, and both signs turn up at every distance rather than the picture sweeping from one
 side of zero to the other as you move right. So the straight line is a fair description of these
 data, and a curve would not obviously do better. That settles the *shape*. It does not settle the
 *position*.
@@ -484,7 +484,7 @@ Sometimes physics already knows one point on the line. Make the line go through 
 scikit-learn that is one extra argument, and nothing else about the fit changes:
 
 ```
-model = LinearRegression(fit_intercept=False).fit(x, y)
+through_origin = LinearRegression(fit_intercept=False).fit(x, y)
 ```
 
 `fit_intercept=False` says: do not look for a best crossing point, there isn't one to look for —
@@ -555,7 +555,7 @@ satellite's map of the microwave background — is {PLANCK_AGE} ± {PLANCK_ERR} 
 Collaboration, *Astronomy & Astrophysics* **641**, A6, 2020; both figures read 2026-08-31). Your
 {M['age_forced']:.2f} sits {abs(M['age_forced'] - PLANCK_AGE):.2f} billion years above it.
 
-That is a startlingly good answer for an hour's work, and it deserves one honest caveat. 1 / H₀ is
+That is a startlingly good answer from thirty-six points, and it deserves one honest caveat. 1 / H₀ is
 the age only if the expansion has always run at today's rate. It has not: gravity slowed it down
 early on, and over the last few billion years it has been speeding up again. Those two effects
 very nearly cancel in our universe, which is why the simple answer lands so close to the careful
@@ -680,12 +680,12 @@ print("✓ the Pacific-Antarctic Ridge — free fit",
 """)
 
 md(f"""
-The free fit puts the ridge {M['par_free_intercept']:.0f} km away from the ridge at age zero.
-There is no reading of that which is physically possible: {M['par_free_intercept']:.0f} km of
-seafloor cannot exist before any seafloor has been made. It is the {M['sn_free_intercept']:.0f}
-km/s intercept again, in different clothes, and it comes from the same cause — the youngest pick
-in the file is {M['par_age_min']} million years old, so the fit is extrapolating past the end of
-its own data. Forcing the line through the origin moves the answer from
+The free fit puts seafloor of age zero {M['par_free_intercept']:.0f} km away from the ridge
+that is making it. There is no reading of that which is physically possible: no seafloor can
+exist before any seafloor has been made. It is the {M['sn_free_intercept']:.0f} km/s intercept
+again in different clothes, but the cause here is in the picks themselves: they do not sit on
+one straight line, they bend, and a single straight line drawn through a bend can cross age zero
+a long way from zero. Forcing the line through the origin moves the answer from
 {M['par_free_slope'] / 10:.2f} to {M['par_forced_slope'] / 10:.2f} cm/yr —
 {abs(M['par_forced_slope'] - M['par_free_slope']) / 10:.2f} cm/yr of difference produced by an
 argument rather than by any new data.
@@ -722,8 +722,8 @@ md(f"""
 The Mid-Atlantic line rises at {M['mar_forced_slope'] / 10:.2f} cm/yr and the Pacific-Antarctic
 one at {M['par_forced_slope'] / 10:.2f} cm/yr — {M['ridge_ratio']:.1f} times as steep, over
 {M['mar_age_max']:.0f} million years of Atlantic seafloor and {M['par_age_max']:.0f} million years
-of Pacific. Both are roughly the speed a fingernail grows, and both fits account for over
-{min(M['par_forced_r2'], M['mar_forced_r2']) * 100:.0f} % of the variation in the distances, so
+of Pacific. Both are roughly the speed a fingernail grows, and neither fit accounts for less than
+{int(min(M['par_forced_r2'], M['mar_forced_r2']) * 100)} % of the variation in the distances, so
 the gap between them is not slop in the fitting.
 
 It is not slop in the Earth either. Plates are pulled along mainly by their own sinking edges:
@@ -853,8 +853,8 @@ Pacific-Antarctic picks.
 
 Quote all four, then answer both of these in a short paragraph.
 
-**Which of your two fits for the older half would you publish** as the rate for the last part of
-that window, and why? Your answer has to deal with the free fit's intercept, which is no longer
+**Which of your two fits for the older half would you publish** as the spreading rate for that
+window of time, and why? Your answer has to deal with the free fit's intercept, which is no longer
 close to zero.
 
 **And is the difference *between* the two ridges bigger or smaller than the difference *within*

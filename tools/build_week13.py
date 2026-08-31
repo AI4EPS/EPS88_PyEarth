@@ -22,8 +22,10 @@ has torch, numpy, matplotlib, sklearn, pyyaml and nbconvert.
 """
 import json
 import pathlib
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 
 import numpy as np
@@ -45,7 +47,9 @@ PLATFORM = course["platform"]
 
 DATA_URL = ("https://github.com/AI4EPS/EPS88_PyEarth/releases/download/"
             "data-v1/phasenet_ncedc.npz")
-LOCAL = pathlib.Path(__file__).resolve().parent / "_wk13_phasenet_ncedc.npz"
+# Kept outside the repository: 42 MB of waveforms must never end up in a clone that nbgitpuller
+# copies onto 46 student accounts.
+LOCAL = pathlib.Path(tempfile.gettempdir()) / "eps88_wk13_phasenet_ncedc.npz"
 
 torch.set_num_threads(4)
 
@@ -89,7 +93,12 @@ M["n_train_events"] = int(len(train_events))
 p_test = p_index[~is_train]
 
 # --- section 1: one trace, and what the S-P gap is worth
-TRACE = 7
+# The trace every single-trace figure draws. Chosen for LEGIBILITY and nothing else — the first
+# recording whose P and S are 2.5 to 4 s apart, whose SNR is over 20, and whose P is late enough
+# in the window to leave some background before it — never for the answer it happens to give.
+sp_samples = s_index - p_index
+TRACE = int(np.nonzero((sp_samples > 250) & (sp_samples < 400)
+                       & (data["snr"] > 20) & (p_index > 400))[0][0])
 M["trace"] = TRACE
 M["trace_station"] = str(data["station"][TRACE])
 M["trace_mag"] = round(float(data["magnitude"][TRACE]), 2)
@@ -179,8 +188,8 @@ M["stalta_near_s"] = round(near_s / M["n_test"], 3)
 
 
 def onset_filter(width):
-    """Energy in the next `width` samples minus energy in the last `width` samples."""
-    return np.concatenate([-np.ones(width) / width, np.ones(width) / width])
+    """Energy in the last `width` samples minus energy in the `width` samples before those."""
+    return np.concatenate([np.ones(width) / width, -np.ones(width) / width])
 
 
 hand_hits = hand_near_s = 0
@@ -338,14 +347,13 @@ datahub = (f"{PLATFORM['datahub']}/hub/user-redirect/git-pull"
 HOOK = """
 A seismometer never stops. It writes down how the ground is moving a hundred times a second, day
 and night, and nearly all of what it writes is traffic, wind and surf. Buried in that are the
-earthquakes — several hundred a day in northern California alone, almost all of them far too small
-to feel.
+earthquakes, almost all of them far too small to feel.
 
 Finding them is one job. Timing them is a harder one, and it is the one that matters. What a
 seismologist needs from a recording is the *instant* the first wave arrived, because the gap
 between the fast P wave and the slower S wave gives the distance to the earthquake, and distances
-from three stations give its location. For most of the last century that instant was marked by a
-person with a ruler.
+from three stations give its location. For most of the history of the subject that instant was
+marked by a person, by eye.
 
 Today you get 2,500 real recordings from northern California, each already marked by an analyst.
 You will watch the standard automatic picker miss, and then train a small network to find the
@@ -359,8 +367,8 @@ md("""
 
 **The science.** Say what a seismogram contains and why the P and S arrival times are the
 quantity a seismologist actually wants. Show that loudness answers *whether* an earthquake
-happened but not *when* it started, and say how well the sixty-year-old automatic picker does on
-real data before anything is learned from it.
+happened but not *when* it started, and say how well the classical automatic picker does on real
+data before anything is learned from it.
 
 **The skills.** Slide a pattern-detector along a signal with `np.convolve`. Build a neural
 network in PyTorch out of `nn.Conv1d`, `nn.ReLU` and `nn.Upsample`, give it a loss to make small,
@@ -382,7 +390,7 @@ from sklearn.linear_model import LinearRegression
 plt.rcParams.update({{"figure.figsize": (7, 4), "figure.dpi": 110,
                      "axes.grid": True, "grid.alpha": 0.3, "axes.axisbelow": True}})
 
-DATA = ("{DATA_URL}")
+WAVEFORMS = ("{DATA_URL}")
 
 
 def load():
@@ -390,14 +398,14 @@ def load():
     try:
         return np.load("phasenet_ncedc.npz")
     except FileNotFoundError:
-        torch.hub.download_url_to_file(DATA, "phasenet_ncedc.npz", progress=False)
+        torch.hub.download_url_to_file(WAVEFORMS, "phasenet_ncedc.npz", progress=False)
         return np.load("phasenet_ncedc.npz")
 
 
-# 42 MB of waveforms, too big to keep beside the notebook, so it arrives from a release instead
-# of from the course repository. Everything else this week is computed from it.
+# 42 MB of waveforms — too big to keep beside the notebook, so it arrives from a release of the
+# course repository rather than from the repository itself, and is kept once it has arrived.
 data = load()
-waveform = np.clip(data["waveform"], -10, 10)   # a few single-sample instrument spikes, cut off
+waveform = np.clip(data["waveform"], -10, 10)   # instrument spikes, cut off at 10 times normal
 p_index = data["p_index"].astype(int)           # sample number of the analyst's P pick
 s_index = data["s_index"].astype(int)           # sample number of the analyst's S pick
 distance_km = data["distance_km"]
@@ -428,9 +436,9 @@ because a seismometer measures the ground moving east, north and up-down at the 
 These come from the Northern California Earthquake Data Center, whose analysts marked the P and
 the S on every one by hand. `p_index` and `s_index` are those marks, stored as sample numbers, so
 sample {M['n_samples'] // 2} means {M['n_samples'] // 2 / SAMPLE_RATE:.2f} seconds into the
-window. Each recording has already been divided by its own size, so a "1" in `waveform` means
-*one typical wiggle for this instrument*, not a fixed number of nanometres — loudness here is
-always relative to the same trace's own background.
+window. Each row has been divided by its own typical size, so a "1" in `waveform` means *one
+typical wiggle for this instrument on this recording*, not a fixed number of nanometres —
+loudness here is always relative to the same trace's own background.
 
 One thing was done deliberately when the file was built: the window was cut at a **random** offset
 before each P, so the arrival lands anywhere from {M['p_min_s']} to {M['p_max_s']} seconds in.
@@ -464,10 +472,12 @@ Draw a different one. Choose any trace number you like between 0 and {M['n_trace
 just its **up-down** row (that is `waveform[my_trace][2]`) against `seconds`, mark the P and the S
 with `plt.axvline`, and label both axes.
 
-Then print the P time, the S time and the gap between them, all in seconds.
+Then print four things in seconds: the P time, the S time, the gap between them, and the moment
+of the **largest swing** on that row. `np.abs(row).argmax()` gives the sample number of the
+largest value, and dividing a sample number by `SAMPLE_RATE` turns it into seconds.
 
-**Use these names**, because the self-check looks for them: `my_trace` for the trace number and
-`sp_seconds` for the gap.
+**Use these names**, because the self-check looks for them: `my_trace` for the trace number,
+`sp_seconds` for the gap, and `loudest_second` for the moment of the largest swing.
 """)
 
 answer(f"""
@@ -478,17 +488,20 @@ plt.axvline(p_index[my_trace] / SAMPLE_RATE, color="k")
 plt.axvline(s_index[my_trace] / SAMPLE_RATE, color="k")
 plt.xlabel("time (s)")
 plt.ylabel("ground motion (up-down)")
-plt.title("trace " + str(my_trace) + " — station " + str(station[my_trace]))
+plt.title("trace " + str(my_trace) + " of {M['n_traces']:,}, station " + str(station[my_trace]))
 plt.show()
 
 sp_seconds = (s_index[my_trace] - p_index[my_trace]) / SAMPLE_RATE
-print("P at", p_index[my_trace] / SAMPLE_RATE, "s")
-print("S at", s_index[my_trace] / SAMPLE_RATE, "s")
-print("gap:", round(sp_seconds, 2), "s")
+loudest_second = np.abs(waveform[my_trace][2]).argmax() / SAMPLE_RATE
+
+print("P at            ", p_index[my_trace] / SAMPLE_RATE, "s")
+print("S at            ", s_index[my_trace] / SAMPLE_RATE, "s")
+print("gap:            ", round(sp_seconds, 2), "s")
+print("biggest swing at", loudest_second, "s")
 """, """
 assert sp_seconds > 0, "the S always arrives after the P, so the gap must be positive"
 print("✓ one trace — trace", my_trace, "has its S", round(sp_seconds, 2),
-      "s after its P")
+      "s after its P, and its biggest swing at", loudest_second, "s")
 """)
 
 md(f"""
@@ -507,8 +520,10 @@ sp_all = (s_index - p_index) / SAMPLE_RATE
 line = LinearRegression(fit_intercept=False)
 line.fit(sp_all.reshape(-1, 1), distance_km)
 
+ends = np.array([0, sp_all.max()]).reshape(-1, 1)   # a straight line needs only its two ends
+
 plt.scatter(sp_all, distance_km, s=3, alpha=0.3)
-plt.plot(sp_all, line.predict(sp_all.reshape(-1, 1)), color="C1")
+plt.plot(ends, line.predict(ends), color="C1")
 plt.xlabel("S minus P (s)")
 plt.ylabel("distance to the earthquake (km)")
 plt.title("{M['n_traces']:,} recordings: the gap is a distance measurement")
@@ -599,24 +614,17 @@ md(f"""
 So *detection* barely needs us. One `if` statement, one number, and most of the work is done —
 which is exactly why a neural network for this task would be decoration.
 
-The interesting question was never whether the ground shook. It is **when it started**. And here
-is the first thing to notice: the loudest part of a seismogram is not the beginning of it.
-
-### Predict before you run
-
-Across all {M['n_traces']:,} recordings, on what fraction is the single loudest sample within half
-a second of the P arrival? Commit to a number before you run the next cell — change `my_guess` to
-whatever you think, then run it.
+The interesting question was never whether the ground shook. It is **when it started**, and your
+own trace gave you one data point on that: compare the moment of its largest swing with the moment
+of its P. Here is the same comparison, over all {M['n_traces']:,} recordings at once.
 """)
 
 code(f"""
-my_guess = 0.80
-
-loudest = np.abs(waveform).max(axis=1).argmax(axis=1)   # sample number of the biggest swing
-near_p = np.abs(loudest - p_index) <= 50                # 50 samples is half a second
+strength = np.abs(waveform).max(axis=1)     # one number per sample: the biggest of the three rows
+loudest = strength.argmax(axis=1)           # sample number of the biggest swing in each recording
+near_p = np.abs(loudest - p_index) <= 50    # 50 samples is half a second
 near_s = np.abs(loudest - s_index) <= 50
 
-print("you guessed:", my_guess)
 print("loudest sample is within 0.5 s of the P:", round(near_p.mean(), 3))
 print("loudest sample is within 0.5 s of the S:", round(near_s.mean(), 3))
 
@@ -641,9 +649,9 @@ being quiet — and not on how big it gets.
 
 # --- section 3 -------------------------------------------------------------
 md("""
-## The oldest automatic picker
+## The classical automatic picker
 
-Seismology has had an automatic answer to this since the 1970s, and it is two averages and a
+Seismology has had an automatic answer to this for decades, and it is two averages and a
 division. Take the average power over a **short** window ending at the current sample, take it
 again over a **long** window ending at the same sample, and divide. In background noise the two
 averages are the same and the ratio sits near 1. The instant a wave arrives, the short window
@@ -655,9 +663,6 @@ short, how long, and how big a jump counts.
 """)
 
 code(f"""
-strength = np.abs(waveform).max(axis=1)         # one number per sample: the biggest of the 3 rows
-
-
 def sta_lta(trace, short, long):
     \"\"\"How much louder the last `short` samples are than the last `long` samples.\"\"\"
     power = trace ** 2
@@ -685,7 +690,19 @@ plt.title("STA/LTA on 1 trace — black is the analyst's P, orange is the trigge
 plt.show()
 """)
 
+md(f"""
+### Predict before you run
+
+That is the standard picker, on a clear recording, landing on the arrival. Now the whole held-out
+set: on what fraction of {M['n_test']} recordings do you think it puts the pick within half a
+second of the analyst's? Commit to a number before you run the next cell — change `my_guess` to
+whatever you think, then run it.
+""")
+
 code(f"""
+my_guess = 0.85
+
+
 def sta_lta_score(short, long, threshold):
     \"\"\"Fraction of test traces STA/LTA places within half a second of the analyst's pick.\"\"\"
     hits = 0
@@ -696,6 +713,7 @@ def sta_lta_score(short, long, threshold):
     return hits / (~is_train).sum()
 
 
+print("you guessed:", my_guess)
 print("textbook setting (0.5 s, 5 s, threshold 3):",
       round(sta_lta_score(50, 500, 3), 3))
 """)
@@ -752,19 +770,23 @@ built decoration.
 md("""
 ## Sliding a pattern-detector along the signal
 
-Look again at what STA/LTA does. At every sample it takes a weighted sum of the samples around it
-— minus one over the long window, plus one over the short one — and reports the answer. Then it
-moves along one sample and does it again. That operation has a name: it is a **convolution**.
-Slide a small pattern-detector along the signal.
+Look again at what each of STA/LTA's two averages is. Take a small list of weights — one over the
+window length, repeated — line it up against the samples ending at the current one, multiply and
+add. Then move along one sample and do it again. That sliding-and-summing has a name: it is a
+**convolution**. Slide a small pattern-detector along the signal. STA/LTA does it twice, with two
+different window lengths, and divides the answers.
 
 The small list of weights is the detector, and what it detects depends entirely on the numbers in
-it. Put a step in the weights and it responds to steps. `np.convolve` slides it for you.
+it. Put a step in the weights and it responds where the signal steps. `np.convolve` slides it for
+you — lining the weights up in reverse, which is the difference between a convolution and a
+sliding dot product, so the *first* half of the list is the half that lands on the most recent
+samples.
 """)
 
 code(f"""
 def onset_filter(width):
-    \"\"\"Energy in the next `width` samples minus energy in the last `width` samples.\"\"\"
-    return np.concatenate([-np.ones(width) / width, np.ones(width) / width])
+    \"\"\"Energy in the last `width` samples minus energy in the `width` samples before those.\"\"\"
+    return np.concatenate([np.ones(width) / width, -np.ones(width) / width])
 
 
 response = np.convolve(strength[{TRACE}] ** 2, onset_filter(10), mode="same")
@@ -781,30 +803,35 @@ plt.show()
 ask(f"""
 ### ✏️ Your turn 4
 
-Score that hand-made detector the way you scored STA/LTA. For each held-out trace, convolve
-`strength[i] ** 2` with `onset_filter(10)`, take `response.argmax()` as the pick, and count how
-often that lands within 50 samples of `p_index[i]`.
+Score that hand-made detector the way you scored STA/LTA. Loop over the held-out traces, convolve
+`strength[i] ** 2` with `onset_filter(10)`, and collect `response.argmax()` — the sample where the
+detector responds most — into a list, one entry per held-out trace.
 
-Print the fraction, and — because the last figure hints at where it actually goes — print the
-fraction that lands within 50 samples of `s_index[i]` as well.
+Then print two fractions: how often that pick lands within 50 samples of `p_index[i]`, and —
+because the last figure hints at where it actually goes — how often it lands within 50 samples of
+`s_index[i]`.
 
-**Use these names**, because the self-check looks for them: `hand_accuracy`.
+**Use these names**, because the self-check looks for them: `hand_picks` for the list and
+`hand_accuracy` for the first fraction.
 """)
 
 answer(f"""
-hits = 0
-near_s_hits = 0
+hand_picks = []
 for i in np.nonzero(~is_train)[0]:
     response = np.convolve(strength[i] ** 2, onset_filter(10), mode="same")
-    pick = response.argmax()
+    hand_picks.append(response.argmax())
+
+hits = 0
+near_s_hits = 0
+for pick, i in zip(hand_picks, np.nonzero(~is_train)[0]):
     hits = hits + (abs(pick - p_index[i]) <= 50)
     near_s_hits = near_s_hits + (abs(pick - s_index[i]) <= 50)
 
-hand_accuracy = hits / (~is_train).sum()
+hand_accuracy = hits / len(hand_picks)
 print("within 0.5 s of the P:", round(hand_accuracy, 3))
-print("within 0.5 s of the S:", round(near_s_hits / (~is_train).sum(), 3))
+print("within 0.5 s of the S:", round(near_s_hits / len(hand_picks), 3))
 """, """
-assert hand_accuracy < 1, "this is a fraction of held-out traces, not a count"
+assert len(hand_picks) == (~is_train).sum(), "one pick per held-out trace, and none of the rest"
 print("✓ the hand-made detector — it finds the P on",
       round(100 * hand_accuracy, 1), "% of held-out traces")
 """)
@@ -841,8 +868,8 @@ flat = nn.Sequential(nn.Linear(1, 8), nn.Linear(8, 1))
 torch.manual_seed(1)
 bent = nn.Sequential(nn.Linear(1, 8), nn.ReLU(), nn.Linear(8, 1))
 
-plt.plot(grid, flat(grid).detach(), label="2 layers, no activation")
-plt.plot(grid, bent(grid).detach(), label="2 layers, with ReLU")
+plt.plot(grid.numpy(), flat(grid).detach().numpy(), label="2 layers, no activation")
+plt.plot(grid.numpy(), bent(grid).detach().numpy(), label="2 layers, with ReLU")
 plt.xlabel("input")
 plt.ylabel("output")
 plt.title("what 8 hidden units can draw, with and without an activation")
@@ -879,10 +906,10 @@ def make_target(pick_index, sigma):
 
 plt.plot(seconds, waveform[{TRACE}][2] / np.abs(waveform[{TRACE}][2]).max(), lw=0.6,
          label="up-down, scaled")
-plt.plot(seconds, make_target(p_index[[{TRACE}]], 20)[0], label="what we want back")
+plt.plot(seconds, make_target(p_index[{TRACE}:{TRACE} + 1], 20)[0], label="what we want back")
 plt.xlabel("time (s)")
 plt.ylabel("scaled to 1")
-plt.title("1 trace and its training target — a bump 0.2 s wide on the P")
+plt.title("1 trace and its training target — a bump of width 20 samples on the P")
 plt.legend()
 plt.show()
 """)
@@ -892,7 +919,8 @@ Now the network. `nn.Conv1d(3, 8, 7)` is eight pattern-detectors, each 7 samples
 looking at all 3 rows at once — the same sliding operation as before, except that the numbers
 inside are what training will choose. `stride=4` slides in steps of 4 instead of 1, which makes
 the signal four times shorter and lets the next layer's 7 samples cover four times as much time;
-`nn.Upsample` stretches it back out so the answer is one number per original sample.
+`padding=3` keeps each layer's output the same length as its input, and `nn.Upsample` stretches
+the whole thing back out at the end, so the answer is one number per original sample.
 
 In PyTorch a model is an `nn.Module` — a box that holds the numbers to be learned and knows how
 to run them. `nn.Sequential` is the simplest one there is: hand it layers, and it runs them in
@@ -983,6 +1011,9 @@ plt.xlabel("epoch")
 plt.ylabel("held-out traces within 0.5 s")
 plt.suptitle("learning curve — {M['n_train']:,} training and {M['n_test']} held-out recordings")
 plt.show()
+
+print("after epoch 10 the held-out line still wanders by",
+      round(max(scores[10:]) - min(scores[10:]), 3), "from epoch to epoch")
 """)
 
 ask(f"""
@@ -1174,20 +1205,22 @@ print("✓ more training — the loss fell by a factor of",
 """)
 
 answer_prose(f"""
-Over the extra 35 epochs my training loss kept falling, from {{long_loss25}} at epoch 25 to
-{{long_loss60}} at epoch 60, while the held-out score went from {{long_acc25}} to {{long_acc60}} —
-it did not improve, and the best held-out score of the whole run, {{long_best_acc}}, came at epoch
-{{long_best_epoch}}. So the network was still learning something, but nothing that transferred to
-recordings of earthquakes it had not seen: the extra epochs bought a better fit to the training
-labels, not a better picker. That means the limit is not the amount of training, and the number
-that would have to change is the labels themselves. Every target is a bump centred on where a
-human analyst put the P, and where the P is faint that mark is itself uncertain by a few tenths of
-a second, so a network that agrees with the analyst to within its own uncertainty has nowhere left
-to go. To do better you would have to make the marks better — more analysts per trace, or agreement
-between them — not train longer.
-""".format(long_loss25=M["long_loss25"], long_loss60=M["long_loss60"],
-           long_acc25=M["long_acc25"], long_acc60=M["long_acc60"],
-           long_best_acc=M["long_best_acc"], long_best_epoch=M["long_best_epoch"]))
+Over the extra 35 epochs the training loss kept falling, from {M['long_loss25']} at epoch 25 to
+{M['long_loss60']} at epoch 60, so the network went on learning the whole time. The held-out score
+did not follow it: {M['long_acc25']} at epoch 25 and {M['long_acc60']} at epoch 60, and the best
+value of the entire run, {M['long_best_acc']} at epoch {M['long_best_epoch']}, is only
+{100 * (M['long_best_acc'] - M['long_acc25']):.1f} points above where it already was — smaller
+than the {100 * M['acc_wobble']:.1f}-point range the class learning curve wandered over after
+epoch 10, so I cannot call it an improvement at all. More training bought a closer fit to the
+training labels and no better picker.
+
+The number that would have to change is therefore not the epoch count but the labels. Every target
+is a bump centred on where one analyst put the P, and on a faint arrival that mark is itself
+uncertain by a few tenths of a second; a picker that already agrees with the analyst to a median
+of {M['net_med_err']} s has nothing left to agree with more closely. To go further you would have
+to improve the marks — several analysts per trace, and only the ones they agree on — rather than
+run more epochs.
+""")
 
 
 # ---------------------------------------------------------------------------
@@ -1217,10 +1250,16 @@ def main():
     sol_path = OUT / f"{SLUG}_solution.ipynb"
     sol_path.write_text(json.dumps(sol, indent=1) + "\n")
 
-    print(f"executing {sol_path.name} ...")
+    # Execute somewhere disposable. The notebook keeps the 42 MB download in its working
+    # directory, which on DataHub is the right thing and in this repository is not.
+    run_dir = pathlib.Path(tempfile.mkdtemp(prefix="wk13-run-"))
+    shutil.copy(LOCAL, run_dir / "phasenet_ncedc.npz")
+
+    print(f"executing {sol_path.name} in {run_dir} ...")
     r = subprocess.run([sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook",
                         "--execute", "--inplace", "--ExecutePreprocessor.timeout=2400",
-                        str(sol_path)], capture_output=True, text=True, cwd=OUT)
+                        str(sol_path)], capture_output=True, text=True, cwd=run_dir)
+    shutil.rmtree(run_dir, ignore_errors=True)
     if r.returncode:
         print(r.stderr[-6000:])
         sys.exit("the solution did not execute")

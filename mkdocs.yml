@@ -26,5 +26,6 @@ nav:
     - "Week 7: How often does a Tambora happen?": notebooks/07_how_often_tambora.ipynb
     - "Week 8: Was our earthquake forecast wrong — or were we just unlucky?": notebooks/08_wrong_or_unlucky.ipynb
     - "Week 9: Is CO2 rising faster than it used to?": notebooks/09_rising_faster.ipynb
+    - "Week 10: Earthquake or explosion — how does the world verify a nuclear test ban?": notebooks/10_earthquake_or_explosion.ipynb
     - "Week 11: Where does a volcano get its magma?": notebooks/11_where_magma.ipynb
     - "Week 12: Can you find a fault that nobody mapped?": notebooks/12_hidden_fault.ipynb

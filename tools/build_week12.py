@@ -82,7 +82,6 @@ M = {}
 counts = {}
 for start, end in WINDOWS:
     counts[start] = len(fetch(start, end))
-M["window_counts"] = counts
 M["n_before"] = counts["2019-01-01"]
 M["n_before2"] = counts["2018-07-01"]
 M["n_before3"] = counts["2018-01-01"]
@@ -98,7 +97,6 @@ fore_row = quakes[quakes["mag"] == 6.4].iloc[0]
 M["main_mag"] = float(main_row["mag"])
 M["main_lat"] = round(float(main_row["latitude"]), 4)
 M["main_lon"] = round(float(main_row["longitude"]), 4)
-M["main_depth"] = round(float(main_row["depth"]), 1)
 M["main_time"] = str(main_row["time"])[:16].replace("T", " ")
 M["fore_mag"] = float(fore_row["mag"])
 M["fore_lat"] = round(float(fore_row["latitude"]), 4)
@@ -108,12 +106,7 @@ M["gap_hours"] = round((pd.to_datetime(main_row["time"])
                         - pd.to_datetime(fore_row["time"])).total_seconds() / 3600, 1)
 M["n_big"] = len(big)
 
-# the trivial method: a circle round the mainshock
-RADIUS = 0.3
-dist_deg = (((quakes["longitude"] - M["main_lon"]) ** 2
-             + (quakes["latitude"] - M["main_lat"]) ** 2) ** 0.5)
-M["n_circle"] = int((dist_deg < RADIUS).sum())
-M["frac_circle"] = round(M["n_circle"] / M["n"], 3)
+RADIUS = 0.3           # the trivial method: a circle this many degrees round the mainshock
 
 # scaling
 scaler = StandardScaler()
@@ -130,13 +123,10 @@ quakes["kmeans"] = kmeans_labels
 km_sizes = quakes["kmeans"].value_counts()
 M["km_sizes"] = [int(v) for v in km_sizes.sort_values(ascending=False)]
 km_depth = quakes.groupby("kmeans")["depth"].median().round(2)
-M["km_depths"] = {int(k): float(v) for k, v in km_depth.items()}
-M["km_deep_group"] = int(km_depth.idxmax())
 M["km_deep_median"] = float(km_depth.max())
 M["km_shallow_median"] = float(km_depth.min())
 M["inertias"] = [round(KMeans(n_clusters=k, random_state=0).fit(scaled).inertia_, 1)
                  for k in K_VALUES]
-M["inertia_k3"] = M["inertias"][2]
 M["inertia_drop_2"] = round(100 * (M["inertias"][0] - M["inertias"][1]) / M["inertias"][0], 1)
 M["inertia_drop_8"] = round(100 * (M["inertias"][6] - M["inertias"][7]) / M["inertias"][6], 1)
 
@@ -160,10 +150,6 @@ M["depth_6"] = round(float(depths.loc[6]), 2)
 M["start_6"] = str(starts.loc[6])[:16].replace("T", " ")
 M["coso_after_hours"] = round((pd.to_datetime(starts.loc[6])
                                - pd.to_datetime(main_row["time"])).total_seconds() / 3600, 1)
-M["coso_places"] = [str(p) for p in
-                    quakes[quakes["cluster"] == 6]["place"].value_counts().head(3).index]
-M["coso_shallow_frac"] = round(float((quakes[quakes["cluster"] == 6]["depth"] < 5).mean()), 3)
-M["rupture_shallow_frac"] = round(float((quakes[quakes["cluster"] == 0]["depth"] < 5).mean()), 3)
 M["n_before_main"] = int(sum(1 for c in sorted(set(labels))
                              if pd.to_datetime(starts.loc[c]) < pd.to_datetime(main_row["time"])
                              and c != -1))
@@ -182,28 +168,16 @@ M["evr_0"] = [float(x) for x in pca.explained_variance_ratio_.round(3)]
 M["sd_0"] = [float(x) for x in (pca.explained_variance_ ** 0.5).round(2)]
 M["axis1_0"] = [float(x) for x in pca.components_[0].round(2)]
 M["axis2_0"] = [float(x) for x in pca.components_[1].round(2)]
+M["aspect_0"] = round(M["sd_0"][0] / M["sd_0"][2], 1)
 
 coso = quakes[quakes["cluster"] == 6]
 coso_pca = PCA().fit(coso[["east_km", "north_km", "depth"]])
 M["evr_6"] = [float(x) for x in coso_pca.explained_variance_ratio_.round(3)]
 M["sd_6"] = [float(x) for x in (coso_pca.explained_variance_ ** 0.5).round(2)]
+M["aspect_6"] = round(M["sd_6"][0] / M["sd_6"][2], 1)
 M["coso_east_km"] = round(float(coso["east_km"].median()), 1)
 M["coso_north_km"] = round(float(coso["north_km"].median()), 1)
 
-# the homework sweep
-M["sweep"] = {}
-for eps in EPS_SWEEP:
-    lab = DBSCAN(eps=eps, min_samples=MIN_SAMPLES).fit_predict(scaled)
-    coso_split = pd.Series(lab)[quakes["cluster"].values == 6].value_counts()
-    M["sweep"][eps] = {
-        "clusters": int(len(set(lab)) - 1),
-        "noise": int((lab == -1).sum()),
-        "noise_pct": round(100 * (lab == -1).mean(), 1),
-        "largest": int(max(v for k, v in pd.Series(lab).value_counts().items() if k != -1)),
-        "coso_groups": int(len(set(coso_split.index) - {-1})),
-        "coso_biggest": int(coso_split.drop(index=-1, errors="ignore").max()),
-        "coso_noise": int(coso_split.get(-1, 0)),
-    }
 # what each eps does to two named clusters, for the model answers
 M["fate"] = {}
 for eps in EPS_SWEEP:
@@ -299,7 +273,7 @@ setup = weekkit.setup_cell(
     imports=("from sklearn.cluster import DBSCAN, KMeans\n"
              "from sklearn.decomposition import PCA\n"
              "from sklearn.preprocessing import StandardScaler\n"),
-    figsize="(6.5, 5)",
+    figsize="(7, 6)",
     cache_base=CACHE_BASE,
     signature="start, end",
     docstring=("Fetch one window of the USGS catalogue round Ridgecrest; "
@@ -360,7 +334,9 @@ cell under it.
 code(f"""
 my_guess = 2000
 
-windows = {WINDOWS}
+windows = [("2018-01-01", "2018-07-01"), ("2018-07-01", "2019-01-01"),
+           ("2019-01-01", "2019-07-01"), ("2019-07-01", "2019-12-31"),
+           ("2020-01-01", "2020-07-01")]
 
 for start, end in windows:
     print(start, "to", end, ":", len(load(start, end)), "earthquakes")
@@ -408,7 +384,7 @@ code(f"""
 plt.scatter(quakes["longitude"], quakes["latitude"], s=2, color="0.3")
 plt.scatter([{M['fore_lon']}, {M['main_lon']}], [{M['fore_lat']}, {M['main_lat']}],
             s=120, marker="*", color="firebrick")
-plt.locator_params(axis="x", nbins=4)      # or the degree labels run into each other
+plt.locator_params(axis="x", nbins=6)      # or the degree labels run into each other
 plt.gca().set_aspect("equal")
 plt.xlabel("longitude (degrees east)")
 plt.ylabel("latitude (degrees north)")
@@ -513,8 +489,7 @@ quakes["kmeans"] = model.fit_predict(scaled)
 
 print(quakes["kmeans"].value_counts())
 """, f"""
-assert len(quakes["kmeans"].value_counts()) == {K}, \
-    "there should be exactly {K} groups — check n_clusters"
+assert len(quakes["kmeans"].value_counts()) == {K}, "there should be exactly {K} groups"
 print("✓ k-means with {K} pins — groups of",
       list(quakes["kmeans"].value_counts()))
 """)
@@ -530,7 +505,7 @@ for group in [0, 1, 2]:
     plt.scatter(part["longitude"], part["latitude"], s=2, label=f"group {{group}}")
 
 plt.legend()
-plt.locator_params(axis="x", nbins=4)
+plt.locator_params(axis="x", nbins=6)
 plt.gca().set_aspect("equal")
 plt.xlabel("longitude (degrees east)")
 plt.ylabel("latitude (degrees north)")
@@ -660,7 +635,7 @@ placed = quakes[quakes["cluster"] >= 0]
 plt.scatter(unplaced["longitude"], unplaced["latitude"], s=2, color="0.8")
 plt.scatter(placed["longitude"], placed["latitude"], s=2, c=placed["cluster"], cmap="tab20")
 plt.colorbar(label="cluster number")
-plt.locator_params(axis="x", nbins=4)
+plt.locator_params(axis="x", nbins=6)
 plt.gca().set_aspect("equal")
 plt.xlabel("longitude (degrees east)")
 plt.ylabel("latitude (degrees north)")
@@ -691,8 +666,9 @@ its size, its median depth rounded to 2 decimal places, and the first 16 charact
 earliest time. Use `.loc[c]` to read one value out of each Series.
 
 `value_counts()` already sorts, so the biggest cluster comes first and -1 will appear wherever its
-size puts it. Finally, print the three most common `place` values in the **second-largest**
-cluster, with `value_counts().head(3)` — the catalogue names where each earthquake was, and we
+size puts it. Finally, print the three most common `place` values in the **second-largest
+cluster** — second-largest among the clusters, so not the -1 row — with
+`value_counts().head(3)` — the catalogue names where each earthquake was, and we
 have not looked at that column yet.
 
 **Use these names**, because the self-check looks for them: `sizes`, `depths`, `starts`.
@@ -759,7 +735,8 @@ left over, and so on, and reports how much of the spread sits on each.
 
 For that to mean anything the three columns have to be in the same real units, so we swap degrees
 for kilometres. One degree of latitude is {M['km_north']} km everywhere (that is Earth's
-circumference divided by 360, from a mean radius of {EARTH_RADIUS_KM:,.0f} km). One degree of
+circumference divided by 360, using the mean radius of {EARTH_RADIUS_KM:,.0f} km on the NASA
+Earth fact sheet, read 2026-08-31). One degree of
 longitude is shorter, and at {REF_LAT} degrees north it is {M['km_east']} km. Depth is already in
 kilometres. We measure from the mainshock, so the numbers read as "kilometres east and north of
 the magnitude {M['main_mag']}".
@@ -778,7 +755,7 @@ quakes["east_km"] = (quakes["longitude"] - ({M['main_lon']})) * KM_PER_DEGREE_EA
 quakes["north_km"] = (quakes["latitude"] - ({M['main_lat']})) * KM_PER_DEGREE_NORTH
 
 rupture = quakes[quakes["cluster"] == 0]
-print(len(rupture), "events in cluster 0")
+print(len(rupture), "events in cluster 0, largest magnitude", rupture["mag"].max())
 """)
 
 code(f"""
@@ -800,9 +777,9 @@ In kilometres the cluster measures {M['sd_0'][0]} by {M['sd_0'][1]} by {M['sd_0'
 standard deviations, so the full extent is several times each). Long, much less wide, thinner
 still.
 
-Axis 1 came out as {M['axis1_0']} in (east, north, down): {M['axis1_0'][1]} north for
-{abs(M['axis1_0'][0])} west, and {abs(M['axis1_0'][2])} up or down. So it is a **horizontal line
-running northwest–southeast**. Axis 2 is {M['axis2_0']} — almost straight down. A surface
+Axis 1 came out as {M['axis1_0']} in (east, north, down): {M['axis1_0'][1]} north for every
+{abs(M['axis1_0'][0])} west, and only {abs(M['axis1_0'][2])} up or down. So it is a **horizontal
+line running northwest–southeast**. Axis 2 is {M['axis2_0']} — almost straight down. A surface
 whose long direction is horizontal and whose second direction is vertical is a **near-vertical
 plane striking northwest–southeast**, which is what a strike-slip fault in this desert looks
 like, and it matches the direction of the limb you saw by eye on the map.
@@ -824,9 +801,10 @@ plt.show()
 """)
 
 md(f"""
-A sheet, seen from the side: {M['sd_0'][0]:.0f} km of length for {M['sd_0'][2]:.1f} km of
-thickness. Some of that thickness is real — faults are zones, not razor cuts — and some of it is
-just how accurately these events could be located.
+A sheet, seen from the side. The numbers you printed say the same thing: {M['sd_0'][0]} km of
+spread along axis 1 against {M['sd_0'][2]} km across the plane, so it is about
+{M['aspect_0']} times longer than it is thick. Some of that thickness is real — faults are zones,
+not razor cuts — and some of it is only how accurately these events could be located.
 """)
 
 ask(f"""
@@ -866,10 +844,9 @@ print("✓ the shape of cluster 6 —", len(coso), "events,",
 md(f"""
 {M['evr_6'][0] * 100:.1f}% on axis 1 rather than {M['evr_0'][0] * 100:.1f}%, and
 {M['sd_6'][0]} by {M['sd_6'][1]} by {M['sd_6'][2]} km rather than {M['sd_0'][0]} by
-{M['sd_0'][1]} by {M['sd_0'][2]}. Cluster 6 is stretched, but only about four times its
-thickness where cluster 0 is eight, and it is shallow: a median of {M['depth_6']} km, with
-{M['coso_shallow_frac'] * 100:.0f}% of it above 5 km, against
-{M['rupture_shallow_frac'] * 100:.0f}% for cluster 0.
+{M['sd_0'][1]} by {M['sd_0'][2]}. Cluster 6 is stretched, but only {M['aspect_6']} times longer
+than it is thick where cluster 0 is {M['aspect_0']}, and it is shallow: a median of
+{M['depth_6']} km against {M['depth_0']} km for cluster 0, both from the table you built.
 
 Those are two different kinds of object. One is a long thin near-vertical sheet that started
 moving with the first event in the file. The other is a shallow, blobbier patch
@@ -987,8 +964,8 @@ answer_prose(f"""
 I would draw cluster 0. Its {M['largest']:,} events measure {M['sd_0'][0]} by {M['sd_0'][1]} by
 {M['sd_0'][2]} km, with {M['evr_0'][0] * 100:.1f}% of the spread on a single horizontal axis
 running northwest–southeast, which is the shape a fault plane has and not a shape a blob has; it
-also contains both large earthquakes and starts with the first event in the catalogue, so it is
-the thing that actually broke. I think the algorithm invented cluster 7: it holds
+holds the magnitude {M['main_mag']} itself and starts with the very first event in the
+catalogue, so it is the thing that actually broke. I think the algorithm invented cluster 7: it holds
 {M['sizes'][7]} events, exactly `min_samples`, and it is its own cluster at no other setting I
 tried — at `eps={EPS_SWEEP[0]}` all {M['fate'][(EPS_SWEEP[0], 7)]['noise']} of them become noise,
 and at `eps={EPS_SWEEP[2]}` they are absorbed into a group of

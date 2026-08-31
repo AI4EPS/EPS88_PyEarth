@@ -89,10 +89,9 @@ have liquid water — and why does your test reject Earth?**
 md("""
 ## What you'll be able to do
 
-**The science.** Say what a planet's equilibrium temperature is and what it leaves out. Compute it
-from three numbers an archive will give you for almost any planet. Measure the greenhouse effect on
-three worlds as a discrepancy rather than accept it as a definition. And say why a test that gets
-Earth wrong by 34 degrees and Venus wrong by five hundred is still worth running.
+**The science.** Say what a planet's equilibrium temperature is, and compute it from three numbers
+an archive will give you for almost any planet. Measure the difference between that temperature and
+the real one, on the three worlds where we have both. And say what that difference is made of.
 
 **The code.** `for` loops over a list and over `range(n)` · the accumulator pattern, with
 `list.append` · `if` / `elif` / `else` and the comparison operators · `and`, `or`, `not` · `None`,
@@ -199,7 +198,9 @@ Earth's 1.014, and Mars's is 0.006. Hold on to that.
 
 The other thing a loop is for is building something up as it goes. **Set a counter to 0 before the loop starts and add to it inside; same idea for a list — start
 it empty and append inside.** `results.append(x)` adds one item to the end of the list `results`.
+""")
 
+md("""
 ✏️ **Your turn.** Sunlight thins out with distance: a planet twice as far from its star catches a
 quarter as much. So the sunlight reaching a world, compared with Earth, is `1 / distance ** 2` —
 where `**` means "to the power of", so `distance ** 2` is the distance squared.
@@ -308,20 +309,16 @@ for i in range(len(worlds)):
 print("worlds the test accepts:", in_window)
 ''')
 
-md("""
-Two of the three pass. One of the two is Earth, which is reassuring. The other is Venus.
-
-Look back at the first table: Venus's surface temperature is 737 K. That is 364 degrees above the
-boiling point of water, and our test just said liquid water was possible there.
-
-Something is missing, and section 1 already put it on screen: 92 bar of air.
-""")
-
 # ---------------------------------------------------------------- 4. albedo
 md("""
 ## 4. The light a world throws away
 
-The formula has a term we have not used yet.
+Two of the three pass. One of the two is Earth, which is reassuring. The other is Venus — whose
+surface temperature, in the first table of this notebook, is 737 K. That is 364 degrees above the
+boiling point of water, and our test just said liquid water was possible there. Something is
+missing, and section 1 already put it on screen: 92 bar of air.
+
+The formula also has a term we have not used yet.
 
 **Albedo: the fraction of the starlight falling on a world that it reflects straight back into space; only
 the rest is absorbed and turned into heat.**
@@ -353,7 +350,9 @@ Mars was never in. Run the test one way and it accepts Earth and Venus together;
 way and it rejects Earth, Venus and Mars alike. It has not been right once.
 
 So how wrong is it? We know what these three worlds are actually like.
+""")
 
+md("""
 ✏️ **Your turn.** Loop over the three worlds and print, for each, its measured surface temperature
 from `surface_temps`, the temperature the test just gave it from `albedo_temps`, the difference
 between them rounded to one decimal place, and its `air_pressures` value. Four numbers on a line,
@@ -438,7 +437,9 @@ answers the albedo-0 question and the albedo-0.306 question without being rewrit
 
 A function can also hand back **two** values at once: `return temperature, verdict` gives both, and
 `t, v = check_planet(...)` catches them in that order.
+""")
 
+md("""
 ✏️ **Your turn.** Write a function called `check_planet` that takes the same four arguments —
 `star_temp`, `star_radius`, `distance`, `albedo` — and returns two things: the temperature, and a
 verdict string that is `"too cold"` below 273 K, `"too hot"` above 373 K, and
@@ -564,10 +565,11 @@ their own.
 
 The scattering of points far *below* the line is a different animal, and the worst of them says
 what it is. HD 284149 AB b orbits 431 AU out — four hundred times the width of Earth's orbit — and
-at that distance the starlight our formula is built on has almost nothing left in it, which is why
-our answer comes out near zero. The 2395 K the archive lists for that planet is not a response to
-its star at all; a young planet that far out is still glowing with the heat of its own formation.
-The formula is not wrong about it. It is answering a question that does not apply.
+at that distance the starlight our formula is built on has almost nothing left in it, so our answer
+comes out near zero and the two disagree by 2379 K. The archive's number for that planet is not a
+response to its star at all: a young planet photographed that far out is still glowing with the
+heat of its own formation. The formula is not wrong about it. It is answering a question that does
+not apply.
 
 Agreement with the professionals is not agreement with reality, either. Everyone in that figure is
 computing the same quantity, and section 4 already showed what that quantity leaves out.
@@ -586,7 +588,9 @@ holding loosely.
 
 So a planet inside the temperature window falls into one of three cases, and `None` makes the third
 one unavoidable: rocky, too big to be rocky, or the archive never measured its radius.
+""")
 
+md("""
 ✏️ **Your turn.** Loop over the usable planets. For each one, call `check_planet` with albedo
 `0.0` — the same "reflecting nothing" pass the class started with — and collect every temperature
 into a list called `all_temps`, which the next cell plots.
@@ -634,7 +638,7 @@ for i in range(len(usable_names)):
 
 code(f'''
 assert len(all_temps) == len(usable_names), "all_temps needs one entry per planet, not per hit"
-assert unknown_radius > 0, "None never reached the first branch — check you tested `is None` first"
+assert unknown_radius > 0, "unknown_radius never moved — add one to it inside the `is None` branch"
 {check_print("Section 7",
              "{n_window} planets in the window: {len(rocky_names)} rocky,",
              "{too_big} too big, {unknown_radius} with no measured radius")}
@@ -668,7 +672,8 @@ easiest kind to find — a bias in the catalogue, not in the galaxy.
 
 Now the interesting part. Astronomers keep an informal list of the planets thought most likely to
 be habitable, and it is short: the outer TRAPPIST-1 planets, Proxima Centauri b, TOI-700 d,
-Kepler-186 f, Kepler-442 b. Ask our test about them.
+Kepler-186 f, Kepler-442 b. The cell below asks our test about those, and about two more that the
+field does not put on that list.
 """)
 
 code('''
@@ -801,7 +806,8 @@ Both of the choices class made were arguable. Pick **one** of these two changes,
 Then rerun part 1's loop with your three values in place of the fixed ones, into a list called
 `new_candidates`, and report what moved: how many candidates there are now, how many of part 1's
 `candidate_names` are still on the list, how many dropped off and how many are new. `name in
-candidate_names` is true when that name is somewhere in the list.
+candidate_names` is true when that name is somewhere in the list. (The first number stands on its
+own; the other three need part 1 to have run.)
 
 Say which option you took in a comment on the first line.
 
@@ -843,9 +849,9 @@ assert len(new_candidates) != len(candidate_names), "the count did not move; che
 md("""
 ✏️ **Part 3 — one planet you do not believe.**
 
-Your part-1 printout lists every planet this week's test calls a candidate, with its temperature and
-its radius. Pick **one** of them that you do not believe could have liquid water, and make the case
-against it in two or three sentences, in the cell below.
+Section 7's printout lists every planet this week's test calls a rocky candidate, with its
+temperature and its radius. Pick **one** of them that you do not believe could have liquid water,
+and make the case against it in two or three sentences, in the cell below.
 
 Quote real numbers, not impressions: that planet's own temperature and radius from the printout, and
 how far the same test was wrong about Earth and about Venus — both of those differences were printed

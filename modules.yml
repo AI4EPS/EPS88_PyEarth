@@ -374,6 +374,17 @@ modules:
       extra machinery: building new columns from old ones IS the feature engineering S3 teaches,
       so the sweep reinforces the earlier week instead of introducing a second fitting idiom.
       np.log10, np.random and np.mean stay in use — the rule is about MODEL FITTING, not numpy.
+    functions:
+      - {name: "table.tail(n)",         does: "the last n rows"}
+      - {name: "column.mean()",         does: "the average of a column"}
+      - {name: "LinearRegression().fit(x, y)", does: "find the straight line with the smallest total miss"}
+      - {name: "model.coef_[0]",        does: "the slope of the fitted line"}
+      - {name: "model.intercept_",      does: "where the fitted line crosses zero"}
+      - {name: "model.predict(x)",      does: "what the fitted line says y should be at each x"}
+      - {name: "model.score(x, y)",     does: "R2 — the fraction of the up-and-down variation the line accounts for"}
+      - {name: "LinearRegression(fit_intercept=False)", does: "the same fit, forced to pass through (0, 0)"}
+      - {name: "plt.axhline(y)",        does: "a horizontal line at y, to mark zero on a residual plot", remember: false}
+      - {name: "column.abs()",          does: "drop the minus signs, so a miss above and below count the same", remember: false}
     requires: [D1, D2, D4]
     harvest_gives: "harvest supplies BOTH the method and the Earth-science content"
     minutes: 100
@@ -391,6 +402,14 @@ modules:
     title: "Bias, variance and model selection"
     topic: "Model selection"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
     teaches: [polynomial degree, underfitting, overfitting, train/test split, held-out evaluation, leakage, feature selection]
+    functions:
+      - {name: "table.iloc[a:b]",       does: "rows by position, the way a list slice works"}
+      - {name: "np.polyfit(x, y, degree)", does: "fit the best polynomial of that degree; at degree 1 it is the least-squares line"}
+      - {name: "np.polyval(coeffs, x)", does: "read a fitted curve back at any x, including x values never in the data"}
+      - {name: "np.sqrt(x) / np.mean(x)", does: "the square root and the average — the two halves of a typical miss"}
+      - {name: "table.sample(frac=1, random_state=n)", does: "shuffle a table; random_state fixes the shuffle so everyone gets the same one"}
+      - {name: "table.rename(columns={...})", does: "give a column a better name", remember: false}
+      - {name: 'plt.yscale("log")',     does: "a log axis, when the values span factors of a thousand", remember: false}
     requires: [ML1, S4]
     harvest_gives: "harvest supplies the method and PART of the content"
     minutes: 100
@@ -415,6 +434,19 @@ modules:
     title: "Drawing the line — logistic regression and Naive Bayes"
     topic: "Logistic regression"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
     teaches: [logistic regression, Naive Bayes, decision boundary, confusion matrix, precision, recall, F1, class imbalance, stratify]
+    functions:
+      - {name: "LogisticRegression()",   does: "draw the straight line that best separates two labelled groups"}
+      - {name: "GaussianNB()",          does: "the naive-Bayes classifier — assumes each measurement speaks for itself"}
+      - {name: "accuracy_score(y, pred)", does: "the fraction it got right — useless when one class is 98% of the data"}
+      - {name: "precision_score(y, pred)", does: "of the ones it called a blast, how many were"}
+      - {name: "recall_score(y, pred)", does: "of the blasts there were, how many it found"}
+      - {name: "f1_score(y, pred)",     does: "precision and recall in one number, so two models can be compared"}
+      - {name: "pd.to_datetime(column)", does: "turn a column of date text into real dates"}
+      - {name: "column.dt.tz_convert(zone)", does: "move a timestamp into local time, so 'hour of day' means what it says"}
+      - {name: "column.nunique()",      does: "how many different values a column holds", remember: false}
+      - {name: "pd.concat([a, b])",     does: "stack two tables end to end", remember: false}
+      - {name: "train_test_split(X, y, test_size=0.3, random_state=n, stratify=y)", does: "cut the rows into a training set and a held-out set, keeping the class balance"}
+      - {name: "model.fit(X, y) / model.score(X, y)", does: "learn from the training rows; score on the held-out ones"}
     requires: [ML2]
     harvest_gives: "harvest supplies the METHOD ONLY — the Earth-science content is new"
     minutes: 100
@@ -430,6 +462,16 @@ modules:
     title: "Beyond a straight line — trees, forests and SVM"
     topic: "SVM, Decision Trees"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
     teaches: [decision tree, random forest, SVM (widest gap), feature importance, comparing models behind one API]
+    functions:
+      - {name: "DecisionTreeClassifier(random_state=0)", does: "learn the flowchart of yes/no questions from the data"}
+      - {name: "RandomForestClassifier(n_estimators=200, random_state=0)", does: "a hundred slightly different trees, voting"}
+      - {name: "SVC()",                 does: "the widest-gap classifier; give it scaled columns or the gap means nothing"}
+      - {name: 'SimpleImputer(strategy="median")', does: "put the middle value of a column into that column's holes"}
+      - {name: "StandardScaler()",      does: "put every column on the same footing, so a distance across them means something"}
+      - {name: "filler.fit_transform(X_train) / filler.transform(X_test)", does: "learn the fill values on the training set only, then apply the same ones to the test set"}
+      - {name: "forest.feature_importances_", does: "one number per column: how much of the forest's decisions it carried"}
+      - {name: "pd.Series(values, index=names)", does: "a column of numbers with a name on every row", remember: false}
+      - {name: "plt.bar(x, heights) / plt.barh(labels, values)", does: "one bar per item; barh when the labels are words"}
     requires: [ML3]
     harvest_gives: "harvest supplies BOTH the method and the Earth-science content"
     minutes: 100
@@ -571,6 +613,10 @@ plain_words:
   - {idea: "Equilibrium temperature", module: P4, words: "The temperature a planet would sit at if starlight were the only thing heating it and it had no air."}
   - {idea: "Albedo",               module: P4, words: "The fraction of the starlight falling on a world that it reflects straight back into space; only the rest is absorbed and turned into heat."}
   - {idea: "The greenhouse effect", module: P4, words: "The difference between the temperature a world would have with no air and the temperature it actually has."}
+  - {idea: "Leakage",              module: ML2, words: "Any route by which information about the data you are scoring on reaches the model before you score it."}
+  - {idea: "Polynomial degree",    module: ML2, words: "The degree of a polynomial is how many bends it is allowed: degree 1 is a straight line, degree 2 bends once."}
+  - {idea: "Feature importance",   module: ML4, words: "How much of a forest's decisions each column carried — the model's own account of what it used."}
+  - {idea: "Missingness as data",  module: ML4, words: "Which measurements are missing is itself a record of who measured the sample, and a model will use it if you let it."}
   - {idea: "Monte Carlo",          module: S2,  words: "Make up a world where the effect is absent, a thousand times, and see how often chance alone beats what you measured."}
   - {idea: "Linear regression",    module: ML1, words: "Draw the best straight line. Best means the smallest total miss."}
   - {idea: "Fit through the origin", module: ML1, words: "Sometimes physics already knows one point on the line. Make the line go through it."}

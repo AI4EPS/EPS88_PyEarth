@@ -368,6 +368,13 @@ schedule:
 
     pinned:
       slice: "Freedman 2000 — 36 Type-Ia supernovae, 1.1 kB; MAR 235 points and PAR 140 points"
+      # THE TWO RIDGE FILES DO NOT MEASURE DISTANCE THE SAME WAY. MAR's Distance column is
+      # one-flank (half-spreading); PAR's is roughly twice that. The fitted 1.74 cm/yr for MAR
+      # matches published HALF rates (1.1-1.5) and PAR's 6.77 matches published FULL rates (~7.4
+      # at 56 S), so comparing them directly mixes conventions: in comparable terms the ridges
+      # differ by about 1.9x, not 3.9x. An earlier takeaway said "fourfold" and was wrong.
+      # Teach the contrast and the slab-pull mechanism, which hold either way; do NOT quote a
+      # ratio, and do NOT compare either number to a published spreading rate.
       expect:
         free_fit: {slope: 67.5, intercept_km_s: 711.8}   # intercept must be zero: zero distance,
         forced_through_origin: {H0: 70.7, age_Gyr: 13.84} # zero recession. Accepted age 13.8.
@@ -396,7 +403,8 @@ schedule:
     takeaways:
       - "A slope can be an age."
       - "Physics can force a fit through the origin; the free fit was not wrong, it was unconstrained."
-      - "Two ocean ridges spread at rates differing fourfold, and that difference is the science."
+      - "Two ocean ridges build new seafloor at rates several times apart, and that difference is
+        the science."
   - n: 7
     date: 2026-10-19
     slug: 07_how_often_tambora
@@ -412,7 +420,11 @@ schedule:
       expect:
         M3.5_to_6.9: 6282
         M7_plus: 5
-        fits: {"M3.5-5.0": 1.18, "M4.0-5.5": 1.64, "M4.5-6.0": 1.54}   # predicted M7+ in 36 years
+        # BUILD THE MAGNITUDE LEVELS FROM INTEGERS, not np.arange: arange(3.5, 5.05, 0.1)[3] is
+        # 3.8000000000000003, so `mags >= level` silently drops all 214 events recorded at exactly
+        # 3.8. An earlier pin said 1.18 for the first range; that was the artifact, not a result.
+        # Two builders found it independently. The other two ranges land clean and are unchanged.
+        fits: {"M3.5-5.0": 1.41, "M4.0-5.5": 1.64, "M4.5-6.0": 1.54}   # predicted M7+ in 36 years
       verified: 2026-08-30
     exercise: "Fit Gutenberg-Richter on M3.5-5.0 in California, predict how many M7+ to expect in 36 years, then count the real ones. Write down whether you think your model failed — you cannot settle it yet."
     note_critical: >

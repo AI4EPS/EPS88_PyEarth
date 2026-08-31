@@ -113,7 +113,7 @@ M["mean_mag"] = round(float(mags.mean()), 3)
 M["median_mag"] = round(float(np.median(mags)), 2)
 M["max_small"] = float(mags.max())
 M["max_big"] = float(big["mag"].max())
-M["energy_ratio"] = round(float(ENERGY_PER_STEP ** (M["max_big"] - M["mean_mag"])))
+M["energy_ratio"] = round(float(ENERGY_PER_STEP ** (M["max_big"] - mags.mean())))
 M["places"] = list(big["place"])
 M["big_years"] = [t[:4] for t in big["time"]]
 
@@ -136,7 +136,9 @@ M["r2"] = round(float(eq_model.score(MAG_LEVELS.reshape(-1, 1), np.log10(eq_coun
 
 # the float trap the notebook warns about, measured rather than asserted
 naive = np.arange(3.5, 5.05, 0.1)
-M["lost_to_float"] = int(count_at_least(mags, 3.8) - count_at_least(mags, naive[3]))
+M["n_at_3_8"] = int(count_at_least(mags, 3.8))
+M["n_naive_3_8"] = int(count_at_least(mags, naive[3]))
+M["lost_to_float"] = M["n_at_3_8"] - M["n_naive_3_8"]
 
 EQ_RANGES = [(3.5, 5.0), (4.0, 5.5), (4.5, 6.0)]
 M["eq_predictions"] = [round(float(predict_count(mags, levels_between(lo, hi), 7.0)[1]), 2)
@@ -161,9 +163,9 @@ vei_model, _ = fit_line(vei, VEI_LEVELS)
 M["vei_slope"] = round(float(vei_model.coef_[0]), 3)
 M["vei_step_factor"] = round(float(10 ** -vei_model.coef_[0]), 2)
 M["vei_line"] = [round(float(10 ** vei_model.predict([[k]])[0]), 2) for k in range(8)]
-M["vei_pred7"] = M["vei_line"][7]
+M["vei_pred7"] = round(float(10 ** vei_model.predict([[7]])[0]), 2)
 M["vei_obs7"] = M["vei_counts"][7]
-M["one_per"] = round(M["span"] / M["vei_pred7"])
+M["one_per"] = round(M["span"] / float(10 ** vei_model.predict([[7]])[0]))
 
 top = rated[rated["ExplosivityIndexMax"] >= 7]
 M["tambora_year"] = int(top[top["Volcano_Name"] == "Tambora"]["StartDateYear"].iloc[0])
@@ -293,6 +295,7 @@ big = quakes[quakes["mag"] >= 7.0]
 mags = small["mag"].values
 
 print("California catalogue:", quakes.shape, "  eruption catalogue:", eruptions.shape)
+print("magnitude 7 and above in the same box since 1810:", len(big_history))
 '''.strip("\n"))
 code(setup)
 
@@ -340,7 +343,8 @@ md(f"""
 `quakes` is every earthquake of magnitude {EQ_FLOOR} and above that the USGS recorded between
 {EQ_START} and {EQ_END} inside a box around California: latitude 32 to 42 north, longitude 125 to
 114 west. That box is a rectangle, not a state — it reaches into Nevada and into Baja California —
-and it holds {M['n_quakes']:,} earthquakes.
+and it holds {M['n_quakes']:,} earthquakes, of which the {M['n_small']:,} below magnitude 7 are in
+`mags`.
 
 Start with the plainest possible picture of them.
 """)
@@ -355,9 +359,10 @@ plt.show()
 """)
 
 md("""
-A wall on the left and nothing on the right. That is not a bell curve with a long tail; it is a
-distribution where almost every event is nearly the smallest one the network can see, and the
-events anybody actually cares about are off in a region of the axis that looks empty.
+A wall on the left and nothing on the right. There is no hump anywhere: almost every event sits
+close to the magnitude 3.5 floor we asked for, and it would sit close to any other floor we chose,
+because there are always more small ones. The events anybody actually cares about are off in a
+region of the axis that looks empty.
 
 Which is why the usual summary of a column — its middle — is worse than useless here.
 """)
@@ -434,14 +439,19 @@ def levels_between(lowest, highest):
 
 mag_levels = levels_between(3.5, 5.0)
 print(mag_levels)
+
+the_obvious_way = np.arange(3.5, 5.05, 0.1)      # looks the same, and is not
+print("is its fourth entry equal to 3.8?", the_obvious_way[3] == 3.8)
+print("earthquakes at 3.8 and above:", (mags >= 3.8).sum(),
+      "  using its fourth entry instead:", (mags >= the_obvious_way[3]).sum())
 """)
 
 md(f"""
-Whole numbers first, then divide. `np.arange(3.5, 5.05, 0.1)` looks like it does the same thing and
-does not: its fourth entry comes out as 3.8000000000000003, which is not equal to a catalogue
-magnitude of exactly 3.8, so `mags >= level` would silently throw away {M['lost_to_float']}
-earthquakes. Decimals are stored as approximations, and asking two of them to be equal is a bad
-habit. Build them from integers and the problem never arises.
+Whole numbers first, then divide. The obvious way looks identical on screen and is not: its fourth
+entry is a hair above 3.8, so it excludes every earthquake recorded as exactly 3.8 and the count
+falls from {M['n_at_3_8']:,} to {M['n_naive_3_8']:,} — {M['lost_to_float']} earthquakes gone, with
+no error and no warning. Decimals are stored as approximations, so two that ought to be equal often
+are not. Build the levels from integers and the problem never arises.
 """)
 
 ask(f"""
@@ -488,11 +498,11 @@ plt.show()
 """)
 
 md(f"""
-A curve, and one that hides the half we came for. The left-hand point is {M['n_at_3_5']:,}, so the
-axis has to run that far; the six right-hand points run from {M['n_at_4_5']} down to
-{M['n_at_5_0']}, which is the bottom {M['tail_share']} per cent of it. They are a row of dots
-sitting on the floor, and you cannot tell from looking whether they fall along a line, along a
-curve, or along nothing in particular. Those are the points nearest the sizes that matter.
+A curve, and one that hides the half we came for. The left-hand point is {M['n_at_3_5']:,} and the
+right-hand one is {M['n_at_5_0']}, so the axis has to reach {M['n_at_3_5']:,} and the whole right
+half of the plot is packed into a thin band along the bottom. You cannot tell by looking whether
+those dots fall along a line, along a curve, or along nothing in particular — and they are the ones
+nearest the sizes that matter.
 
 The fix is the one the plotting week introduced. When the values span factors of a thousand, plot
 the exponents instead and a curve becomes a line. `plt.yscale("log")` does exactly that: the
@@ -518,9 +528,10 @@ this the Gutenberg–Richter relation, after the two Caltech seismologists who d
 
 ## Measuring the line
 
-A straight line is what least squares is for, and the counts are already almost straight — it is
-`np.log10(counts)` that is straight, since the log axis was only a change of drawing, not of data.
-Draw the best straight line. Best means the smallest total miss.
+A straight line is what least squares is for. The log axis was a change of drawing and not of
+data, so the counts themselves are still a curve; what is straight is `np.log10(counts)` plotted
+against magnitude, and that is the pair least squares gets. Draw the best straight line. Best means
+the smallest total miss.
 
 `LinearRegression` wants one row per data point rather than one long row, which is what
 `.reshape(-1, 1)` is doing below: sixteen numbers become sixteen rows of one number each.
@@ -562,8 +573,9 @@ print("✓ the fitted line — slope", round(slope, 3), "so each whole magnitude
 md(f"""
 A slope of {M['slope']}, with R squared {M['r2']}. Seismologists quote the size of that slope and
 call it the **b-value**; a b-value near 1 is what Gutenberg and Richter found and what most of the
-world's crust gives. It says that magnitude 4 earthquakes outnumber magnitude 5s by about
-{M['step_factor']} to one, all the way up and all the way down, with no favoured size anywhere.
+world's crust gives. It says that earthquakes of magnitude 4 and above outnumber those of
+magnitude 5 and above by about {M['step_factor']} to one, and that the same factor holds between
+any two levels a whole magnitude apart, with no favoured size anywhere.
 
 That is a strong statement about how the crust breaks. Rock does not have a characteristic
 earthquake size the way a person has a characteristic height — the same physics of a rupture
@@ -678,10 +690,12 @@ Every defensible range lands between {min(M['eq_predictions'])} and {max(M['eq_p
 
 Three things could be true, and this notebook cannot tell them apart. {WINDOW} years may simply be
 too short a window for an event this rare, so we are looking at an unlucky draw. Or California may
-genuinely make more large earthquakes than the small ones suggest — the crust runs out of small
-faults long before it runs out of long ones, and a fault that is long enough can rupture end to end.
-Or the counting could be off. Hold the question open; the first part of the homework goes after the
-first of those three.
+genuinely make more large earthquakes than its small ones imply: the small events come from cracked
+crust everywhere, while the magnitude 7s come from a handful of very long faults rupturing along
+most of their length, and whether those long faults deliver more big earthquakes than the
+small-event line allows is a live argument in seismology rather than a settled question. Or the
+counting could be off. Hold the question open; the first part of the homework goes after the first
+of those three.
 
 ## The same line, drawn for volcanoes
 
@@ -730,15 +744,15 @@ vei_levels = np.array([2, 3, 4])
 vei_slope, vei_predicted = predict_count(vei, vei_levels, 7)
 
 print("slope:", round(vei_slope, 3))
-print("the line expects", round(vei_predicted, 3), "eruptions at VEI 7 since {VOLCANO_FROM}")
+print("the line expects", round(vei_predicted, 2), "eruptions at VEI 7 since {VOLCANO_FROM}")
 print("the catalogue holds", count_at_least(vei, 7))
 """, """
 assert vei_levels.min() >= 2, "fit from VEI 2 upward — 0 and 1 are the levels the catalogue misses"
-print("✓ the volcano line — it expects", round(vei_predicted, 3),
+print("✓ the volcano line — it expects", round(vei_predicted, 2),
       "at VEI 7 and the catalogue holds", count_at_least(vei, 7))
 """)
 
-code(f"""
+code("""
 all_levels = np.arange(0, 8)
 
 vei_counted = []
@@ -746,7 +760,11 @@ vei_on_the_line = []
 for level in all_levels:
     vei_counted.append(count_at_least(vei, level))
     vei_on_the_line.append(predict_count(vei, vei_levels, level)[1])
+    print("VEI", level, " counted", vei_counted[-1],
+          "  the line says", round(vei_on_the_line[-1], 2))
+""")
 
+code(f"""
 plt.scatter(all_levels, vei_counted, label="counted")
 plt.plot(all_levels, vei_on_the_line, color="firebrick", label="the line fitted to VEI 2, 3, 4")
 plt.yscale("log")
@@ -764,17 +782,17 @@ there are {M['vei_counts'][6]}, and {M['vei_pred7']} at VEI 7 where there is {M[
 
 Below VEI 2 it is a disaster, and the log axis is what makes the size of the disaster visible: the
 line calls for {M['vei_line'][0]:,.0f} eruptions at VEI 0 or above and the catalogue holds
-{M['vei_counts'][0]:,}. Taken literally that says nine in ten of the world's smallest eruptions never
-reached anybody's records; taken carefully it says the record cannot be trusted down there at all,
-which is the same conclusion and a safer way to say it. Either way the missing thing is the data,
-not the line.
+{M['vei_counts'][0]:,}. Taken literally that says more than nine in ten of the world's smallest
+eruptions never reached anybody's records; taken carefully it says the record cannot be trusted
+down there at all, which is the same conclusion and a safer way to say it. Either way the missing
+thing is the data, not the line.
 
 ## What one observation can settle
 
 {M['vei_pred7']} predicted against {M['vei_obs7']} observed looks like a triumph, and this is
-exactly the moment to be suspicious. A prediction is only impressive if it could have been embarrassed. So ask what
-counts as agreement here: if the true rate of VEI 7 eruptions were something quite different, how
-often would {M['span']} years still hand you exactly one?
+exactly the moment to be suspicious. A prediction is only impressive if it could have been
+embarrassed, so ask what would have counted as a failure here: if the true rate of VEI 7 eruptions
+were something quite different, how often would {M['span']} years still hand you exactly one?
 
 Rare independent events arrive with Poisson counts, so simulate. Twenty thousand imaginary
 histories at each of several rates, counting how often each one produces exactly {M['vei_obs7']}.
@@ -789,9 +807,11 @@ for rate in {POISSON_RATES}:
           round((histories == 1).mean() * 100), "% of histories")
 
 top = rated[rated["ExplosivityIndexMax"] >= 7]
+oldest = int(top["StartDateYear"].min())
 print()
-print("VEI 7 eruptions in the whole catalogue:", len(top),
-      " oldest starts:", int(top["StartDateYear"].min()))
+print("the fitted rate is one VEI 7 every", round({M['span']} / vei_predicted), "years")
+print("the whole catalogue holds", len(top), "of them, the oldest starting", oldest,
+      "— one every", round((2026 - oldest) / len(top)), "years")
 """)
 
 md(f"""
@@ -851,8 +871,6 @@ window and we drew an unlucky one. That is checkable: count the other windows.
 year at or after `start` and before `start + {WINDOW}`. Collect the counts in a list called
 `window_counts`, print each window with its count, and print the mean.
 
-Then say in one line whether {EQ_START[:4]}-{EQ_END[:4]} looks like a normal window.
-
 **Use these names**, because the self-check looks for them: `window_counts`, `big_history`.
 """)
 
@@ -898,14 +916,14 @@ for start_year in {FORK_YEARS}:
     fork_slope, fork_predicted = predict_count(window_vei, vei_levels, 7)
     fork_predictions.append(fork_predicted)
     print("since", start_year, ":", len(window_vei), "eruptions,",
-          "the line expects", round(fork_predicted, 3), "at VEI 7,",
+          "the line expects", round(fork_predicted, 2), "at VEI 7,",
           "and", count_at_least(window_vei, 7), "occurred")
 """, """
 assert len(fork_predictions) == 2, "two start years, two predictions"
 assert fork_predictions[0] != fork_predictions[1], \\
     "identical predictions mean the same eruptions went in twice — check the cut inside the loop"
 print("✓ the window is a choice — the two start years predict",
-      round(fork_predictions[0], 3), "and", round(fork_predictions[1], 3), "VEI 7 eruptions")
+      round(fork_predictions[0], 2), "and", round(fork_predictions[1], 2), "VEI 7 eruptions")
 """)
 
 ask(f"""

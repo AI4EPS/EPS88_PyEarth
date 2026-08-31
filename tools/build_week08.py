@@ -508,16 +508,14 @@ plt.show()
 
 md(f"""
 A hump, and the red lines cut {int(round(0.025 * B))} resamples off each side. Two things to read
-off it. Every one of the {B:,} resamples landed between {M['boot_min']:.2f} and
-{M['boot_max']:.2f} mm/yr — nowhere near zero, and
-{M['n_below_zero']} of the {B:,} resamples came out at zero or below. So the answer to *could the
-Bay be flat?* is no, and now we can say so rather than assert it.
+off it. Nothing in it comes anywhere near zero — the count you printed of resamples at zero or
+below was {M['n_below_zero']} out of {B:,} — so the answer to *could the Bay be flat?* is no, and
+now we can say so rather than assert it.
 
 Second, look at how narrow it is: {M['iid_width']:.2f} mm/yr wide, against the
 {M['chunk_span']:.2f} mm/yr that separated the highest of your five chunks from the lowest. Cutting
-the record up made the answer look about {M['chunk_span'] / M['iid_width']:.0f} times less certain
-than it is, because each piece had a quarter-century of noise to fit through and a quarter of the
-data to do it with.
+the record up made the answer look far less certain than it is, because each piece had a
+quarter-century of noise to fit through and a quarter of the data to do it with.
 """)
 
 # --- section 3 -------------------------------------------------------------
@@ -618,13 +616,19 @@ print("expected number of M7+ in the same span:", round(predicted_m7(quakes["mag
 
 md(f"""
 {M['rate']:.2f} expected, against five that actually happened. That is where the argument stopped
-when you first fitted the line. {M['rate']:.2f} the way you just bootstrapped the slope and you get a 95% interval
+when you first fitted the line.
+""")
+
+md(f"""
+### Predict before you run
+
+Bootstrap that {M['rate']:.2f} the way you just bootstrapped the slope and you get a 95% interval
 around it. **How high do you think the top of that interval reaches?** Commit to a number — change
 `my_guess` and run it — and then find out.
 """)
 
-code(f"""
-my_guess = 5.0
+code("""
+my_guess = 3.0
 
 print("you guessed the interval reaches:", my_guess, "M7+ earthquakes")
 print("five actually happened")
@@ -670,7 +674,7 @@ plt.axvline(rate_high, color="firebrick")
 plt.axvline(5, color="black")
 plt.xlabel("bootstrap forecast (M7+ earthquakes in {M['span_years'] // M['n_windows']} years)")
 plt.ylabel("number of resamples")
-plt.title(f"{{len(boot_rates):,}} bootstrap forecasts; top of the interval in red, 5 observed in black")
+plt.title(f"{{len(boot_rates):,}} bootstrap forecasts; interval top red, 5 observed black")
 plt.show()
 """)
 
@@ -724,7 +728,7 @@ print("\u2713 an interval on the count \u2014 5 or more happened in",
 code("""
 plt.hist(boot_counts, bins=np.arange(-0.5, boot_counts.max() + 1.5, 1))
 plt.axvline(5, color="black")
-plt.xlabel("M7+ earthquakes in a simulated thirty-six years")
+plt.xlabel("M7+ earthquakes in a simulated 36 years")
 plt.ylabel("number of simulated worlds")
 plt.title(f"{len(boot_counts):,} simulated worlds, 5 observed marked in black")
 plt.show()
@@ -744,8 +748,9 @@ has had.
 
 code(f"""
 big["when"] = pd.to_datetime(big["time"])
-window_counts = []
+print(big[["mag", "place"]])
 
+window_counts = []
 for start in {WINDOW_STARTS}:
     inside = (big["when"] >= f"{{start}}-01-01") & (big["when"] < f"{{start + {WINDOW_YEARS}}}-01-01")
     window_counts.append(inside.sum())
@@ -776,10 +781,11 @@ is not in trouble at all.
 
 Two caveats you should carry, because neither is settled by anything above. The box is a
 rectangle of latitude and longitude, not the state, so it collects earthquakes in Nevada and Baja
-California as well — {big.loc[1, 'place']} is one of the {M['total_big']}. And the earlier windows
+California as well: of the {M['total_big']} the cell above listed, Fairview Peak is in Nevada and
+Sierra El Mayor is in Baja California. And the earlier windows
 depend on a catalogue that was thinner: *A catalogue lists what somebody's instruments recorded,
 not what happened.* If those windows are undercounted, the true long-run rate is higher than
-{M['total_big']}/{M['span_years']} years, which pushes the same way — it makes five look less
+{M['total_big']} in {M['span_years']} years, and that pushes the same way — it makes five look less
 exceptional, not more.
 """)
 
@@ -798,9 +804,6 @@ months of 1931 or none of them — so that whatever is shared inside a year trav
 are {M['n_calendar_years']} years to draw from. `pd.concat` is the function that stacks the chosen
 years back into one table.
 """)
-
-code(weekkit.CHECKPOINT.format(body="""fit = LinearRegression().fit(sea[["year"]], sea["sea_mm"])
-slope = fit.coef_[0]"""))
 
 code(f"""
 np.random.seed(88)
@@ -847,13 +850,13 @@ not always be true, and when it is not, the wider interval is the one to believe
 md(f"""
 {weekkit.CLOSING_HEADING}
 
-**Neither, on this evidence — and the reason we can now say that instead of shrugging is that the
-forecast finally has an interval attached.** Bootstrapping the catalogue puts the
+**We cannot show it was wrong — and the reason we can now say that, rather than shrug, is that
+the forecast finally has an interval attached.** Bootstrapping the catalogue puts the
 Gutenberg-Richter rate at {M['rate']:.2f} M7+ earthquakes per {WINDOW_YEARS} years, 95% CI
 [{M['rate_low']:.2f}, {M['rate_high']:.2f}], and five is far outside that. But a rate is not a
 count: fold in the Poisson scatter that any real thirty-six years is subject to and five happens
-in {100 * M['frac_5']:.1f}% of simulated worlds, at the very top of the interval rather than beyond
-it. Widen the window and the case for a broken model gets weaker still — {M['total_big']} large
+in {100 * M['frac_5']:.1f}% of simulated worlds, sitting on the top edge of the interval on the
+count rather than beyond it. Widen the window and the case for a broken model gets weaker still — {M['total_big']} large
 earthquakes in {M['span_years']} years against {M['n_windows'] * M['rate']:.1f} expected, which
 {100 * M['frac_total']:.0f}% of simulated worlds match or beat. The forecast was not convicted; it
 was not acquitted either, and the honest report is the interval rather than the verdict.
@@ -976,17 +979,18 @@ either way.
 """)
 
 answer_prose(f"""
-Fitting between {LO['lo']} and {LO['hi']} gives a forecast of {LO['rate']:.2f} M7+ earthquakes,
-a 95% interval on the count topping out at {LO['count_high']}, and five or more in only
-{100 * LO['frac_5']:.1f}% of simulated worlds — so on my choice five *is* outside the interval and
-the forecast looks broken. Class's range, 4.0 to 5.5, gave {100 * M['frac_5']:.1f}%, with five
-sitting on the edge rather than beyond it; the wider range {HI['lo']} to {HI['hi']} gives
-{100 * HI['frac_5']:.1f}%. The verdict therefore turns on a choice nobody can defend as the only
-right one, which means one thirty-six-year count cannot settle it: the answer moves by more when I
-change my fitting range than the data moves it. For a single window to be decisive, the observed
-count would have to sit outside the interval under *every* defensible fitting range — five does
-not — or the window would have to be long enough that the Poisson scatter, which is about the
-square root of the expected count, became small next to the gap being argued about.
+Fitting between {LO['lo']} and {LO['hi']} gives a forecast of {LO['rate']:.2f} M7+ earthquakes, a
+95% interval on the count topping out at {LO['count_high']}, and five or more in only
+{100 * LO['frac_5']:.1f}% of simulated worlds — so on my choice five is *outside* the interval and
+the forecast does look broken. Class's range, 4.0 to 5.5, gave {100 * M['frac_5']:.1f}%, with five
+sitting on the edge rather than beyond it, and the third choice, {HI['lo']} to {HI['hi']}, has only
+{M['count_at_55']} events above magnitude 5.5 left to fit, so its interval is wider still. The
+verdict therefore turns on a choice nobody can defend as the only right one, and the answer moves
+more when I change my fitting range than the observation moves it. For a single thirty-six-year
+count to settle the question, it would have to fall outside the interval under *every* defensible
+fitting range — five does not — or the window would have to be long enough that the Poisson
+scatter, which is roughly the square root of the expected count, became small beside the gap being
+argued about.
 """)
 
 
