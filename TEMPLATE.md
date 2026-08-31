@@ -330,6 +330,12 @@ as the prose. Write it to be **copied**, not admired.
 - **The same shapes every week.** Setup, loading, plotting and checking look identical in week 12
   and week 1, so by December the only new thing on the screen is the science.
 
+- **A large binary asset has exactly one door.** A `.npz` or similar too big for `data/` goes to
+  a GitHub release, and `torch.hub.download_url_to_file(url, name)` is the ONLY route in the six
+  libraries that fetches a URL to disk — `np.load` takes no URL and `urllib` is standard library,
+  which is closed. Wrap it in the same try/except shape as `SETUP_CELL`, write no `data/` copy,
+  and add the filename to `.gitignore`: the notebook downloads it into the working directory, and
+  nothing else stops 42 MB being committed into a repo nbgitpuller clones onto 46 accounts.
 - **It is graded as a PDF.** Students export the notebook and upload it to Canvas, and it is read
   on screen, not run. So everything that earns marks has to be legible in print: no output wider
   than the page (a printed line clipped at the right margin is ungradeable, and a twenty-column
