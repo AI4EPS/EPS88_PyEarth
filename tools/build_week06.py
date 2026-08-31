@@ -323,7 +323,7 @@ get **residuals**, and look at them. And fit a line that is not allowed an inter
 `LinearRegression(fit_intercept=False)`, when physics has already told you one point it must pass
 through.
 
-**The four questions this week works through:**
+**The four questions, in order:**
 
 1. Is the expansion rate one number, or thirty-six?
 2. Where does the line have to cross zero, and how old is the universe once it does?
@@ -442,7 +442,7 @@ print("✓ one Hubble constant per supernova —", round(h_each.min(), 1), "to",
       len(h_each), "of them")
 """)
 
-# --- section 2: one line through all of them ------------------------------
+# --- one line through all of them -----------------------------------------
 md(f"""
 Thirty-six supernovae, {M['h_min']:.1f} to {M['h_max']:.1f} km/s/Mpc, the largest
 {M['h_max'] / M['h_min']:.2f} times the smallest. That is not one Hubble constant, it is
@@ -453,7 +453,7 @@ its speed and its distance.
 
 What we want is one number that uses all thirty-six at once.
 
-## What does one line through all thirty-six say?
+### What does one line through all thirty-six say?
 
 Draw the best straight line. Best means the smallest total miss. For each point, the miss is the
 vertical gap between the real speed and the speed the line claims; square each gap so that
@@ -558,7 +558,9 @@ below it, and both signs turn up at every distance rather than the picture sweep
 side of zero to the other as you move right. So the straight line is a fair description of these
 data, and a curve would not obviously do better. That settles the *shape*. It does not settle the
 *position*.
+""")
 
+md(f"""
 ## Where does the line have to cross zero, and how old is the universe once it does?
 
 Go back to the intercept, which is the number your prediction was about. The fitted line says
@@ -841,7 +843,9 @@ drawn through a bend can cross age zero a long way from zero. Forcing the line t
 moves the answer from {M['par_free_slope'] / 10:.2f} to {M['par_forced_slope'] / 10:.2f} cm/yr —
 {abs(M['par_forced_slope'] - M['par_free_slope']) / 10:.2f} cm/yr of difference produced by an
 argument rather than by any new data.
+""")
 
+md(f"""
 ## Do the two ridge files mean the same thing by "distance"?
 
 One ridge is not a result, and the Mid-Atlantic table has {M['mar_n']} picks waiting. But the two

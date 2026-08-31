@@ -456,7 +456,7 @@ have, `np.percentile` turns a thousand answers into an interval, and a `for` loo
 together. You will put an error bar on a fitted slope, which is something a single call to
 `LinearRegression` will never give you.
 
-**The four questions this week works through:**
+**The four questions, in order:**
 
 1. Could the Bay's rise be zero?
 2. How much water is that by 2100?
@@ -592,7 +592,7 @@ the data. Five numbers also cannot tell you what "95% of the time" means.
 What we want is the whole record's worth of answer, many times over. We only have one record. So
 we make more of it out of the one we have.
 
-## How do you get an error bar out of one record?
+### How do you get an error bar out of one record?
 
 The trick has a name and one line of code. **Bootstrap:** *Ask the data the same question a
 thousand times, using a different random slice of itself each time.*
@@ -727,7 +727,9 @@ has to fit through a quarter-century of weather. But that wobble is nowhere near
 open a gap of {M['ends_gap']:.2f}. Something in this record really did change, and
 {M['slope']:.3f} mm/yr is an average across a rate that was not constant. The interval around it
 says how well we know that average — not that the Bay rose steadily.
+""")
 
+md("""
 ## How much water is that by 2100?
 
 Millimetres per year is not a quantity anyone plans a seawall around. Two conversions get asked
@@ -786,7 +788,9 @@ plain reason to doubt that: the most recent twenty-five years came out at {M['ch
 mm/yr, more than twice the long-run figure. The interval [{M['cm_2100_low']:.1f},
 {M['cm_2100_high']:.1f}] cm is the uncertainty in *this straight line*, not the uncertainty in what
 the ocean will do. It is a floor, not a forecast.
+""")
 
+md(f"""
 ## Was the forecast wrong, or were we unlucky?
 
 Back to the earthquakes, with the same six lines.

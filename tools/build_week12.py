@@ -380,6 +380,13 @@ groups you did not choose, and is allowed to refuse. `PCA` measures the shape of
 
 **Eight places where you write something: five in class, three at home.** Each one is headed
 *Your turn*, with an empty cell under it.
+
+**The four questions, in order:**
+
+1. Is six months of this box unusual, and what shape is the cloud?
+2. Can you find the structures by putting pins on the map?
+3. What changes when the method is allowed to say "this one belongs to nothing"?
+4. Is a cluster a fault?
 """)
 
 setup = weekkit.setup_cell(
@@ -409,7 +416,7 @@ code(setup)
 
 # --- section 1 -------------------------------------------------------------
 md(f"""
-## Six months in one box of desert
+## Is six months of this box unusual, and what shape is the cloud?
 
 Every row is one earthquake of magnitude {MINMAG} or above, inside a box
 {-118.5} to {-117.0} degrees east and {35.0} to {36.5} degrees north, between
@@ -452,7 +459,8 @@ windows = [("2018-01-01", "2018-07-01"), ("2018-07-01", "2019-01-01"),
            ("2020-01-01", "2020-07-01")]
 
 for start, end in windows:
-    print(start, "to", end, ":", len(load(start, end)), "earthquakes")
+    window = load(start, end)
+    print(start, "to", end, ":", len(window), "earthquakes")
 
 print("you guessed:", my_guess, "for 2019-01-01 to 2019-07-01")
 """)
@@ -559,8 +567,10 @@ the patch in the northwest corner and the crossing limb are either inside the ci
 it, and either way they are not distinguished from anything else.
 
 What we want is a method that is handed the coordinates and nothing else.
+""")
 
-## Putting pins on the map
+md(f"""
+## Can you find the structures by putting pins on the map?
 
 Here is the oldest idea in clustering. *Put k pins on the map, give each point to its nearest pin,
 move the pins, repeat.* The pins settle where the data is densest, and each point ends up with
@@ -704,8 +714,10 @@ The curve bends, but it does not have a corner. The first extra pin takes
 is left, as the self-check line says. There is no `k` at which the curve says *stop here*, because the data
 is not made of `k` round blobs, so no value of `k` is right. That is the honest reading of a
 smooth elbow: it is telling you that the question "how many blobs?" does not fit this data.
+""")
 
-## Groups by crowding, instead of by pins
+md(f"""
+## What changes when the method is allowed to say "this one belongs to nothing"?
 
 *The same idea, but it is allowed to say: this one belongs to nothing.* That is **DBSCAN**, and
 it works from crowding rather than from pins. It has two settings and no `k`:
@@ -908,8 +920,10 @@ mistake is the opposite of cutting the cluster short: it *over-includes*, sweepi
 {M['circle_not_c0']} events that are not in cluster 0 at all. Hold that number. The closing comes
 back to it, because a headline result you could have had by knowing where the mainshock was is
 the part of this output worth the least.
+""")
 
-## The shape of a cluster
+md(f"""
+## Is a cluster a fault?
 
 A cluster is not yet a fault. A fault is a surface in the rock, so a cluster that is a fault
 should be *long in one direction, less so in a second, and thin in the third*. The map cannot tell
@@ -1016,7 +1030,7 @@ what you are about to do. A standard deviation is never the length of a fault.
 Some of the thickness is real, because faults are zones and not razor cuts, and some of it is
 only how accurately these events could be located.
 
-## One cluster, or two faults?
+### One cluster, or two faults?
 
 {M['evr_0'][0] * 100:.1f}% on one axis is a strong number, and it is also a misleading one. Most
 of cluster 0's events are on the long limb, so the long limb is most of the variance, so PCA
@@ -1224,6 +1238,10 @@ labels, and print three things: how many clusters it found (`len(set(labels)) - 
 not a cluster), how many events it left unassigned (`(labels == -1).sum()`), and that count as a
 percentage of {M['n']:,}. Append the cluster count to `cluster_counts` as you go.
 
+Then answer it in one more printed line, quoting the count at each end of your sweep: what did
+widening `eps` from {EPS_SWEEP[0]} to {EPS_SWEEP[-1]} do to the number of structures the method
+reports, and is that number a property of the earthquakes or of the setting you chose?
+
 **Use these names**, because the self-check looks for them: `eps_values`, `cluster_counts`.
 """)
 
@@ -1237,6 +1255,11 @@ for eps in eps_values:
     cluster_counts.append(len(set(labels)) - 1)
     print("eps", eps, "->", len(set(labels)) - 1, "clusters,", unassigned, "unassigned (",
           round(100 * unassigned / len(labels), 1), "% )")
+
+print("Widening eps from", eps_values[0], "to", eps_values[-1], "took the count of structures",
+      "from", cluster_counts[0], "down to", cluster_counts[-1],
+      "on the same earthquakes, so the number of structures is a property of eps and not of",
+      "the desert; the catalogue never changed.")
 """, f"""
 assert len(cluster_counts) == len(eps_values), \\
     "one cluster count per eps — was the append inside the loop?"

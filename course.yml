@@ -79,6 +79,14 @@ calendar:
 # module's extension into assigned reading — it is written and published either way.
 schedule:
   - n: 1
+    frozen_until: 2026-09-09        # the Wednesday after week 1's deadline
+    frozen_because: >
+      Taught 2026-08-31. 46 students hold this notebook, nbgitpuller gives their copy priority
+      on a merge, and the deployed Gradescope bundle stores its released self-checks — so any
+      change to an assert, a cell id or the released source fails whoever is on the other side
+      of it. The repaired week is built and waiting on branch week01-v2; it merges on the date
+      above. Until then check_all REPORTS week 1's defects and does not fail on them, so a red
+      build still means something new broke. Delete both keys at merge.
     date: 2026-08-31
     slug: 01_birthquake
     evidence: [notes/dataset-audit/usgs-fdsn.md]

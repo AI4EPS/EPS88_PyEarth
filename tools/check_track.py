@@ -205,7 +205,7 @@ def main():
     cn.check_imports(cells)
     cn.check_figures(cells)
     cn.check_figures(sol_cells)
-    cn.check_code_quality(cells)
+    cn.check_code_quality(cells, sol_cells)
     check_scaffolding_stops(cells, qs)
     check_no_worked_answer(cells, sol_cells)
     check_required_sections(cells)

@@ -76,9 +76,24 @@ built = [s for s in course["schedule"] if s["modules"]
          and (ROOT / "docs/notebooks" / f"{s['slug']}.ipynb").exists()]
 if not built:
     print("  --    no notebooks built yet")
+import datetime
 for s in built:
-    bad += run(f"week {s['n']} notebook", "check_notebook.py", str(s["n"]))
-    bad += run(f"week {s['n']} prior knowledge", "check_prior_knowledge.py", str(s["n"]))
+    # A week frozen between its release and its deadline cannot be repaired without breaking
+    # grading for students who already hold it. Its defects are still PRINTED — hiding them
+    # would be worse than a red build — but they do not fail the run, so a failure still means
+    # something new broke rather than something known and dated.
+    fu = s.get("frozen_until")
+    if isinstance(fu, str):
+        fu = datetime.date.fromisoformat(fu)
+    frozen = fu and datetime.date.today() < fu
+    a = run(f"week {s['n']} notebook", "check_notebook.py", str(s["n"]))
+    b = run(f"week {s['n']} prior knowledge", "check_prior_knowledge.py", str(s["n"]))
+    if frozen:
+        if a or b:
+            print(f"        ^ week {s['n']} is FROZEN until {fu} and these are not counted — "
+                  f"students hold it; the repair is on branch week01-v2")
+    else:
+        bad += a + b
 
 # Project tracks. They are notebooks like a week, but keyed by track id rather than week
 # number, so they need their own checker — see tools/check_track.py for what carries over

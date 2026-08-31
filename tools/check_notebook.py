@@ -500,10 +500,17 @@ def check_imports(cells):
                 warns.append(f"cell {i}: import outside the setup cell")
 
 
-def check_code_quality(cells):
+def check_code_quality(cells, solution_cells=()):
     """The mechanical half of TEMPLATE 8 'the code is teaching material'."""
     code = [(i, src(c)) for i, c in enumerate(cells) if c["cell_type"] == "code"]
     all_code = "\n".join(s for _, s in code)
+    # The unused-import test must see the SOLUTION too. In a student copy every answer is a
+    # stub, so an import used only inside answers reads as dead — and in a project track, where
+    # the whole notebook after the load is stubs, that is a false positive on every build. An
+    # import the model answer uses is used.
+    if solution_cells:
+        all_code += "\n" + "\n".join(src(c) for c in solution_cells
+                                      if c.get("cell_type") == "code")
 
     # commented-out code: a comment that parses as a statement, not as prose
     for i, s in code:
@@ -716,7 +723,7 @@ def main():
     # Figures live in the SOLUTION too: a model answer that draws a map was never
     # checked for labels or coastlines, because only the student copy was passed in.
     check_figures(cells); check_figures(sol_cells)
-    check_code_quality(cells); check_summary_is_generated(cells, n)
+    check_code_quality(cells, sol_cells); check_summary_is_generated(cells, n)
     check_checkpoints_rebuild(cells, sol_cells)
     scope = "" if solution else " · student only (no solution in this checkout)"
     print(f"week {n} · {len(cells)} cells · {len(qs)} questions · {figs} figures{scope}")

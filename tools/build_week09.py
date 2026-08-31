@@ -330,7 +330,7 @@ record does and does not let you say about when it reaches {TARGET_PPM} ppm.
 years you fit on and years you keep back; and read the two error curves that tell you when a
 model has stopped learning the pattern and started memorising the data.
 
-**The four questions this week works through:**
+**The four questions, in order:**
 
 1. Is a straight line enough?
 2. How much bend does the record want?
@@ -712,9 +712,9 @@ the moment they leave them. *Too simple and you miss the pattern; too flexible a
 the noise.* The held-out years are the only thing on that plot that can tell the three apart.
 """)
 
-# --- section 4 -------------------------------------------------------------
+# --- scoring every degree on the held-out years ----------------------------
 md(f"""
-## Which degree do the held-out years choose?
+### Which degree do the held-out years choose?
 
 One year of checking is thin. Score each curve on all {M['n_later']} held-out years instead, and
 score it on its training years too, so the two can be compared.

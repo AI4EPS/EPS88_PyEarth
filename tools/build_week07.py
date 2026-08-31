@@ -344,7 +344,7 @@ each level. Put those counts on a **log axis** so a hopeless curve becomes a str
 that line with `LinearRegression`, read its slope, and use `predict` to ask it about a size that is
 not in your data at all.
 
-**The four questions this week works through:**
+**The four questions, in order:**
 
 1. Why can't we just count the Tamboras?
 2. How many small earthquakes for each large one?
@@ -522,7 +522,7 @@ by roughly their own square root, so that {M['n6']} could as easily have come ou
 {M['ratio45']}. Two ratios that might be one is worth measuring properly instead of at three
 points.
 
-## What do the counts do at every level, not just three?
+### What do the counts do at every level, not just three?
 
 The histogram above counted earthquakes **in** each magnitude bin. What Your turn 1 counted is
 different and more useful: how many are **at or above** a level. That is a *cumulative* count, and
@@ -635,7 +635,7 @@ count by the same factor — which lets you predict the sizes you have never see
 this the Gutenberg–Richter relation, after the two Caltech seismologists who described it in the
 1940s, and it holds with the same shape in essentially every region anybody has looked at.
 
-## What is that factor, measured rather than eyeballed?
+### What is that factor, measured rather than eyeballed?
 
 A straight line is what least squares is for. The log axis was a change of drawing and not of
 data, so the counts themselves are still a curve; what is straight is `np.log10(counts)` plotted
@@ -719,7 +719,9 @@ catalogue. The check could hardly have failed, so passing it says almost nothing
 resting on that {M['r2']} is resting on the shape of a cumulative count rather than on California.
 What would be worth something is the line holding up somewhere it was never fitted. That is
 testable, so test it.
+""")
 
+md("""
 ## Does the line hold where it was never fitted?
 
 The line was measured between magnitude 3.5 and 5.0. Nothing stops us evaluating it somewhere else,
@@ -842,7 +844,9 @@ most of their length, and whether those long faults deliver more big earthquakes
 small-event line allows is a live argument in seismology rather than a settled question. Or the
 counting could be off. Hold the question open; the first part of the homework goes after the first
 of those three.
+""")
 
+md(f"""
 ## So how often does a Tambora happen?
 
 VEI is a magnitude scale, so the same machinery applies without changing a thing: cumulative counts
@@ -956,7 +960,7 @@ eruptions never reached anybody's records; taken carefully it says the record ca
 down there at all, which is the same conclusion and a safer way to say it. Either way the missing
 thing is the data, not the line.
 
-## And how much is that number worth?
+### And how much is that number worth?
 
 About one predicted against exactly {M['vei_obs7']} observed looks like a triumph, and this is
 exactly the moment to be suspicious. A prediction is only impressive if it could have been
