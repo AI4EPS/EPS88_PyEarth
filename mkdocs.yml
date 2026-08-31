@@ -17,3 +17,5 @@ plugins:
 nav:
   - Home: README.md
   - Weeks:
+    - "Week 1: What was your birthquake?": notebooks/01_birthquake.ipynb
+    - "Week 3: Earth's elevation has two peaks. So does Mars's. Same reason?": notebooks/03_two_peaks.ipynb
