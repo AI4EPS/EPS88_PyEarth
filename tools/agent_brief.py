@@ -114,10 +114,16 @@ def past_defects():
         return ""
     # Newest first, capped: a mechanised defect drops out on its own (a checker catches it),
     # but the judgement ones only accumulate, and a brief nobody finishes teaches nothing.
-    d = [x for x in yaml.safe_load(f.read_text())["defects"]
+    raw = yaml.safe_load(f.read_text())["defects"]
+    d = [(i, x) for i, x in enumerate(raw)
          if x.get("scope") == "build" and not x.get("mechanised")
          and not x.get("promoted") and not x.get("superseded")]
-    d = sorted(d, key=lambda x: str(x.get("date", "")), reverse=True)[:8]
+    # Date, THEN position in the file. Nine build defects were added on 2026-08-31 and twelve
+    # were competing for eight slots, so sorting on date alone left it to Python which of that
+    # day's lessons reached a builder — the mechanism for carrying lessons forward was dropping
+    # the newest ones at random. Later in the file is newer; that is deterministic.
+    d = [x for _, x in sorted(d, key=lambda p: (str(p[1].get("date", "")), p[0]),
+                              reverse=True)[:8]]
     if not d:
         return ""
     body = "\n".join(f"- **{x['id']}** ({x['caught_by']}) — {x['lesson'].strip()}" for x in d)
