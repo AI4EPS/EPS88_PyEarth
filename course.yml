@@ -1046,15 +1046,29 @@ project:
         give different answers and only one of them is honest — many records share an earthquake,
         and many share a station.
       open_question: >
-        Does a neural network actually beat a well-designed parametric GMPE, or does it only look
-        that way under a random split? Measured on this data, a random forest beats the classic
-        three-parameter form by +0.061 R2 on a random 5-fold, +0.056 split by event, LOSES by
-        0.012 split by station, and loses by 0.054 trained outside Italy and tested in Italy.
-        The advantage reverses sign, because the forest was memorising site terms rather than
-        learning physics. Whether ML genuinely improves ground-motion prediction under honest
-        validation is unresolved in the literature and decidable with this dataset — and sigma
-        (0.448 log10, decomposing to tau = 0.371 and phi = 0.337) is the quantity seismic hazard
-        actually consumes, so reducing it is a real goal rather than a leaderboard.
+        Does a neural network actually beat a well-designed parametric GMPE, or does it only
+        look that way under a random split? Measured on this data, a random forest beats the
+        classic three-parameter form by +0.039 R2 on a random split and +0.023 split by event;
+        split by STATION the advantage is +0.012 with a 95% interval of [-0.006, +0.030], which
+        straddles zero; and trained outside Italy and tested in Italy it LOSES by 0.094. So the
+        advantage does not survive an honest split, and reverses only when the test set is a
+        region the model never saw — consistent with the forest memorising site terms rather
+        than learning physics. Whether ML genuinely improves ground-motion prediction under
+        honest validation is unresolved in the literature and decidable with this dataset. And
+        sigma (0.445 log10, decomposing to tau = 0.306 between earthquakes and phi = 0.324
+        within them) is the quantity seismic hazard actually consumes, so reducing it is a real
+        goal rather than a leaderboard.
+      open_question_note: >
+        ⚠️ CORRECTED 2026-08-31 from the T1 build; kept out of the student text above. Two
+        errors. (a) A SIGN ERROR: this said the forest "LOSES by 0.012 split by station". It is
+        AHEAD by 0.012 there — the honest statement is that the gap's interval straddles zero,
+        not that it reverses. The sign genuinely flips only at the region holdout. (b) The
+        sigma decomposition did not close: it read tau 0.371, phi 0.337, sigma 0.448, but
+        sqrt(0.371^2 + 0.337^2) = 0.501. The audit's tau was the naive standard deviation of
+        per-event mean residuals, which inflates it with within-event sampling noise; the
+        row-weighted terms are orthogonal by construction and do close (0.3055, 0.3238 ->
+        0.4452). Both original figures came from 5-fold cross-validation, which CLAUDE.md
+        excludes from this course, so neither was reproducible as written.
       uses: [ML1, S3, S4, ML2, ML4, ML6]
       evidence: notes/dataset-audit/ground-motion.md
 
@@ -1064,9 +1078,22 @@ project:
       data: "NOAA Mauna Loa monthly 1958-2026, plus Barrow at 71N for the comparison"
       fork: "What is 'amplitude' — peak-to-trough, detrended residual, or a Fourier term? They disagree."
       open_question: >
-        Mauna Loa gives +12.9% and Barrow gives +24.7%: the seasonal breath is growing faster at
-        high latitude. How far north does that scale, and what does it say about which ecosystems
-        are doing the breathing?
+        The seasonal breath is growing faster at high latitude — Mauna Loa's detrended swing
+        grows at +0.118 ppm per decade against Barrow's +0.969. But the four-station ladder is
+        NOT monotone in latitude: South Pole -90 gives 4.0 %/decade, Samoa -14 gives 12.9,
+        Mauna Loa +19.5 gives 1.8, Barrow +71.3 gives 5.8. How far north does it scale, and what
+        does it say about which ecosystems are doing the breathing?
+      open_question_note: >
+        ⚠️ CORRECTED 2026-08-31, from building the track. This asked the student to compare
+        "Mauna Loa +12.9% and Barrow +24.7%". BOTH numbers reproduce exactly and they are still
+        not a comparable pair: +12.9% comes from the trends CSV, the DETRENDED definition and a
+        50-year window, while +24.7% comes from the flask file, the RAW definition and 39 years.
+        Different definition, different measurement programme, different window — the compare-
+        like-with-like error week 8 exists to teach, sitting in this course's own project spec
+        with both halves individually correct. Replaced by a rate on one definition and one
+        programme. This note is for whoever edits the plan; it is NOT student-facing, which is
+        why it is a separate key — the first version of this correction went inside
+        open_question and would have printed into the notebook.
       uses: [ML1, S4, ML2]
       evidence: notes/dataset-audit/noaa-climate.md
 
@@ -1120,17 +1147,24 @@ project:
       data: "Vermeesch 2006, 756 samples, OIB 259 / IAB 256 / MORB 241"
       fork: "Which chemistry — the classic three-element diagram, the ten major oxides, or all 51 columns?"
       open_question: >
-        The forest leans hard on Sr and K2O. The premise to get right first: Pearce and Cann
-        (1973) published TWO ternary diagrams, Ti-Zr-Y and Ti/100-Zr-Sr/2, so Sr was not avoided
-        by the founders — it was used, and they warned in the same paper that alteration
-        mobilises it, which is why the Y diagram became the one people trust on altered
-        ocean-floor basalt. (An earlier version of this line said the diagrams "deliberately
-        avoid" Sr; that was recalled rather than measured, it was false, and week 11 inherited
-        it into student-facing prose before a reviewer caught it. Corrected 2026-08-31.) Adding
-        Sr to the classic trio jumps accuracy from 81.2 to 89.7. So the classic diagram is
-        trading discrimination for robustness. Is that the right trade for a rock that has sat
-        on the seafloor for 50 million years, and can you measure the robustness it buys rather
-        than assuming it?
+        The forest leans hard on strontium — second only to TiO2, which comes first on every
+        seed. The premise to get right first: Pearce and Cann (1973) published TWO ternary
+        diagrams, Ti-Zr-Y and Ti/100-Zr-Sr/2, so Sr was not avoided by the founders. It was
+        used, and they warned in the same paper that alteration mobilises it, which is why the
+        Y diagram became the one people trust on altered ocean-floor basalt. Adding Sr to the
+        classic trio takes accuracy from about 80 to about 88. So the classic diagram trades
+        discrimination for robustness. Is that the right trade for a rock that has sat on the
+        seafloor for 50 million years, and can you MEASURE the robustness it buys rather than
+        assuming it?
+      open_question_note: >
+        ⚠️ Two corrections, both 2026-08-31, both kept out of the student text above.
+        (a) This originally said the published diagrams "deliberately avoid" Sr and K2O. False,
+        and recalled rather than measured: it came from the audit, shipped into week 11's
+        student prose, and reached here. (b) It then said the forest "leans hard on Sr and K2O";
+        K2O is fourth at 0.043, a third of Sr's weight and behind Zr, so the pair overstated the
+        second half. The 81.2/89.7 pair also came from the audit's cross-validated protocol,
+        which this course excludes — the track measures 80.1/88.5 on one 70/30 split swept over
+        ten seeds, so the numbers above are deliberately given as "about".
       uses: [ML4, ML2, ML5]
       evidence: notes/dataset-audit/vermeesch-basalts.md
 

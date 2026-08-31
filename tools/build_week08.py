@@ -804,10 +804,11 @@ line off at a magnitude you have not observed.
 Written as a function it is short enough to call {B:,} times.
 """)
 
-code(weekkit.CHECKPOINT.format(body=f'''quakes = load(FDSN + "&starttime=1990-01-01&endtime=2026-01-01"
-                     "&minmagnitude=3.5&maxmagnitude=6.9" + CA_BOX,
-              "{EQ_CACHE}")'''))
-
+# No checkpoint here. This section reads nothing that an earlier SECTION built: `quakes` comes
+# from the setup cell, and TEMPLATE 1.4 asks for a checkpoint only where a section needs state
+# from an earlier one. The cell that stood here re-issued the setup cell's own query verbatim —
+# and could not have run at all unless setup had already run, since it needs `load`, `FDSN` and
+# `CA_BOX` from it. A checkpoint that rebuilds nothing teaches that a checkpoint is a ritual.
 code(f"""
 edges = np.arange(4.0, 5.6, 0.1).round(1)      # fit between magnitude 4.0 and 5.5
 
@@ -1096,10 +1097,8 @@ California on its own. It was a fact about California **and a threshold**, and t
 the story further than the earthquakes did. That is the same lesson as the interval, applied to a
 choice instead of a sample: when a conclusion rests on one round number, try the number either
 side of it and report what you find.
-""")
 
-md(f"""
-Back to the Bay for the assumption the bootstrap slipped past you. Resampling *months* treats each
+Now back to the Bay for the assumption the bootstrap slipped past you. Resampling *months* treats each
 month as an independent draw — as if the sea level in March told you nothing about April. It
 plainly does. A wet winter, an El Niño, a warm year: those last longer than a month, so
 neighbouring months carry much of the same information, and the record's months are worth rather

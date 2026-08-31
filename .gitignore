@@ -18,3 +18,7 @@ phasenet_ncedc.npz
 
 # Gradescope zips staged by tools/gradescope_deploy.py --zip; rebuildable, never source
 build/
+
+# Raw downloads a build keeps only to derive the real cached asset beside them.
+# The underscore marks them intermediate; the artifact students read has no prefix.
+data/_*

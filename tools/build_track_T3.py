@@ -353,7 +353,7 @@ break.
 Everything above it is scaffolding; that question is the project.
 """)
 
-md("""
+md(f"""
 ## What you'll be able to do
 
 **The science.** Say whether a seasonal signal in a global eruption catalogue is a fact about the
@@ -363,6 +363,16 @@ Then say what would have to be true for the question to be answerable at all.
 **The skills.** Read a real catalogue's missing-value conventions, including the ones that do not
 look missing. Build a null by simulation instead of looking up a table. Put an interval on a test
 statistic by resampling the thing that is actually independent, which is rarely the row.
+
+**The four questions, in order:**
+
+1. How big is the July peak, and is it bigger than chance?
+2. Who wrote those July dates, and when?
+3. Which records do you trust, and what does the choice cost?
+4. How many independent things are {M['cuts']['clean']['n']:,} rows?
+
+The open question at the end is not on that list. It is the project; the four above are what you
+build to reach it.
 """)
 
 md("""
@@ -404,7 +414,7 @@ print(eruptions[["Volcano_Name", "StartDateYear", "StartDateMonth", "StartDateDa
 
 # --- the verified half ------------------------------------------------------
 md(f"""
-## The result you are handed
+## How big is the July peak, and is it bigger than chance?
 
 Two lines of filtering, and then the count. `StartDateMonth > 0` is doing real work: across the
 whole table {M['month_zero']:,} eruptions carry month `0` and another {M['month_nan']} carry a
@@ -440,8 +450,6 @@ are the counts. Everything from here is yours, and nothing will tell you when yo
 """)
 
 md(f"""
-## The count that started this
-
 One bar per month. This is the entire observation the project exists to explain, and it needs no
 statistics to see.
 """)
@@ -522,7 +530,7 @@ print("I think", my_guess, "of the {M['excess']} extra July eruptions really beg
 
 # --- YOUR TURN 1 ------------------------------------------------------------
 md("""
-## Where the dates come from
+## Who wrote those July dates, and when?
 
 A month is made of days, and the days are in the file too.
 """)
@@ -578,7 +586,9 @@ Three things to put on the page:
 3. The number that matters: the July bar stands {M['excess']} above the even line, so what
    **fraction of that excess** is accounted for by the one date you have just found? Print it.
 
-Compare the fraction with the number you wrote down in *Predict before you run*.
+Compare the fraction with the number you wrote down in *Predict before you run*. Then print one
+more line answering it in a sentence, on your own fraction: is the July peak a fact about
+volcanoes, or a fact about the file?
 """)
 
 answer(f"""
@@ -597,6 +607,11 @@ print("July eruptions:", len(july), "of which on 2 July:", len(on_2_july),
 excess = len(july) - len(dated) / 12
 print("July stands", round(excess), "above an even spread")
 print("the 2 July +/- 182 placeholder is", round(len(half_a_year) / excess, 3), "of it")
+
+print("So the July peak is mostly a fact about the file —",
+      round(len(half_a_year) / excess, 3),
+      "of the excess is one placeholder date the compilers wrote when they knew only the year.",
+      "Whatever is left over is the only part that could be about volcanoes.")
 """)
 
 md(f"""
@@ -612,7 +627,7 @@ is that one placeholder.
 
 # --- YOUR TURN 3, the fork --------------------------------------------------
 md(f"""
-## Which records do you trust
+## Which records do you trust, and what does the choice cost?
 
 You now have to throw some data away, and there is no correct amount. Three cuts are defensible:
 
@@ -633,6 +648,9 @@ Build all three subsets. For each one print: how many eruptions it holds, its ch
 percentile of `null_spread` **for that sample size** (the threshold moves with n, so it has to be
 recomputed), and which month is the tallest bar.
 
+Take the threshold in the same two steps class used, rather than nesting the calls:
+`spread = null_spread(len(subset))` on one line, then `np.percentile(spread, 95)` on the next.
+
 Then draw the month bar chart for the middle cut beside the one from *The result you are handed*,
 so the before and after are on the same page.
 
@@ -650,9 +668,10 @@ cuts = {{"keep everything": dated,
 for name in cuts:
     subset = cuts[name]
     counts = subset["StartDateMonth"].value_counts().reindex(range(1, 13)).fillna(0)
+    spread = null_spread(len(subset))
     print(name, "— n =", len(subset),
           "chi-squared", round(chi_squared(subset["StartDateMonth"]), 2),
-          "against a no-season 95th of", round(np.percentile(null_spread(len(subset)), 95), 2),
+          "against a no-season 95th of", round(np.percentile(spread, 95), 2),
           "— tallest month", int(counts.idxmax()))
 
 clean = cuts["drop placeholders"]
@@ -725,7 +744,7 @@ introduces.
 
 # --- YOUR TURN 5, 6: the sting ---------------------------------------------
 md(f"""
-## Counting what is independent
+## How many independent things are {M['cuts']['clean']['n']:,} rows?
 
 A chi-squared test asks how surprising a set of counts is if every observation were an independent
 draw. That assumption is not about the arithmetic; it is about the world. Before quoting
@@ -741,6 +760,10 @@ For the middle cut, count the **volcanoes**, not the eruptions. `Volcano_Number`
 Print: how many distinct volcanoes there are, the mean and median number of eruptions per volcano,
 how many volcanoes contribute exactly one, and the name and count of the two busiest. Draw
 whatever figure makes the shape of that distribution obvious.
+
+Then print one more line answering it in a sentence: how many independent things do you think the
+{M['cuts']['clean']['n']:,} rows really are, and what does that do to a test that counts every
+eruption as its own draw from the calendar?
 """)
 
 answer(f"""
@@ -759,6 +782,12 @@ plt.xlabel("eruptions contributed by one volcano")
 plt.ylabel("volcanoes")
 plt.title(f"How the {{len(clean)}} eruptions are shared among {{len(per_volcano)}} volcanoes")
 plt.show()
+
+print("Nearer", len(per_volcano), "independent things than", len(clean), "— one volcano's run",
+      "of", per_volcano.max(), "eruptions is one thing happening, not", per_volcano.max(),
+      "separate draws from the calendar. A test that counts every row as its own draw is",
+      "therefore counting the same evidence over and over, and its threshold is too easy",
+      "to clear.")
 """)
 
 md(f"""
@@ -790,6 +819,10 @@ Bootstrap the chi-squared **by volcano**, not by eruption. The recipe, in words:
 Draw the {N_BOOT} statistics as a histogram with the observed value and the threshold marked.
 
 **Confidence interval:** {idea('S4', 'Confidence interval')['words']}
+
+Then print two or three sentences answering it on your own interval: does the chi-squared you
+reported in *Your turn 3* still support a seasonal signal, and what would your interval have to
+look like before it did?
 """)
 
 answer(f"""
@@ -809,7 +842,8 @@ for i in range({N_BOOT}):
 resampled = np.array(resampled)
 
 clean_chi = chi_squared(clean["StartDateMonth"])
-threshold = np.percentile(null_spread(len(clean)), 95)
+spread = null_spread(len(clean))
+threshold = np.percentile(spread, 95)
 
 print("observed chi-squared:", round(clean_chi, 2), " no-season threshold:", round(threshold, 2))
 print("resampling by volcano, 95% interval:", np.round(np.percentile(resampled, [2.5, 97.5]), 1),
@@ -823,6 +857,18 @@ plt.xlabel("chi-squared of a catalogue resampled by volcano")
 plt.ylabel("resamples")
 plt.title(f"{N_BOOT} volcano-block resamples (red = observed, blue = no-season 95th)")
 plt.show()
+
+print("No. My interval runs from", round(np.percentile(resampled, 2.5), 1), "to",
+      round(np.percentile(resampled, 97.5), 1), "and straddles the no-season threshold of",
+      round(threshold, 1), "so the", round(clean_chi, 1),
+      "I reported in Your turn 3 is one draw from a range in which",
+      round(100 * (resampled < threshold).mean()), "percent of catalogues fail the test.")
+print("The margin it cleared the threshold by was", round(clean_chi - threshold, 1),
+      "which is far inside that spread, so what looked like a significant result is mostly",
+      "an accident of which volcanoes happen to be in the file.")
+print("Before I would call it seasonal the whole interval would have to sit above the",
+      "threshold — its lower end, not its middle — and on these", len(volcano_months),
+      "volcanoes it does not.")
 """)
 
 md(f"""
@@ -988,11 +1034,12 @@ peaks = []
 for name in ["northern", "southern"]:
     half = clean[clean["lat"] > 0] if name == "northern" else clean[clean["lat"] < 0]
     counts = half["StartDateMonth"].value_counts().reindex(range(1, 13)).fillna(0)
+    spread = null_spread(len(half))
     peaks.append(int(counts.idxmax()))
     print(name, "hemisphere — n =", len(half),
           " tallest month", int(counts.idxmax()),
           " chi-squared", round(chi_squared(half["StartDateMonth"]), 2),
-          " no-season 95th", round(np.percentile(null_spread(len(half)), 95), 2))
+          " no-season 95th", round(np.percentile(spread, 95), 2))
 
 offset = abs(peaks[0] - peaks[1])
 print("the two peak months are", min(offset, 12 - offset), "months apart —",

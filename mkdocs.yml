@@ -39,6 +39,7 @@ nav:
     - "Week 12: Can you find a fault that nobody mapped?": notebooks/12_hidden_fault.ipynb
     - "Week 13: Can a machine hear an earthquake?": notebooks/13_machine_hears.ipynb
   - Projects:
+    - "T1: How hard will the ground shake at distance R from a magnitude M earthquake?": notebooks/T1_how_hard_will_it_shake.ipynb
     - "T2: Is the CO2 seasonal cycle getting stronger?": notebooks/T2_getting_stronger.ipynb
     - "T3: July has 400 eruptions and December has 212. Is that the Earth, or the catalogue?": notebooks/T3_july_or_the_catalogue.ipynb
     - "T4: Are we finding more Earth-like planets, or just better telescopes?": notebooks/T4_more_planets_or_better_telescopes.ipynb

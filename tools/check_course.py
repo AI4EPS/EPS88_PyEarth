@@ -158,6 +158,29 @@ for line in open('course.yml'):
         errs.append(f"grading '{m.group(1)}' is {m.group(2)} but its comment sums to "
                     f"{sum(parts)}: {m.group(3).strip()}")
 
+# --- a correction note must never sit in text a student reads ------------------
+# These fields are quoted VERBATIM into a notebook: the week's question and takeaways print in
+# the summary, a track's title and open_question print in the notebook itself. Three separate
+# corrections written today went inside `open_question` and would have printed a dated "⚠️
+# CORRECTED ... an earlier version of this line said" paragraph to 46 students. The note belongs
+# beside the field, not inside it — use `open_question_note:` or a `note:` key.
+MARKERS = ("⚠️", "CORRECTED", "Corrected 20", "an earlier version", "An earlier version",
+           "this line used to", "recalled rather than measured")
+for s_ in c['schedule']:
+    for k in ('question',):
+        if s_.get(k) and any(m in s_[k] for m in MARKERS):
+            errs.append(f"session {s_['n']} {k}: carries a correction note, and students read "
+                        f"this verbatim — move it to a note: key")
+    for tk in (s_.get('takeaways') or []):
+        if any(m in tk for m in MARKERS):
+            errs.append(f"session {s_['n']} takeaway carries a correction note, and it prints "
+                        f"verbatim into the week summary: {tk[:60]}")
+for tr in c['project']['tracks']:
+    for k in ('title', 'open_question'):
+        if tr.get(k) and any(m in tr[k] for m in MARKERS):
+            errs.append(f"track {tr['id']} {k}: carries a correction note, and the notebook "
+                        f"quotes it verbatim — move it to {k}_note:")
+
 if sum(c['grading'].values()) != 100:            errs.append("grading does not sum to 100")
 if sum(c['project']['rubric'].values()) != 100:  errs.append("rubric does not sum to 100")
 

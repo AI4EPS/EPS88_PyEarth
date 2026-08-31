@@ -624,9 +624,13 @@ print("✓ k-means with {K} pins — groups of",
 
 md(f"""
 {M['km_sizes'][0]:,}, {M['km_sizes'][1]:,} and {M['km_sizes'][2]:,}: three groups of almost
-exactly the same size. Draw them.
+exactly the same size. Draw them — and print their median depths underneath, because a map has
+flattened the depth away and the pins were given it.
 """)
 
+# The median depths ride in the plot cell rather than a cell of their own: they are the same
+# question the figure asks — what did the three pins actually cut the data into? — and a one-line
+# code cell between the two halves of one paragraph split the answer in half with it.
 code(f"""
 for group in [0, 1, 2]:
     part = quakes[quakes["kmeans"] == group]
@@ -639,6 +643,8 @@ plt.xlabel("longitude (degrees east)")
 plt.ylabel("latitude (degrees north)")
 plt.title("k-means, k={K}, {M['n']:,} earthquakes")
 plt.show()
+
+print(quakes.groupby("kmeans")["depth"].median())   # the map cannot show you this
 """)
 
 md(f"""
@@ -646,15 +652,10 @@ Two things went wrong, and neither is a bug.
 
 The long limb has been **cut across the middle**. k-means groups by distance to a pin, so its
 groups come out as roughly round blobs; a structure many times longer than it is wide is not a
-blob, and no arrangement of {K} pins can make it one. Look at the depths as well —
-""")
+blob, and no arrangement of {K} pins can make it one.
 
-code(f"""
-print(quakes.groupby("kmeans")["depth"].median())
-""")
-
-md(f"""
-— one group has a median depth of {M['km_deep_median']} km and another {M['km_shallow_median']}
+The depths printed under the figure are the same complaint from another direction: one group has a
+median depth of {M['km_deep_median']} km and another {M['km_shallow_median']}
 km. The pins have partly split the data into a deep half and a shallow half, which is a real
 feature of the data and is not what we asked for.
 
