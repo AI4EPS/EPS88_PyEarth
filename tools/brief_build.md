@@ -17,6 +17,14 @@ rules, because a summary of them would compete with the real thing. Read these i
    need to open course.yml or modules.yml; this file is those two files' week-{n} content.
 4. The dataset audit the spec's `evidence:` names, in `{EPS88}/notes/dataset-audit/`.
    **Its measured numbers and traps outrank your expectations.**
+   ⚠️ **What it MEASURED outranks the notebook. What it RECALLED does not.** An audit has no
+   marker separating a number it computed from a sentence somebody wrote from memory, and on
+   2026-08-31 four of them were found to carry false recalled prose that had already shipped
+   into student-facing text: that Pearce and Cann "deliberately avoided" strontium (they
+   published a Ti-Zr-Sr diagram), that two ridge files measure distance the same way (one is
+   full separation, the other one flank), that a G-R fit gives 1.18 (a float artifact), and
+   that a NOAA endpoint caps a request at ten years (one call returns 126 years). Trust a
+   measurement; treat an un-computed claim as a hypothesis and check it.
 
 ## Know what students already know
 

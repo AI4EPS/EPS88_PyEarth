@@ -1,0 +1,74 @@
+# Hand-marking criteria for the prose question, one block per week.
+#
+# make_rubrics.py splits the week's manual points evenly across the items listed here, so write
+# 3 or 4 per week — enough that a partial answer lands somewhere sensible, few enough that each
+# item is worth reading for. Every item names something checkable in the paragraph: a claim, a
+# number the student must have used, a comparison they must have drawn. Nothing here asks whether
+# a student "understands" anything, because that is not a thing a paragraph can be checked against.
+#
+# Where a week lets the student choose a box, a window, a fork or a cluster, the item says so —
+# the model answer's figures are one valid path among several, and marking against them alone
+# would penalise the students who took the question seriously.
+
+2:
+  items:
+    - "Names one specific planet from section 7's own printout and quotes that planet's two numbers, its equilibrium temperature in kelvin and its radius in Earth radii. Any planet on that list is a valid choice; the numbers have to be the ones their notebook printed for it."
+    - "Quotes both of section 4's discrepancies, the test's 34.0 K miss on Earth (254.0 K against a real 288.0 K) and its 510.3 K miss on Venus (226.7 K against a real 737.0 K), and uses the difference in size between the two as the argument rather than as decoration."
+    - "Draws the conclusion those numbers support: the test's error is wide enough, on a world with thick air, to move a planet clean out of the 273-373 K window, so a temperature inside the window is not on its own evidence of liquid water."
+    - "Closes by naming what the test does not know about that particular planet, its atmosphere or albedo or surface pressure, and why knowing it would settle the case. An answer that stops at needing more data without naming the missing quantity does not earn this item."
+
+4:
+  items:
+    - "Identifies the eruption chart as the broken one and cites its two lowest bars, 1,019 at VEI 0 and 1,441 at VEI 1, against the 4,030 at VEI 2, stating the expectation those bars violate: smaller eruptions must be commoner than larger ones."
+    - "Cites the first two entries of their own printed counts array, 8,973 earthquakes in the 5.5-6.0 bin against 2,688 in the next one up, and says the magnitude counts keep rising all the way to the edge of the plot instead of falling off."
+    - "Explains the difference as one of how the two records were made rather than of what the Earth does: a magnitude 5.5 earthquake is recorded by instruments on the far side of the planet, while an eruption is recorded only if somebody was nearby or it left a deposit, so small old eruptions in empty places are simply absent."
+    - "Answers the last clause with a condition on the recording network rather than on the earthquakes: the magnitude chart would break the same way if whole regions had no instruments, or if the query's magnitude floor were pushed low enough that only well-instrumented ground reported."
+
+5:
+  items:
+    - "Names which of p1, p2 and p3 they would quote and gives its four-year percentage together with the recurrence interval and event count behind it, then states both sides of the wider box: the extra events it buys, and the cost. Names at least one specific earthquake from the printed table that only the two-degree box contains, such as 1901 Parkfield or 1983 Coalinga. Any of the three numbers can be the right one to quote if the trade is argued."
+    - "Quotes their own shortest gap in days against their recurrence interval in years, and concedes in the same breath that one short gap proves nothing, on the ground class established that a world without clustering is already bunched. An answer that treats a single short gap as proof of clustering does not earn this item."
+    - "Points at something in the two printed gap lists that chance would genuinely struggle to produce: the two-degree box's 0-day gap, two magnitude-6 events inside an hour against a 10.5-year average wait, or that gap set beside the 21,004-day silence, since a fixed total forces the crowded intervals and the empty ones to come together."
+    - "Names a direction of distrust and the reason for it, from their own list of events: aftershocks inflating the rate above the rate at which independent earthquakes begin, the whole estimate resting on 8 events in 126 years, or the events clumping into 1903-1926 so that moving the start date to 1930 gives 12% rather than 22% on a choice nothing in the data makes."
+
+6:
+  items:
+    - "Quotes all four rates with the two conventions kept straight: class's 6.77 cm/yr for the whole Pacific-Antarctic ridge and 1.74 cm/yr for the Mid-Atlantic, plus their own two for the older half, 5.83 cm/yr free and 6.63 cm/yr forced. Says which three count both flanks and which one counts a single flank."
+    - "Chooses one of the two fits to publish and defends the choice by what the fit is being asked, not by which line looks better: the free fit because age zero lies outside the 20-41 Ma window the question is about, or the forced fit on an explicit physical argument. Either choice earns full marks; picking one without a reason earns none."
+    - "Deals with the free fit's intercept head on, as the question requires: says that 251 km is not a claim that 251 km of seafloor existed at age zero but simply where this segment's line happens to cross, and does not treat the non-zero intercept as evidence that the free fit is broken."
+    - "Gives both ratios from their own numbers, the between-ridge one with the Pacific-Antarctic rate halved onto the Atlantic convention first (about 3.38 / 1.74 = 1.9) and the within-ridge one unhalved (about 6.77 / 5.83 = 1.16), says which is the bigger, and concludes that a ridge's rate is a fair summary but not a constant."
+
+7:
+  items:
+    - "Quotes the six window counts (3, 2, 2, 1, 2, 5) and their mean of 2.5 against the 1.49 the line expected, taken from their own turn 6 output rather than from the summary table."
+    - "Gives a two-sided verdict on the California line: 1990-2026 with its 5 really was the busiest of the six windows, so part of class's shortfall was an unlucky draw, but the long-run mean of 2.5 is still about 1.7 times the expected 1.49, so bad luck does not account for all of it."
+    - "Quotes both part 2 predictions against the counts that went with them: 1.43 expected at VEI 7 from 1700 with 1 occurring, and 0.74 expected from 1900 with 0 occurring."
+    - "Names the problem those two predictions expose: the volcano line agrees comfortably with every window, including the one that holds no eruption at all, so none of them is testing it. Agreement this cheap is not evidence, and an answer that reports the volcano line as confirmed does not earn this item."
+
+8:
+  items:
+    - "Names which fitting range they took, 3.5 to 5.0 or 4.5 to 6.0, and quotes the three numbers their own range printed: the forecast, the top end of the 95% interval on the count, and the fraction of simulated worlds reaching five. Either fork is valid; the numbers must be theirs."
+    - "Says where five falls under their range, outside the interval or on and inside it, and states the verdict a reader of their notebook would come away with. Both verdicts are correct answers when they follow from the student's own printed fraction."
+    - "Sets their result against class's range (4.0 to 5.5, five on the edge, 2.9% of simulated worlds) and makes the point that the verdict turns on a choice nobody can defend as the only right one, so the answer moves more with the fitting range than with the observation."
+    - "Answers the last clause with a stated condition rather than a wish: five would have to fall outside the interval under every defensible fitting range, or the window would have to be long enough that the Poisson scatter, roughly the square root of the expected count, became small beside the gap being argued about."
+
+9:
+  items:
+    - "Quotes at least three of their own numbers: the crossing year they chose in part 2, the spread between the four crossing years (48 years, 2051 to 2099), and the turn 3 held-out miss of the degree behind their chosen year, 1.57 ppm for degree 2 or 14.831 ppm for degree 1."
+    - "Commits to a single year for the newspaper and justifies it by held-out performance rather than preference, contrasting degree 2's 1.57 ppm miss with degree 1's 14.831 ppm and noting that a straight line's date assumes the rise stops accelerating the day the record ends. A defended degree-1 or training-window answer earns this if it argues from the held-out numbers."
+    - "Separates the two sources of the spread with their own four years, saying which moves the answer further, the degree or the training window, and by how many years. Asserting that one matters more without the year counts does not earn this item."
+    - "Tells the reader the honest thing: the gap between the earliest and the latest crossing year is not a measurement of anything, it is the curve the student chose to draw through the same points, so the defensible claim is a decade-scale range rather than one year carrying false precision."
+
+10:
+  items:
+    - "Quotes both of their own turn 6 F1 scores, logistic regression with depth (0.7701) and the same model with the depth column removed (0.0000), and reads the second against the always-earthquake baseline rather than against zero in the abstract."
+    - "Names what the gap means: essentially all the apparent skill was coming from one column, and that column is not a measurement of the ground but a value an analyst entered after the event had already been labelled a blast. Backs it with a concrete sign, the 360 blasts sharing the single depth -0.82 km or the constant 31.61 km depthError on 96% of them."
+    - "Answers whether they would report the 0.7701 as a result, and answers no on the leakage ground. Reporting it with a caveat attached does not earn this item, because the question is whether the number is a result at all."
+    - "Answers the secret-test sentence by reasoning from why each clue works rather than by guessing: the repeated location works because a quarry is worked from the same pit for decades, the hour and weekday clues because blasting is scheduled legal work, the depth because somebody typed it in once the label was chosen. Naming a clue that would survive earns this only if the case for its survival is actually made."
+
+12:
+  items:
+    - "Names one cluster they would be willing to draw on a fault map and gives two numbers from their own output as the reason, drawn from the size, the median depth, the first event time, the extent along the PCA axes, or the share of the spread on axis 1. Any cluster is a valid choice provided two of its own numbers carry the argument."
+    - "Names one cluster they think the algorithm invented and gives two numbers for that one too, typically a small cluster sitting at or near the min_samples floor of 12, or Coso's 583 events at a median depth of 2.36 km, which is a real place but a shallow geothermal swarm rather than a fault worth drawing."
+    - "Ties the invented verdict to the settings rather than to the ground, using the turn 6 eps sweep or the coso_now counts to show that the cluster's existence or its extent changes when eps changes, so it is a property of the parameters and not of the desert."
+    - "Names one measurement genuinely outside this notebook that would settle the disagreement and says how it would decide. Focal mechanisms are the model answer, but relocated hypocentres, InSAR or GPS displacement, mapped surface rupture, or a geological field survey all earn it when the student says what agreement or disagreement in that measurement would prove."

@@ -973,10 +973,17 @@ project:
       data: "Vermeesch 2006, 756 samples, OIB 259 / IAB 256 / MORB 241"
       fork: "Which chemistry — the classic three-element diagram, the ten major oxides, or all 51 columns?"
       open_question: >
-        The forest leans hard on Sr and K2O, which the published discrimination diagrams
-        deliberately avoid as alteration-mobile; adding Sr to the classic trio jumps accuracy from
-        81.2 to 89.7. Are the classic diagrams trading discrimination for robustness, and is that
-        the right trade for a rock that has sat on the seafloor for 50 million years?
+        The forest leans hard on Sr and K2O. The premise to get right first: Pearce and Cann
+        (1973) published TWO ternary diagrams, Ti-Zr-Y and Ti/100-Zr-Sr/2, so Sr was not avoided
+        by the founders — it was used, and they warned in the same paper that alteration
+        mobilises it, which is why the Y diagram became the one people trust on altered
+        ocean-floor basalt. (An earlier version of this line said the diagrams "deliberately
+        avoid" Sr; that was recalled rather than measured, it was false, and week 11 inherited
+        it into student-facing prose before a reviewer caught it. Corrected 2026-08-31.) Adding
+        Sr to the classic trio jumps accuracy from 81.2 to 89.7. So the classic diagram is
+        trading discrimination for robustness. Is that the right trade for a rock that has sat
+        on the seafloor for 50 million years, and can you measure the robustness it buys rather
+        than assuming it?
       uses: [ML4, ML2, ML5]
       evidence: notes/dataset-audit/vermeesch-basalts.md
 

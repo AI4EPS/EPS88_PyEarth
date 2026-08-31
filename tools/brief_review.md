@@ -9,8 +9,15 @@ not go looking for it — that blindness is the point of asking you.
 2. The graded standards are reproduced below and they are the whole of what you grade against.
    `{REPO}/TEMPLATE.md` holds the reasoning behind them — open it only when a standard is
    unclear, not as background reading, and never for extra criteria.
-3. The dataset audit this week's `evidence:` names, in `{EPS88}/notes/dataset-audit/` —
-   measured, and it outranks the notebook
+3. The dataset audit this week's `evidence:` names, in `{EPS88}/notes/dataset-audit/`.
+   ⚠️ **What it MEASURED outranks the notebook. What it RECALLED does not.** An audit has no
+   marker separating a number it computed from a sentence somebody wrote from memory, and on
+   2026-08-31 four of them were found to carry false recalled prose that had already shipped
+   into student-facing text: that Pearce and Cann "deliberately avoided" strontium (they
+   published a Ti-Zr-Sr diagram), that two ridge files measure distance the same way (one is
+   full separation, the other one flank), that a G-R fit gives 1.18 (a float artifact), and
+   that a NOAA endpoint caps a request at ten years (one call returns 126 years). Trust a
+   measurement; treat an un-computed claim as a hypothesis and check it.
 4. `{REPO}/{student}` — **read this one first, straight through, as a student would.**
 5. `{REPO}/{solution}` — the executed version, for checking outputs and figures
 

@@ -1004,7 +1004,7 @@ ask("""
 Two of the pictures in this notebook are counts on a log axis: the eruptions by VEI, and your own
 magnitudes from part 6. One of them falls off at its low end and the other does not.
 
-In three or four sentences, and using your own printed numbers — the two shortest VEI bars from
+In three or four sentences, and using your own printed numbers — the three shortest VEI bars from
 class, and the first two numbers in your `counts` array — say which chart has the broken low end,
 and explain what is different about how the two catalogues were made. Your answer should say what
 would have to be true for the *other* chart's low end to break as well.
