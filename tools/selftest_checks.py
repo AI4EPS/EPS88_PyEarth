@@ -120,6 +120,17 @@ CASES = [
      lambda c: C.check_checkpoints_rebuild(c, THEIR_SOL), THEIR_STU, True),
     ("...but not when the checkpoint names it and says to re-run it",
      lambda c: C.check_checkpoints_rebuild(c, TOLD_SOL), TOLD_STU, False),
+    ("a spine whose questions outnumber the headings", C.check_spine,
+     [MD(SP), MD("## Where do the earthquakes go?"), MD("## Homework")], True),
+    ("...but not one where every question is a heading", C.check_spine,
+     [MD(SP), MD("## Where do the earthquakes go?"), MD("## Why there?"),
+      MD("## Homework")], False),
+    ("a section heading that is a topic rather than a question", C.check_spine,
+     [MD(SP), MD("## Where do the earthquakes go?"), MD("## Plate boundaries"),
+      MD("## Homework")], True),
+    ("a notebook with no spine at all", C.check_spine,
+     [MD("## What you'll be able to do\n\nprose only."), MD("## Homework")], True),
+
     # WARNING rules, via run_warn.
     ("a self-check that is membership in a list the prompt dictated", C.check_weak_asserts,
      [CODE("bins = [3, 4, 5]\nassert answer in bins, 'pick one you tried'")], True, "warn"),

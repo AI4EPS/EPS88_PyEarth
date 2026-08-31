@@ -380,6 +380,54 @@ def check_weak_asserts(cells, solution_cells=()):
                              f"(`{line}`). Assert a measured value instead.")
 
 
+# --- the spine has to match the headings ---------------------------------------
+SPINE_SKIP = ("What you'll", "The question", "Week ", "Homework", "Setup")
+
+
+def check_spine(cells):
+    """The 3-4 spine questions are the section headings, one for one.
+
+    TEMPLATE 1 asks for a bare numbered list after "What you'll be able to do" AND for every
+    section heading to be the question its section answers. Shipped without a check, three
+    agents wrote the list three different ways and three weeks listed four questions while
+    shipping two headings — so the instructor reads a spine promising four moves and finds
+    nothing to scroll to for half of them. A spine that does not match the headings is worse
+    than no spine: it is a map of a building that was not built.
+    """
+    spine = []
+    for c in cells:
+        s = src(c)
+        if c["cell_type"] == "markdown" and s.startswith("## What you'll be able to do"):
+            spine = [l.strip() for l in s.split("\n") if re.match(r"^\d+\.\s", l.strip())]
+            break
+    heads = [src(c).split("\n")[0][3:].strip() for c in cells
+             if c["cell_type"] == "markdown" and src(c).startswith("## ")]
+    body = [h for h in heads if not any(h.startswith(k) for k in SPINE_SKIP)]
+
+    if not spine:
+        errs.append("no spine: TEMPLATE 1 asks for the 3-4 questions that lead the class as a "
+                    "numbered list at the end of \"What you'll be able to do\"")
+        return
+    if not 3 <= len(spine) <= 4:
+        errs.append(f"the spine lists {len(spine)} questions; TEMPLATE 1 asks for 3 or 4")
+    if len(spine) != len(body):
+        errs.append(f"the spine lists {len(spine)} questions but the notebook has {len(body)} "
+                    f"section headings — every spine question must BE a heading, or the "
+                    f"instructor has nothing to scroll to. Headings: {body}")
+        return
+    for i, (q, h) in enumerate(zip(spine, body), start=1):
+        # Strip the number from BOTH sides: weeks 2-5 number their headings ("## 1. What ...")
+        # and weeks 10-13 do not, and both are fine — the rule is that the TEXT matches.
+        strip = lambda s: re.sub(r"^\d+\.\s*", "", s).strip().rstrip("?").lower()
+        qt, ht = strip(q), strip(h)
+        if not (ht.startswith(qt[:28]) or qt.startswith(ht[:28])):
+            errs.append(f"spine question {i} and section heading {i} do not match:\n"
+                        f"        spine:   {q[:76]}\n        heading: {h[:76]}")
+    for h in body:
+        if not h.rstrip().endswith("?"):
+            errs.append(f"section heading is a topic, not a question: \"{h[:70]}\"")
+
+
 def check_asserts(cells):
     """Every name an assert uses must be one the student was told to create, or one the
     notebook already defined. A NameError from the reassurance cell is the worst failure
@@ -655,6 +703,7 @@ def main():
     sol_cells = solution["cells"] if solution else []
     figs = check_pair(student, solution) if solution else 0
     check_banned(cells); qs = check_questions(cells); check_order(cells)
+    check_spine(cells)
     check_opening(cells)
     # both notebooks: a function taught only in the homework is stubbed out of the
     # student copy, so scanning that alone made it unlistable
