@@ -12,6 +12,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import check_notebook as C
 
 MD = lambda s: {"cell_type": "markdown", "source": [s]}
+REPEAT = 'quakes = load("2019-07-01", "2019-12-31")\nscaled = StandardScaler().fit_transform(quakes[COLS])\nquakes["cluster"] = DBSCAN(eps=0.15).fit_predict(scaled)'
 CODE = lambda s: {"cell_type": "code", "source": [s]}
 
 
@@ -19,6 +20,15 @@ def run(fn, cells, *a):
     C.errs.clear(); C.warns.clear()
     fn(cells, *a)
     return list(C.errs)
+
+
+def run_warn(fn, cells, *a):
+    """Some rules warn rather than error, and a warning nobody can test is a rule nobody can
+    trust: the repeated-block rule fired on mandatory checkpoints for days, and it took two
+    independent reviewers to notice, because this file could only see errs."""
+    C.errs.clear(); C.warns.clear()
+    fn(cells, *a)
+    return list(C.warns)
 
 
 # Week 2's modules list SYNTAX rather than functions, so the near-miss has to WRITE that syntax:
@@ -110,14 +120,22 @@ CASES = [
      lambda c: C.check_checkpoints_rebuild(c, THEIR_SOL), THEIR_STU, True),
     ("...but not when the checkpoint names it and says to re-run it",
      lambda c: C.check_checkpoints_rebuild(c, TOLD_SOL), TOLD_STU, False),
+    # WARNING rules, via run_warn.
+    ("the same three lines in three ordinary cells", C.check_code_quality,
+     [CODE(REPEAT), CODE(REPEAT), CODE(REPEAT)], True, "warn"),
+    ("...but not when those cells are checkpoints, which MUST repeat",
+     C.check_code_quality,
+     [CODE("# ── Checkpoint ── run this if you restarted\n" + REPEAT)] * 3, False, "warn"),
     ("a notebook with no Predict cell", C.check_predict, [MD("## 1. Something")], True),
     ("...but not one that has the conventional heading", C.check_predict,
      [MD("### Predict before you run\n\nHow many do you expect?")], False),
 ]
 
 bad = 0
-for name, fn, cells, should_fire in CASES:
-    fired = bool(run(fn, cells))
+for case in CASES:
+    name, fn, cells, should_fire = case[:4]
+    kind = case[4] if len(case) > 4 else "err"
+    fired = bool((run_warn if kind == "warn" else run)(fn, cells))
     ok = fired == should_fire
     bad += not ok
     print(f"  {'ok  ' if ok else 'DEAD'}  {name}")

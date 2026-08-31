@@ -420,6 +420,13 @@ def check_code_quality(cells):
     # a block said three times is a function waiting to be written
     blocks = {}
     for i, s in code:
+        # A CHECKPOINT is exempt for the same reason plot furniture is: TEMPLATE §1.4 REQUIRES
+        # one at the head of every section that needs earlier state, and its whole job is to
+        # repeat the setup verbatim. Saying it once is the one thing a checkpoint may not do.
+        # Weeks 10 and 12 each carry three, and two reviewers independently reported the warning
+        # as a false positive — a rule fighting a rule.
+        if s.lstrip().startswith("# ── Checkpoint"):
+            continue
         # Plot furniture is exempt: check_figures requires plt.xlabel/ylabel literally inside
         # every plot cell, so a week with four maps MUST repeat them. Requiring the repetition
         # and then flagging it is a rule fighting itself.
