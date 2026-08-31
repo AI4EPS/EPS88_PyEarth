@@ -2,8 +2,6 @@ You are reviewing **week {n}** of EPS 88 "PyEarth", a course for freshmen with n
 programming experience. Someone else built it. You have not seen their reasoning, and you should
 not go looking for it — that blindness is the point of asking you.
 
-**The week's question:** {question}
-
 ## What to read
 
 1. `{REPO}/tools/_week{n:02d}_spec.md` — week {n}'s own specification: its `question`,
@@ -11,7 +9,8 @@ not go looking for it — that blindness is the point of asking you.
 2. `{REPO}/TEMPLATE.md` — the rules the notebook was built to. The graded standards are
    reproduced below and they are what you grade against; read TEMPLATE for the reasoning behind
    them, not for extra criteria.
-3. This week's dataset audit: {audits} — measured, and it outranks the notebook
+3. The dataset audit this week's `evidence:` names, in `{EPS88}/notes/dataset-audit/` —
+   measured, and it outranks the notebook
 4. `{REPO}/{student}` — **read this one first, straight through, as a student would.**
 5. `{REPO}/{solution}` — the executed version, for checking outputs and figures
 

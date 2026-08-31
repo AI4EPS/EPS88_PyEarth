@@ -255,7 +255,7 @@ schedule:
         mars_peaks_m: [-4375, 1375]      # the hemispheric dichotomy
         earth_below_sea_level: 0.660
         earth_between_-5000_and_-3000: 0.347
-        ranges_m: {earth: [-9027, 5824], mars: [-7682, 20708]}
+        ranges_m: {earth: [-9026, 5824], mars: [-7682, 20708]}   # int16, so -9026.625 truncates
       verified: 2026-08-31
     exercise: "How FEW bins before the two peaks merge into one? Find that number for Earth and for Mars, and say which planet holds its two peaks longer. Then weight every cell by cos(latitude) and re-run: the fraction of Earth below sea level moves by about five points. Say which number is the honest one, and what the lon-lat grid was doing to the poles. Then switch containers and group the earthquake catalogue by year."
     note: >

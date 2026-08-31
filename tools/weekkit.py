@@ -132,7 +132,7 @@ CHECKPOINT = """# ── Checkpoint ── run this if you restarted the kernel 
 
 CLOSING_HEADING = "## The question, answered"
 
-SETUP_CELL = """import pandas as pd
+SETUP_CELL = """{imports}import pandas as pd
 import matplotlib.pyplot as plt
 
 # house style, set once, so every plot cell below holds only what matters

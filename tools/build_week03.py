@@ -1,0 +1,847 @@
+#!/usr/bin/env python
+"""Build week 3 — "Earth's elevation has two peaks. So does Mars's. Same reason?"
+
+Emits both notebooks from one source so they cannot drift:
+
+    docs/notebooks/03_two_peaks_solution.ipynb   executed, every output saved
+    docs/notebooks/03_two_peaks.ipynb            the same file with the answers deleted
+
+It also writes the week's cached fallback for the one live query (the USGS catalogue). The two
+elevation grids were pre-built by tools/make_elevation_grids.py and are already in data/; this
+script never rebuilds them.
+
+Every number that appears in prose or in a model answer is computed HERE, from the same files
+the notebook reads, and formatted in. Nothing is typed from memory or copied from the plan.
+
+    python tools/build_week03.py
+"""
+import json
+import pathlib
+import subprocess
+import sys
+
+import numpy as np
+import pandas as pd
+import yaml
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import weekkit
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+OUT = ROOT / "docs/notebooks"
+SLUG = "03_two_peaks"
+
+course = yaml.safe_load((ROOT / "course.yml").read_text())
+WEEK = next(s for s in course["schedule"] if s["n"] == 3)
+PLATFORM = course["platform"]
+CACHE_BASE = PLATFORM["cache_base"]
+
+# The one live query this week runs. Pinned here so the cached CSV, the notebook and the prose
+# below cannot drift apart.
+START, END, MINMAG = "2000-01-01", "2026-01-01", 5.5
+CACHE_NAME = f"week03_{START}_{END}_M{MINMAG}.csv"
+FDSN = ("https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&orderby=time-asc"
+        f"&starttime={START}&endtime={END}&minmagnitude={MINMAG}")
+
+BINS = np.arange(-10000, 21000, 250)      # 250-metre bins, the same ones for both planets
+
+
+# ---------------------------------------------------------------------------
+# 1. measure everything the notebook will say
+# ---------------------------------------------------------------------------
+def read_grid(planet, first_column):
+    """Read one shipped elevation CSV the same way the notebook does."""
+    grid = pd.read_csv(ROOT / f"data/{planet}_elevation.csv", header=None).values
+    return np.concatenate([grid[:, first_column:], grid[:, :first_column]], axis=1)
+
+
+def peak_position(grid, lowest, highest):
+    """The centre of the tallest 250-metre bin between two elevations."""
+    counts, edges = np.histogram(grid.ravel(), bins=BINS)
+    centres = (edges[:-1] + edges[1:]) / 2
+    inside = (centres >= lowest) & (centres <= highest)
+    return centres[inside][counts[inside].argmax()]
+
+
+def humps(grid, n_bins):
+    """How many separate humps a histogram of this grid shows at n_bins bins."""
+    counts, _ = np.histogram(grid.ravel(), bins=n_bins)
+    return sum(1 for i in range(len(counts))
+               if (i == 0 or counts[i] > counts[i - 1])
+               and (i == len(counts) - 1 or counts[i] > counts[i + 1]))
+
+
+def fetch_catalogue():
+    """Run the live query once, cache it, and return it."""
+    out = ROOT / "data" / CACHE_NAME
+    if not out.exists():
+        pd.read_csv(FDSN).to_csv(out, index=False)
+    return pd.read_csv(out)
+
+
+earth = read_grid("earth", 160)[::-1]     # the Earth file starts at the south pole
+mars = read_grid("mars", 180)
+coast = pd.read_csv(ROOT / "data/coastlines.csv")
+quakes_full = fetch_catalogue()
+
+M = {}                                     # every measured number the notebook uses
+M["n_cells"] = int(earth.size)
+M["earth_min"], M["earth_max"] = int(earth.min()), int(earth.max())
+M["mars_min"], M["mars_max"] = int(mars.min()), int(mars.max())
+M["mars_max_km"] = round(M["mars_max"] / 1000, 3)
+M["earth_deep"] = int(peak_position(earth, -10000, -1000))
+M["earth_high"] = int(peak_position(earth, -1000, 21000))
+M["mars_deep"] = int(peak_position(mars, -10000, -1000))
+M["mars_high"] = int(peak_position(mars, -1000, 21000))
+M["earth_gap"] = M["earth_high"] - M["earth_deep"]
+M["mars_gap"] = M["mars_high"] - M["mars_deep"]
+
+below = earth < 0
+M["n_below"] = int(below.sum())
+M["frac_below"] = round(float(M["n_below"] / earth.size), 3)
+band = (earth >= -5000) & (earth <= -3000)
+M["frac_band"] = round(float(band.sum() / earth.size), 3)
+
+lats = np.arange(89.5, -90, -1)
+cell_width = np.cos(np.deg2rad(lats))
+M["frac_below_weighted"] = round(
+    float((below.sum(axis=1) * cell_width).sum() / (360 * cell_width.sum())), 3)
+
+BIN_SWEEP = [3, 4, 5, 6, 8, 10, 20]
+M["earth_fewest_bins"] = min(n for n in BIN_SWEEP if humps(earth, n) >= 2)
+M["mars_fewest_bins"] = min(n for n in BIN_SWEEP if humps(mars, n) >= 2)
+
+M["n_quakes"] = len(quakes_full)
+M["n_columns"] = len(quakes_full.columns)
+M["n_dmin_missing"] = int(quakes_full["dmin"].isna().sum())
+M["n_after_dropna"] = len(quakes_full.dropna())
+kinds = quakes_full["type"].value_counts()
+M["n_earthquake_rows"] = int(kinds["earthquake"])
+M["n_other_rows"] = int(len(quakes_full) - kinds["earthquake"])
+M["n_big"] = int((quakes_full["mag"] >= 8.0).sum())
+M["biggest_mag"] = float(quakes_full["mag"].max())
+M["n_deep"] = int((quakes_full["depth"] > 500).sum())
+M["deepest"] = round(float(quakes_full["depth"].max()), 1)
+
+years = quakes_full["time"].str[:4]
+per_year = quakes_full.assign(year=years).groupby("year")["mag"].count()
+M["n_years"] = int(len(per_year))
+M["busiest_year"] = str(per_year.idxmax())
+M["busiest_count"] = int(per_year.max())
+M["year_before"] = int(per_year.loc[str(int(M["busiest_year"]) - 1)])
+M["year_after"] = int(per_year.loc[str(int(M["busiest_year"]) + 1)])
+M["median_year"] = float(per_year.median())
+
+
+# ---------------------------------------------------------------------------
+# 2. the cells
+# ---------------------------------------------------------------------------
+CELLS = []
+
+
+def md(text):
+    CELLS.append(("markdown", text.strip("\n"), None))
+
+
+def code(text):
+    CELLS.append(("code", text.strip("\n"), None))
+
+
+def ask(text):
+    """A question: the markdown that asks. The answer cell follows."""
+    md(text)
+
+
+def answer(model, check=""):
+    """A code answer cell. The solution carries the model answer; the student gets the stub.
+
+    A self-check, where one is possible, lives in the SAME cell after the answer, so that it
+    survives into the student copy without costing a third cell per question.
+    """
+    solution = model.strip("\n") + (("\n\n" + check.strip("\n")) if check else "")
+    student = "# ← your answer here\n\n" + (("\n" + check.strip("\n")) if check else "")
+    CELLS.append(("code", solution, student))
+
+
+def answer_prose(model):
+    CELLS.append(("markdown", model.strip("\n"),
+                  "*(Double-click this cell and replace this line with your answer.)*"))
+
+
+datahub = (f"{PLATFORM['datahub']}/hub/user-redirect/git-pull"
+           f"?repo={PLATFORM['repo'].replace(':', '%3A').replace('/', '%2F')}"
+           f"&branch={PLATFORM['branch']}"
+           f"&urlpath=lab%2Ftree%2FEPS88_PyEarth%2F{PLATFORM['notebook_dir']}%2F{SLUG}.ipynb")
+
+HOOK = """
+Ask how high every point on a planet's solid surface is, and you might expect the answers to
+pile up around one typical height, the way people's heights do. Earth's do not. Earth's surface
+has two levels, with a gap between them that almost nothing sits in. That is a strange thing for
+a planet to be, and it wants an explanation.
+
+Mars has two levels as well. Mars has no ocean, no plate tectonics and no mid-ocean ridge — so
+whatever built its two levels cannot be the thing that built Earth's. Or can it?
+
+Today both planets arrive as a grid of numbers: one elevation for every one-degree square of the
+surface. You will measure where each planet's two levels sit, draw them on a map, and decide
+whether one story explains both. Then you will meet the other container Python keeps data in —
+the table with named columns — on a catalogue of earthquakes.
+"""
+
+md(weekkit.OPENING.format(question=WEEK["question"], datahub=datahub, hook=HOOK.strip()))
+
+md("""
+## What you'll be able to do
+
+**The science.** Say where each planet's two levels sit, in metres, and how far apart they are.
+Explain Earth's two levels from the two kinds of crust it is made of, and say what is settled
+and what is still argued about Mars's.
+
+**The skills.** A grid of numbers is a **numpy array**: `.shape` to see how big it is,
+`.ravel()` to lay it out in one line, `earth < 0` to ask one question of every cell at once,
+`np.histogram` to count what falls where, and `plt.imshow` to draw the whole grid as a picture.
+A table with named columns is a **pandas DataFrame**: `.info()`, `.head()`, `.isna()`,
+`.value_counts()`, `.sort_values()` and `.groupby()`.
+
+**Ten places where you write something: five in class, five at home.** Each one is headed
+*Your turn*, with an empty cell under it.
+""")
+
+setup = weekkit.SETUP_CELL.format(
+    figsize="(7, 4)",
+    cache_base=CACHE_BASE,
+    signature="start, end, minmag",
+    docstring="Fetch one window of the USGS earthquake catalogue; fall back to the cached copy.",
+    url_expr=('f"https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&orderby=time-asc"\n'
+              '                       f"&starttime={start}&endtime={end}&minmagnitude={minmag}"'),
+    cache_expr='f"week03_{start}_{end}_M{minmag}.csv"',
+    unpack=f'''
+def elevation(planet, first_column):
+    """Read one planet's 1-degree elevation grid, with -180 degrees at the left edge."""
+    grid = pd.read_csv(CACHE + "/" + planet + "_elevation.csv", header=None).values
+    return np.concatenate([grid[:, first_column:], grid[:, :first_column]], axis=1)
+
+
+# These three files live in this repository, so CACHE is their home rather than their fallback:
+# there is no live server to try first. The catalogue below is the live read.
+earth = elevation("earth", 160)[::-1]      # the Earth file starts at the south pole, so turn it over
+mars = elevation("mars", 180)
+coast = pd.read_csv(CACHE + "/coastlines.csv")
+
+quakes = load("{START}", "{END}", {MINMAG})
+bins = np.arange(-10000, 21000, 250)       # 250-metre bins, the same ones for both planets
+print("elevation grids:", earth.shape, mars.shape, " catalogue:", quakes.shape)
+'''.strip("\n"))
+setup = setup.replace("import pandas as pd\n", "import numpy as np\nimport pandas as pd\n", 1)
+code(setup)
+
+# --- section 1 -------------------------------------------------------------
+md("""
+## A grid, not a list
+
+Every elevation on this planet, one number per one-degree square, is 64,800 numbers. (Earth's
+come from NOAA's ETOPO global relief model, Mars's from the MOLA laser altimeter that flew on
+Mars Global Surveyor; both were averaged down to one degree so that the files are small enough to
+hand round.) A Python list can hold them. But watch what a list does when you ask it for
+arithmetic.
+""")
+
+code("""
+heights_list = [0, 1000, 2000]
+heights_array = np.array([0, 1000, 2000])
+
+print("list  times 2:", heights_list * 2)
+print("array times 2:", heights_array * 2)
+""")
+
+md("""
+The list did not double anything — it made a longer list, with the same three numbers twice.
+That is what `*` means for a list. An **array** is the container that does what you meant:
+arithmetic on an array happens to every number inside it at once, and the answer is the same
+shape as what you started with.
+
+That one difference is why the elevation data is an array. And because an array can be
+two-dimensional, it can keep the *shape* of the planet: one row per line of latitude, one
+column per line of longitude.
+""")
+
+code("""
+print("shape:", earth.shape)
+print("cells:", earth.size)
+print("lowest cell: ", earth.min(), "m")
+print("highest cell:", earth.max(), "m")
+""")
+
+ask("""
+### ✏️ Your turn 1
+
+The Mars grid is already loaded as `mars`. Print its shape, and print its highest cell in
+**kilometres** rather than metres — one line of array arithmetic, then `.max()`.
+
+**Use these names**, because the self-check looks for them: `mars_km` for the grid in kilometres.
+""")
+
+answer("""
+mars_km = mars / 1000
+
+print("shape:", mars.shape)
+print("highest cell:", round(mars_km.max(), 3), "km")
+""", """
+assert mars_km.shape == mars.shape, "mars_km should be the whole grid, not one number"
+print("\u2713 Mars in kilometres \u2014 the highest cell is",
+      round(mars_km.max(), 3), "km above the zero level")
+""")
+
+# --- section 2 -------------------------------------------------------------
+md("""
+## The shape of a planet's surface
+
+A histogram wants one long line of numbers, not a grid. `.ravel()` reads the grid row by row and
+lays it out flat — the same 64,800 numbers, in one line instead of 180 of them.
+""")
+
+code(weekkit.CHECKPOINT.format(body="""earth = elevation("earth", 160)[::-1]
+mars = elevation("mars", 180)"""))
+
+code("""
+flat = earth.ravel()
+print(flat.shape)
+""")
+
+md("""
+Before the histogram, one number. Comparing an array with a number asks the same question of
+every cell at once and hands back a grid of `True` and `False` — a **mask**. Adding a mask up
+counts the `True`s, because Python counts `True` as 1.
+
+### Predict before you run
+
+What fraction of Earth's solid surface lies below sea level? Commit to a number before you run
+the next cell — change `my_guess` to whatever you think, then run it.
+""")
+
+code("""
+my_guess = 0.70
+
+below = earth < 0
+fraction_below = below.sum() / earth.size
+
+print("you guessed:", my_guess)
+print("this grid says:", f"{fraction_below:.3f}")
+""")
+
+md(f"""
+{M['frac_below']:.3f} of the cells. Write that down, and be suspicious of it: what you measured is
+a fraction of *cells*, and whether a fraction of cells is the same as a fraction of the planet is
+a real question. The second part of the homework settles it, and the answer moves.
+
+Now the whole distribution rather than one number. We fix the bins at 250 metres wide and use the
+same ones for both planets, so that a peak position means the same thing every time we quote one.
+Left to itself `plt.hist` picks its own bins, and the answer you read off moves when it does —
+which is the first part of the homework.
+""")
+
+code(f"""
+plt.hist(flat, bins=bins)
+plt.xlim(-9500, 7000)
+plt.xlabel("elevation (m)")
+plt.ylabel("number of 1-degree cells")
+plt.title("Earth, {M['n_cells']:,} cells, 250 m bins")
+plt.show()
+""")
+
+md("""
+Two humps, and a thinly populated gap between them: a broad one a few kilometres down, and a
+taller, narrower one sitting right at zero. (Only 423 of the 64,800 cells are exactly 0 m, so
+that spike is real low ground, not the grid rounding anything to sea level.) Reading their
+positions off the picture by eye is guesswork, so count instead: `np.histogram` does the same counting `plt.hist` does but
+hands you the numbers. `counts[i]` is how many cells fell in bin `i`, and `edges` holds the bin
+boundaries, so the middle of bin `i` is halfway between `edges[i]` and `edges[i+1]`.
+
+`.argmax()` gives the *position* of the largest value — the same move as week one's
+`list.index(max(list))`, in one word.
+""")
+
+code("""
+counts, edges = np.histogram(flat, bins=bins)
+centres = (edges[:-1] + edges[1:]) / 2
+
+print("tallest bin is centred at", centres[counts.argmax()], "m")
+print("and holds", counts.max(), "cells")
+""")
+
+ask("""
+### ✏️ Your turn 2
+
+That found the taller hump. The other one needs the same three lines applied to a *slice* of the
+bins, so write it once as a function and use it twice.
+
+Write `peak_position(grid, lowest, highest)`: it should histogram `grid` on `bins`, keep only the
+bins whose centre lies between `lowest` and `highest`, and return the centre of the tallest one
+that is left. Give it a docstring. Then print Earth's deep peak (search between -10000 and -1000)
+and Earth's shallow peak (search between -1000 and 21000).
+
+**Use these names**, because the self-check looks for them: `peak_position`, `earth_deep`,
+`earth_high`.
+""")
+
+answer("""
+def peak_position(grid, lowest, highest):
+    \"\"\"The centre of the tallest 250-metre bin between two elevations.\"\"\"
+    counts, edges = np.histogram(grid.ravel(), bins=bins)
+    centres = (edges[:-1] + edges[1:]) / 2
+    inside = (centres >= lowest) & (centres <= highest)
+    return centres[inside][counts[inside].argmax()]
+
+
+earth_deep = peak_position(earth, -10000, -1000)
+earth_high = peak_position(earth, -1000, 21000)
+
+print("Earth's deep level:   ", earth_deep, "m")
+print("Earth's shallow level:", earth_high, "m")
+""", """
+assert earth_deep < earth_high, "the deep peak should come out below the shallow one"
+print("\u2713 Earth's two levels \u2014", earth_deep, "m and", earth_high, "m,",
+      earth_high - earth_deep, "m apart")
+""")
+
+# --- section 3 -------------------------------------------------------------
+md("""
+## The same numbers, drawn as a map
+
+The mask you built two cells ago has one `True` or `False` per one-degree square — which is to
+say, it is already a map. `plt.imshow` draws any grid as a picture, one pixel per cell, and
+`extent` tells it what the corners mean in degrees. The coastline goes on top from
+`data/coastlines.csv`, exactly as in week one, so you can see whether the mask agrees with it.
+""")
+
+code(weekkit.CHECKPOINT.format(body="""earth = elevation("earth", 160)[::-1]
+below = earth < 0"""))
+
+code(f"""
+plt.imshow(below, extent=[-180, 180, -90, 90], cmap="Greys")
+plt.plot(coast.lon, coast.lat, color="firebrick", lw=0.6)
+plt.xlabel("degrees east")
+plt.ylabel("degrees north")
+plt.title("Earth: the {M['n_below']:,} cells below sea level, of {M['n_cells']:,}")
+plt.show()
+""")
+
+md(f"""
+The dark region is not a shape anyone had to draw: it is one comparison, `earth < 0`, applied to
+every cell. It comes out as the oceans, and the coastline lands on its edge.
+
+So the deep hump in the histogram, centred near {M['earth_deep']} m, is the ocean floor — the
+abyssal plains — and the shallow hump near {M['earth_high']} m is low-lying land. The reason
+those are two levels rather than one is that Earth is made of two kinds of crust. Ocean crust is
+basalt, thin (a few kilometres) and dense; continental crust is granitic, far thicker (tens of
+kilometres) and less dense. Both float on the mantle, and a thick light raft floats higher than a
+thin heavy one, so the two kinds settle at two different heights. Plate tectonics keeps the
+arrangement going: ocean crust is manufactured at mid-ocean ridges and destroyed at subduction
+zones within a couple of hundred million years, while the light continental crust is too buoyant
+to sink and stays. Water then fills the low level, which is why the boundary between the two
+humps sits so close to sea level.
+
+Note what that map is *not* good at. Every cell is drawn the same size, but a one-degree square
+at 60° north is only half as wide, east to west, as one at the equator — `cos(60°) = 0.5` — and
+at the poles the width goes to nothing. Antarctica along the bottom of the map is stretched
+across far more pixels than it deserves. Hold that thought too.
+""")
+
+# --- section 4 -------------------------------------------------------------
+md("""
+## The other planet
+
+The Mars grid is the same shape as Earth's — 180 by 360, one cell per one-degree square — and it
+was measured by a laser altimeter in orbit, which is why it exists at all. Zero on Mars is not a
+sea level; there is no sea. It is a reference surface chosen by geodesists, so instead of a
+below-and-above mask we colour the whole range. The colour scale is the one normally used for
+topography, so the blue end means nothing more than *low* — there is no water on this map.
+""")
+
+code(weekkit.CHECKPOINT.format(body="""mars = elevation("mars", 180)
+flat = elevation("earth", 160)[::-1].ravel()"""))
+
+code(f"""
+# the colour scale stops at 4000 m, or the step between the two halves is invisible
+plt.imshow(mars, extent=[-180, 180, -90, 90], cmap="terrain", vmin=-4000, vmax=4000)
+plt.colorbar(label="elevation (m)")
+plt.xlabel("degrees east")
+plt.ylabel("degrees north")
+plt.title("Mars, {M['n_cells']:,} cells")
+plt.show()
+""")
+
+md("""
+There is nothing subtle about that map. The north of the planet is low and smooth, the south is
+high and rough, and the step between them runs most of the way round the planet. Planetary scientists call it the **crustal dichotomy**, and the crust under the northern
+lowlands is measurably thinner than the crust under the southern highlands.
+
+What Mars does not have is an ocean to fill the low half, or plates to make and destroy crust.
+Whatever put that step there did it long ago and left it, and the surface has kept it ever since.
+
+So: two levels here as well. The next cell puts both planets on the same axis, using the same
+250-metre bins, so the shapes can be compared rather than described.
+""")
+
+code(f"""
+plt.hist(flat, bins=bins, label="Earth")
+plt.hist(mars.ravel(), bins=bins, label="Mars", alpha=0.6)   # see-through, or Mars hides Earth
+plt.xlim(-9500, 7000)
+plt.xlabel("elevation (m)")
+plt.ylabel("number of 1-degree cells")
+plt.title("Earth and Mars, {M['n_cells']:,} cells each, 250 m bins")
+plt.legend()
+plt.show()
+""")
+
+ask(f"""
+### ✏️ Your turn 3
+
+Mars runs off the right of that plot: its highest cell is the {M['mars_max_km']} km you printed in
+your turn 1, and the axis stops at 7000 m so that the two distributions are both readable.
+
+Use your `peak_position` function on `mars` — the same two searches you ran for Earth — and then
+print how far apart each planet's two levels are.
+
+**Use these names**, because the self-check looks for them: `mars_deep`, `mars_high`.
+""")
+
+answer("""
+mars_deep = peak_position(mars, -10000, -1000)
+mars_high = peak_position(mars, -1000, 21000)
+
+print("Mars's two levels: ", mars_deep, "m and", mars_high, "m")
+print("Mars step: ", mars_high - mars_deep, "m")
+print("Earth step:", earth_high - earth_deep, "m")
+""", """
+assert mars_deep < mars_high, "the deep peak should come out below the shallow one"
+print("\u2713 Mars's two levels \u2014", mars_deep, "m and", mars_high, "m, a step",
+      (mars_high - mars_deep) - (earth_high - earth_deep), "m bigger than Earth's")
+""")
+
+ask("""
+### ✏️ Your turn 4
+
+Same reason? Two or three sentences. Use the four peak positions you measured and the two maps —
+what the Earth mask looked like, what the Mars map looked like — and say whether one explanation
+covers both planets. If it does not, say what Earth has that Mars does not.
+""")
+
+answer_prose(f"""
+Both planets really do have two levels: Earth's sit at {M['earth_deep']} m and
+{M['earth_high']} m, {M['earth_gap']} m apart, and Mars's at {M['mars_deep']} m and
+{M['mars_high']} m, {M['mars_gap']} m apart — a bigger step than Earth's. But the maps do not
+match. Earth's low level came out as the oceans, scattered in basins between continents, and
+Earth's two levels are two kinds of crust that plate tectonics keeps making and destroying. Mars's
+low level is one connected cap over the north, with a single step running round the planet, and
+Mars has neither ocean nor plates. So the same explanation cannot cover both: the shape of the
+histogram is the same, and the cause is not.
+""")
+
+# --- section 5 -------------------------------------------------------------
+md(f"""
+## The question, answered
+
+**No — two levels, two different causes.** Earth's two levels are two kinds of crust, thin dense
+ocean floor and thick light continent, floating at two heights and continuously remade by plate
+tectonics; Mars's are one hemisphere-wide step in crustal thickness, made once and never
+reworked. Which process made Mars's step is genuinely unsettled: the two families of explanation
+under discussion are a single enormous impact that excavated the northern lowlands, and a pattern
+of convection inside the young planet that thinned the crust on one side. Nobody has closed the
+argument, so if you found the Mars half less satisfying than the Earth half, that is not because
+the notebook left something out.
+""")
+
+# --- section 6 -------------------------------------------------------------
+md("""
+## When the data has names
+
+An array is the right container when every number means the same thing — here, metres of
+elevation — and position is what tells them apart. Plenty of data is not like that. An earthquake
+catalogue has a time, a latitude, a depth, a magnitude and a place name on every row, and those
+are five different kinds of thing. That is a **table**, and pandas calls it a DataFrame.
+
+The catalogue below is every earthquake of magnitude 5.5 and above that the USGS has recorded
+since the start of 2000. Remember what such a file is: *A catalogue lists what somebody's
+instruments recorded, not what happened. Where there are no seismometers there are no earthquakes
+in the file.*
+
+`.info()` is the first thing to run on a table you have not seen. It names every column, says
+what type it holds, and — the part that matters — says how many rows are not blank.
+""")
+
+code(weekkit.CHECKPOINT.format(body=f'quakes = load("{START}", "{END}", {MINMAG})'))
+
+code("""
+print(quakes.shape)
+quakes.info()
+
+print("rows with no dmin:", quakes["dmin"].isna().sum())
+print("rows left if you drop every row with any blank:", len(quakes.dropna()))
+""")
+
+md(f"""
+{M['n_quakes']:,} rows and {M['n_columns']} columns. Read down the non-null counts: `time`,
+`latitude`, `depth` and `mag` are complete, but several columns are not. Where the file had
+nothing at all, pandas puts **NaN** — "not a number". A NaN is a hole, not a zero, and the
+difference matters: a depth of 0 km is a real, shallow earthquake, while a NaN depth is an
+earthquake whose depth nobody recorded.
+
+`.isna()` marks the holes — it is exactly the mask move from the first half of the notebook, with
+`is this blank?` as the question instead of `is this below zero?`. `.dropna()` throws away every
+row with a hole anywhere in it, which sounds tidy and is usually a disaster: only
+{M['n_after_dropna']:,} rows survive out of {M['n_quakes']:,}, not because those earthquakes are
+bad but because a column nothing here needs happens to be patchy. So keep the columns you
+actually want, and leave the rest alone.
+
+A new column is made by assigning to a name that does not exist yet. `.str[:4]` slices every
+string in a column the way `[:4]` slices one string, so the four characters at the front of
+`time` give the year. Then the columns worth keeping are chosen by name, in a list, inside the
+square brackets, and `.head()` shows the first five rows.
+""")
+
+code("""
+quakes["year"] = quakes["time"].str[:4]
+quakes = quakes[["year", "depth", "mag", "type", "place"]]
+
+print(quakes.head())
+""")
+
+md("""
+`.value_counts()` counts how often each value appears in one column — the table version of
+counting `True`s in a mask. Run it on `type` and the catalogue tells you something about itself.
+""")
+
+code("""
+print(quakes["type"].value_counts())
+print(quakes[quakes["type"] != "earthquake"])
+""")
+
+md(f"""
+Not everything in the earthquake catalogue is an earthquake. {M['n_other_rows']} of the
+{M['n_quakes']:,} rows are not: seismometers record whatever shakes the ground, and a large enough
+explosion or eruption shakes it in much the way an earthquake does. Telling those apart is a
+question this course comes back to.
+
+That second line is **boolean filtering**: `quakes["type"] != "earthquake"` is a mask, one True or
+False per row, and putting a mask inside the square brackets keeps the rows where it is True. The
+grid and the table use the same move. `.sort_values()` then puts the rows in order by a column.
+""")
+
+code(f"""
+big = quakes[quakes["mag"] >= 8.0]
+print(len(big), "earthquakes at magnitude 8.0 or above")
+print(big.sort_values("mag", ascending=False).head()[["year", "mag", "place"]])
+""")
+
+ask("""
+### ✏️ Your turn 5
+
+Earthquakes deeper than 500 km are strange animals: the rock at that depth is far too hot and
+squeezed to snap the way it does near the surface, and they only happen where cold ocean floor is
+sinking back into the mantle — the far end of the story the first half of this notebook told.
+
+Filter `quakes` to the rows deeper than 500 km, print how many there are, and print the five
+deepest in order, deepest first, showing the year, the depth and the place.
+
+**Use these names**, because the self-check looks for them: `deep_quakes`.
+""")
+
+answer("""
+deep_quakes = quakes[quakes["depth"] > 500]
+
+print(len(deep_quakes), "earthquakes deeper than 500 km")
+print(deep_quakes.sort_values("depth", ascending=False).head()[["year", "depth", "place"]])
+""", """
+assert deep_quakes["depth"].min() > 500, "deep_quakes should hold only the rows below 500 km"
+print("\u2713 deep earthquakes \u2014", len(deep_quakes), "of them, the deepest at",
+      deep_quakes["depth"].max(), "km")
+""")
+
+# --- summary and homework --------------------------------------------------
+md(weekkit.week_cheatsheet(3))
+
+md("""
+## Homework
+
+Three parts, all on the two grids and the catalogue you already have loaded. Part 1 and part 2 go
+back to the elevation grids and finish two arguments class deliberately left open; part 3 stays
+with the table. If you have restarted since class, run the setup cell at the top first.
+""")
+
+ask(f"""
+### ✏️ Your turn 6
+
+Class fixed the bins at 250 metres wide. Loosen that, and the two peaks eventually merge into one
+hump — but which way? Find out.
+
+Loop over `bin_counts = {BIN_SWEEP}` and for each one print the bin count and the counts
+`np.histogram(earth.ravel(), bins=n)` returns. You are looking for a **dip** between two larger
+numbers: that dip is the gap between the two levels, and when it disappears the peaks have
+merged. Report the smallest number of bins that still shows two humps for Earth, and then do the
+same for Mars.
+
+**Use these names**, because the self-check looks for them: `earth_fewest_bins`,
+`mars_fewest_bins`.
+""")
+
+answer(f"""
+bin_counts = {BIN_SWEEP}
+
+for n in bin_counts:
+    counts, edges = np.histogram(earth.ravel(), bins=n)
+    print("Earth,", n, "bins of", round(edges[1] - edges[0]), "m")
+    print(counts)
+
+for n in bin_counts:
+    counts, edges = np.histogram(mars.ravel(), bins=n)
+    print("Mars,", n, "bins of", round(edges[1] - edges[0]), "m")
+    print(counts)
+
+earth_fewest_bins = {M['earth_fewest_bins']}
+mars_fewest_bins = {M['mars_fewest_bins']}
+""", """
+assert earth_fewest_bins in bin_counts, "pick one of the bin counts you actually tried"
+assert mars_fewest_bins in bin_counts, "pick one of the bin counts you actually tried"
+print("\u2713 where the peaks merge \u2014 Earth keeps two humps down to", earth_fewest_bins,
+      "bins, Mars down to", mars_fewest_bins)
+""")
+
+ask(f"""
+### ✏️ Your turn 7
+
+Class measured that {M['frac_below']:.3f} of the *cells* in the Earth grid are below sea level,
+and parked the question of whether that is the fraction of the *planet*. Here is the missing
+piece: the grid counts every one-degree square once, but those squares are not the same size. A
+square at latitude *lat* is `cos(lat)` times as wide, east to west, as one at the equator.
+
+So count each row of the grid by how wide its cells are instead of by how many there are:
+
+```
+lats = np.arange(89.5, -90, -1)          # the centre latitude of each of the 180 rows
+cell_width = np.cos(np.deg2rad(lats))    # 1.0 at the equator, nearly 0 at the poles
+rows_below = below.sum(axis=1)           # below-sea-level cells in each row
+```
+
+`rows_below` and `cell_width` are both 180 numbers long, so `rows_below * cell_width` weights
+each row. Divide by what all 180 full rows would weigh — `360 * cell_width.sum()` — to get the
+weighted fraction. Then say, in the cell after, which of the two numbers is the honest one and
+what the longitude-latitude grid was doing to the poles to produce the other.
+
+**Use these names**, because the self-check looks for them: `earth_weighted`.
+""")
+
+answer("""
+lats = np.arange(89.5, -90, -1)
+cell_width = np.cos(np.deg2rad(lats))
+rows_below = below.sum(axis=1)
+
+earth_weighted = (rows_below * cell_width).sum() / (360 * cell_width.sum())
+
+print("counting cells:      ", f"{fraction_below:.3f}")
+print("weighting by width:  ", f"{earth_weighted:.3f}")
+""", """
+assert earth_weighted != fraction_below, "if nothing moved, the weights were not used"
+print("\u2713 area weighting \u2014 the fraction below sea level moved from",
+      f"{fraction_below:.3f}", "to", f"{earth_weighted:.3f}")
+""")
+
+answer_prose(f"""
+The weighted figure, {M['frac_below_weighted']:.3f}, is the honest one, because the question was
+about the planet's surface and not about the file's rows. Counting cells treats a one-degree
+square at the pole as worth the same as one at the equator, and it is not — `cos(89.5°)` is under
+0.01, so the top row of cells is a hundredth as wide as the equatorial row. The grid therefore
+over-counts high latitudes, and high latitudes are exactly where the two largest pieces of
+high-standing land sit: Antarctica and Greenland. Over-counting them pulls the below-sea-level
+share down, from {M['frac_below_weighted']:.3f} to {M['frac_below']:.3f}, about
+{abs(M['frac_below_weighted'] - M['frac_below']) * 100:.0f} percentage points. The peak positions
+survive this — they are elevations, not shares of area — so the two-levels story from class is
+unaffected. Only the percentage was wrong.
+""")
+
+ask(f"""
+### ✏️ Your turn 8
+
+Back to the table. `quakes` has a `year` column, so `.groupby("year")` will split the catalogue
+into one group per year, and `["mag"].count()` will count the rows in each group.
+
+Build `per_year`, print the three largest years using `.sort_values(ascending=False).head(3)`,
+and then print the year before and the year after the busiest one — `per_year.loc["2007"]` reads
+one year out — together with `per_year.median()`.
+
+Then, in the cell after, answer this in two or three sentences using your own numbers: was the
+planet busier in that year, or did one thing happen? Whatever you claim, the neighbouring years
+and the median have to be consistent with it.
+
+**Use these names**, because the self-check looks for them: `per_year`.
+""")
+
+answer(f"""
+per_year = quakes.groupby("year")["mag"].count()
+
+print(per_year.sort_values(ascending=False).head(3))
+print("the year before:", per_year.loc["{int(M['busiest_year']) - 1}"])
+print("the year after: ", per_year.loc["{int(M['busiest_year']) + 1}"])
+print("median year:    ", per_year.median())
+""", f"""
+assert len(per_year) == {M['n_years']}, "one row per year is expected, from 2000 to 2025"
+print("\u2713 earthquakes by year \u2014 busiest is",
+      per_year.sort_values(ascending=False).index[0], "with", per_year.max(),
+      "against a median of", per_year.median())
+""")
+
+answer_prose(f"""
+{M['busiest_year']} holds {M['busiest_count']} earthquakes of magnitude 5.5 and above, against a
+median year of {M['median_year']:.1f}, and its immediate neighbours are ordinary:
+{M['year_before']} the year before and {M['year_after']} the year after. A planet that had genuinely
+become more active would not go back to normal within twelve months. The catalogue itself says
+what happened instead: the largest event in the whole file, magnitude {M['biggest_mag']}, is in
+{M['busiest_year']}, and a great earthquake is followed by thousands of aftershocks, a few hundred
+of which are large enough to clear the magnitude 5.5 floor of this query. So one earthquake
+sequence, not a busier planet.
+""")
+
+
+# ---------------------------------------------------------------------------
+# 3. emit, execute, gate
+# ---------------------------------------------------------------------------
+def notebook(cells):
+    return {"cells": cells, "metadata": {
+        "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
+        "language_info": {"name": "python", "version": "3"}},
+        "nbformat": 4, "nbformat_minor": 5}
+
+
+def cell(kind, source):
+    c = {"cell_type": kind, "metadata": {}, "source": source.splitlines(keepends=True)}
+    if kind == "code":
+        c["execution_count"] = None
+        c["outputs"] = []
+    return c
+
+
+def main():
+    OUT.mkdir(parents=True, exist_ok=True)
+
+    sol = notebook([cell(k, s) for k, s, _ in CELLS])
+    stu = notebook([cell(k, alt if alt is not None else s) for k, s, alt in CELLS])
+
+    sol_path = OUT / f"{SLUG}_solution.ipynb"
+    sol_path.write_text(json.dumps(sol, indent=1) + "\n")
+
+    print(f"executing {sol_path.name} ...")
+    r = subprocess.run([sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook",
+                        "--execute", "--inplace", "--ExecutePreprocessor.timeout=600",
+                        str(sol_path)], capture_output=True, text=True, cwd=ROOT)
+    if r.returncode:
+        print(r.stderr[-4000:])
+        sys.exit("the solution did not execute")
+
+    (OUT / f"{SLUG}.ipynb").write_text(json.dumps(stu, indent=1) + "\n")
+    print(f"wrote {SLUG}.ipynb ({len(CELLS)} cells) and the executed solution")
+    print(f"cache: data/{CACHE_NAME}")
+
+
+if __name__ == "__main__":
+    main()
+    weekkit.gate(3)

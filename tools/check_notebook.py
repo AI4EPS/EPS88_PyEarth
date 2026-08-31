@@ -194,13 +194,13 @@ def check_summary_is_this_week(cells, n):
         except SyntaxError:
             continue
         for node in ast.walk(tree):
-            if isinstance(node, ast.Call):
-                f = node.func
-                if isinstance(f, ast.Name):
-                    called.add(f.id)
-                elif isinstance(f, ast.Attribute):
-                    base = f.value.id if isinstance(f.value, ast.Name) else None
-                    called.add(f"{base}.{f.attr}" if base in ("plt", "pd", "np") else f.attr)
+            # Attributes and subscripts too, not just calls: grid.shape, grid.size and
+            # table.loc[...] are things a week teaches and no Call node ever names.
+            if isinstance(node, ast.Attribute):
+                base = node.value.id if isinstance(node.value, ast.Name) else None
+                called.add(f"{base}.{node.attr}" if base in ("plt", "pd", "np") else node.attr)
+            elif isinstance(node, ast.Name):
+                called.add(node.id)
     for mid in wk["modules"]:
         for f in mods_.get(mid, {}).get("functions", []) or []:
             if not f.get("remember", True):
@@ -371,7 +371,10 @@ def main():
     cells = student["cells"]
     figs = check_pair(student, solution)
     check_banned(cells); qs = check_questions(cells); check_order(cells)
-    check_opening(cells); check_summary_is_this_week(cells, n); check_conventions(cells); check_predict(cells); check_plain_words(cells, n)
+    check_opening(cells)
+    # both notebooks: a function taught only in the homework is stubbed out of the
+    # student copy, so scanning that alone made it unlistable
+    check_summary_is_this_week(cells + solution['cells'], n); check_conventions(cells); check_predict(cells); check_plain_words(cells, n)
     check_asserts(cells); check_imports(cells)
     # Figures live in the SOLUTION too: a model answer that draws a map was never
     # checked for labels or coastlines, because only the student copy was passed in.

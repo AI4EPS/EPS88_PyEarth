@@ -186,6 +186,20 @@ modules:
       sequences — np.random 118, np.polyfit 40, np.log 28, np.mean 25 — which needs one line at
       the moment of use, not a lesson three weeks early. So np.random is taught in S2
       (Monte Carlo), the sklearn fitting API in ML1 (regression), np.log10 in D4 (log axes).
+    functions:
+      - {name: "np.array(list)",        does: "the container that does arithmetic to every number at once"}
+      - {name: "grid.shape",            does: "how many rows and columns"}
+      - {name: "grid.size",             does: "how many numbers altogether"}
+      - {name: "grid.ravel()",          does: "lay a grid out flat, as one long line of numbers"}
+      - {name: "grid.min() / grid.max()", does: "smallest / largest value in the whole grid"}
+      - {name: "grid.sum()",            does: "add every number up — on a mask, that counts the Trues"}
+      - {name: "grid.argmax()",         does: "the position of the largest value, not the value itself"}
+      - {name: "np.arange(start, stop, step)", does: "evenly spaced numbers — here, the bin edges"}
+      - {name: "np.histogram(values, bins=edges)", does: "the counts a histogram would draw, handed back as numbers"}
+      - {name: "plt.imshow(grid, extent=[...])", does: "draw a whole grid as a picture, one pixel per cell"}
+      - {name: "plt.colorbar(label=...)", does: "the key that says what the colours mean"}
+      - {name: "plt.legend()",          does: "name the things on a plot when there is more than one", remember: false}
+      - {name: "np.concatenate(grids, axis=1)", does: "join grids side by side, to move a map's left edge", remember: false}
     requires: [P3]
     harvest_gives: "harvest supplies the method and PART of the content"
     minutes: 40
@@ -203,6 +217,16 @@ modules:
     teaches: [read_csv from a URL, head/info/describe, loc/iloc, boolean filtering, sort_values,
               groupby, value_counts, isna/dropna/fillna, sentinel values]
     note_moved: "to_datetime, set_index, resample and rolling moved to S2, the first module that needs event times."
+    functions:
+      - {name: "table.info()",          does: "every column, its type, and how many rows are not blank"}
+      - {name: "table.head()",          does: "the first five rows"}
+      - {name: "column.isna()",         does: "a mask marking where the file had nothing"}
+      - {name: "table.dropna()",        does: "throw away every row with a hole anywhere in it"}
+      - {name: "column.value_counts()", does: "how often each value appears"}
+      - {name: "table.sort_values(by)", does: "put the rows in order by one column"}
+      - {name: "table.groupby(column)", does: "split the table into one group per value"}
+      - {name: "column.count() / column.median()", does: "how many, and the middle value"}
+      - {name: "table.loc[label]",      does: "read one row out by its label"}
     requires: [D1]
     harvest_gives: "harvest supplies BOTH the method and the Earth-science content"
     minutes: 60
@@ -545,6 +569,11 @@ modules:
 # and the sentence a student meets in the notebook must be THIS sentence.
 plain_words:
   - {idea: "Catalogue completeness", module: P1, words: "A catalogue lists what somebody's instruments recorded, not what happened. Where there are no seismometers there are no earthquakes in the file."}
+  - {idea: "Array",                module: D1, words: "A grid of numbers where every cell is the same kind of thing, so one line of arithmetic changes all of them at once."}
+  - {idea: "Mask",                 module: D1, words: "Comparing an array with a number asks the same question of every cell at once and hands back a grid of True and False."}
+  - {idea: "NaN",                  module: D1, words: "Where the file had nothing at all, pandas puts NaN. A NaN is a hole, not a zero."}
+  - {idea: "Table",                module: D2, words: "A table with a name on every column, so you ask for data by name instead of by position."}
+  - {idea: "Area weighting",       module: D2, words: "A longitude-latitude grid counts every square once, but a square near the pole is a sliver; weight each row by cos(latitude) before quoting a percentage."}
   - {idea: "Accumulator pattern", module: P3, words: "Set a counter to 0 before the loop starts and add to it inside; same idea for a list — start it empty and append inside."}
   - {idea: "Equilibrium temperature", module: P4, words: "The temperature a planet would sit at if starlight were the only thing heating it and it had no air."}
   - {idea: "Albedo",               module: P4, words: "The fraction of the starlight falling on a world that it reflects straight back into space; only the rest is absorbed and turned into heat."}

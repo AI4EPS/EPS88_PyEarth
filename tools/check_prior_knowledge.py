@@ -50,8 +50,11 @@ def used_in(path, skip_setup=True):
     nb = json.loads(path.read_text())
     cells = nb["cells"]
     if skip_setup:
+        # Anchored like check_questions: the front matter that NAMES the pencil convention was
+        # ending the setup exemption, so the setup cell's own flagged imports read as violations.
         first_q = next((i for i, c in enumerate(cells)
-                        if c["cell_type"] == "markdown" and "\u270f\ufe0f" in "".join(c["source"])),
+                        if c["cell_type"] == "markdown"
+                        and re.search(r"(?m)^\s*(#{1,4}\s*)?\u270f\ufe0f", "".join(c["source"]))),
                        0)
         cells = cells[first_q:]
     # Collect DEFINITIONS from every cell but CALLS only from post-setup cells: the setup may
