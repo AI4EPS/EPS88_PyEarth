@@ -41,6 +41,16 @@ The class/homework split is about **when**, not whose work it is:
    identical in week 13 and week 1; do not rewrite them.
 1. **The hook** — the week's Earth-science question, ~150 words, into `{hook}`.
 2. **What you'll be able to do** — the science *and* the technical skill, naming the functions.
+   Immediately after it, **the spine: the 3-4 questions that lead the class**, as a numbered list
+   and nothing else. Not prose. This is the one place an instructor looks mid-class to find the
+   next move, and it is the reason the layer exists — after teaching week 1, Weiqiang's first
+   note was *"I have to read the long text to know what I am going to teach next."* A week with
+   one question at the top, six topic-titled sections and prose in between makes its teacher read
+   paragraphs in front of the room.
+   Each spine question then IS a section heading: a heading says what its section **answers**, not
+   what it is about. "Counting by magnitude" is a topic; "How many small earthquakes for each
+   large one?" is a question, and a class can be led from it. Two sections may share one spine
+   question where the second finishes the first — week 1's six sections collapse to four.
 3. **Setup** — one imports cell, one data cell, both out of `weekkit`, so every week's setup is
    identical. `weekkit.setup_cell()` carries the plot defaults and the
    live-source-with-cached-fallback pattern, and is what a week reads a live archive with.
@@ -195,6 +205,14 @@ part 1.**
 3. **Explain** — one paragraph about *their own numbers*, checked against the week's takeaways.
    Make them quote their own output back (*"your two counts differ by a factor of ___"*).
 
+**Every part ends in a question, not a list of names to produce.** A part that says "print the
+prediction, the count, and the ratio" and stops has asked for arithmetic; the student can finish
+it having computed two numbers and thought nothing. The computation earns its place by being the
+*evidence for* an answer, so the last thing the prompt does is ask for the answer — in words, on
+their own numbers. A hint pointing at an earlier section ("keep section 6 in mind while you look
+at your answer") is not a question and does not discharge this: week 1's part 2 shipped with
+exactly that and never once asked why the prediction was so much larger than the count.
+
 **Design the homework from the week's takeaways, not from the class cells.** Name the takeaway each
 part serves before writing the part, and check the set: a takeaway no part touches was taught and
 never used. Week 1's third takeaway — how much data you need is itself a scientific question — is
@@ -337,6 +355,18 @@ as the prose. Write it to be **copied**, not admired.
   exist. Before that week, it is a checkpoint cell, and that is the only reason to repeat.
 - **The same shapes every week.** Setup, loading, plotting and checking look identical in week 12
   and week 1, so by December the only new thing on the screen is the science.
+- **Count the helpers, then count the SHAPES.** A student has to hold both, and the shapes are
+  what actually costs them. One operation gets one form everywhere: if class writes
+  `columns(load(...))` nested and the homework writes `d = load_yours(...)` then `columns(d)` on
+  two lines, that is one idea wearing two faces and they will not connect them. A helper defined
+  in setup and never called before the homework is worse than no helper — it is unexplained
+  furniture in the first cell they read.
+  Week 1 shipped five helpers, about twenty call shapes, a `load_yours` called zero times in the
+  student copy, and — because its `columns()` hands back six parallel lists — eleven six-name
+  unpackings under seven different prefixes: `times`, `my_times`, `day_times`, `week_times`,
+  `month_times`, `all_times`, `low_times`. **Forty-two names for one idea**, in the week that
+  assumes no programming. Every other week has zero, because they use a dataframe directly.
+  If a return value forces an unpacking at every call site, the return value is wrong.
 
 - **A large binary asset has exactly one door.** A `.npz` or similar too big for `data/` goes to
   a GitHub release, and `torch.hub.download_url_to_file(url, name)` is the ONLY route in the six

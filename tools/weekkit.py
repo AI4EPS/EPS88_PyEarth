@@ -52,6 +52,14 @@ STANDARDS = [
     # (asserting above a minmagnitude floor); an assert that is true by construction for any
     # other reason is invisible to it. The claim a reviewer must actually make is the last
     # clause, and no checker makes it.
+    # From teaching week 1. All three are things no reviewer reported and the instructor hit in
+    # the first hour; they are graded now so a reviewer looks for them.
+    (2, "the 3-4 spine questions are present as a list, and every section heading is the "
+        "question its section answers rather than the topic it covers", False),
+    (2, "one operation has ONE call shape everywhere; no helper is defined in setup and first "
+        "called in the homework; no return value forces an unpacking at every call site", False),
+    (1, "every homework part ends in a question answered in words, not a list of names to "
+        "produce — a hint pointing at an earlier section does not count", False),
     (1, "every self-check uses only names the prompt gave, and fails for the wrong answer a "
         "student will really produce — not for one the code makes impossible", False),
     (1, "the solution executes clean on a fresh kernel", True),
