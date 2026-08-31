@@ -33,6 +33,8 @@ wording of an idea already named.
 - Work from `{REPO}`
 - Python: `{PY}` (pandas, numpy, matplotlib, sklearn, torch, nbformat, nbclient, yaml)
 - Put every temporary file in `{SCRATCH}/wk{n}{variant}/` — never in the repo
+- `rm` is aliased to `rm -I`, which prompts and will hang a non-interactive shell. Use
+  `/bin/rm -rf` when you need to delete something
 - Students may import ONLY the libraries the spec file lists.
 
 ## Produce
