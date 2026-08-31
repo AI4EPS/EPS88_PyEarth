@@ -138,7 +138,12 @@ M["last_year"] = int(annual["year"].max())
 M["observed"] = round(float(annual["co2"].iloc[-1]), 2)
 # The two part-years the record starts and ends on, and what averaging only the months a
 # part-year happens to have does to a year's mean. These are the only numbers here that a new
-# month of NOAA data moves, and none of them reaches the prose.
+# month of NOAA data moves, so none of them may be written into the prose. lc_bias is the sharp
+# case: it is 1.15 ppm on seven months of a year and 0.36 on nine, and NOAA GML resets about half
+# of 46 simultaneous requests, so on any given Monday part of the room reads the live file and
+# part falls back to this cache — the two halves would disagree with a single sentence written
+# here. The notebook recomputes and prints it at RUN time instead; the value below is measured
+# only so the build report can state what the builder saw.
 M["record_first_year"] = int(monthly["year"].min())
 M["record_first_month"] = int(monthly["month"].iloc[0])
 M["part_year"] = int(monthly["year"].max())
@@ -176,9 +181,14 @@ for start in DECADES:
 
 M["n_train"] = len(train)
 M["n_later"] = len(later)
-M["pred"] = {d: round(float(curve_value(fit_curve(train, d), M["last_year"])), 1)
-             for d in [1, 2, 3]}
-M["err"] = {d: round(M["pred"][d] - M["observed"], 1) for d in [1, 2, 3]}
+# The notebook's own cell prints `round(predicted - observed, 1)` from the UNROUNDED prediction
+# and the UNROUNDED observation. Taking the error from M["pred"] and M["observed"] instead rounds
+# twice — 400.8 - 427.35 = -26.55 -> -26.6 — and the prose then contradicts the output printed
+# directly above it. Round once, at the end, exactly as the notebook does.
+PRED_RAW = {d: float(curve_value(fit_curve(train, d), M["last_year"])) for d in [1, 2, 3]}
+OBSERVED_RAW = float(annual["co2"].iloc[-1])
+M["pred"] = {d: round(PRED_RAW[d], 1) for d in [1, 2, 3]}
+M["err"] = {d: round(PRED_RAW[d] - OBSERVED_RAW, 1) for d in [1, 2, 3]}
 M["pred_spread"] = round(max(M["pred"].values()) - min(M["pred"].values()), 1)
 
 M["train_miss"] = {}
@@ -189,6 +199,11 @@ for d in DEGREES:
     M["test_miss"][d] = round(typical_miss(later["co2"], curve_value(c, later["year"])), 3)
 M["best_train_degree"] = min(DEGREES, key=lambda d: M["train_miss"][d])
 M["best_test_degree"] = min(DEGREES, key=lambda d: M["test_miss"][d])
+# Degree 9 on 42 points with x in [0, 41] is a badly conditioned fit. Jittering the annual means
+# by +/-0.02 ppm — below NOAA's own retrospective revisions — moves this miss across roughly
+# 13,200-14,200, so the five figures the raw value prints are not all real. The conclusion
+# ("orders of magnitude worse") does not depend on them, so the prose quotes the magnitude.
+M["test_miss_9_about"] = f"{round(M['test_miss'][9], -3):,.0f}"
 
 M["other_best"] = {}
 for cut in OTHER_SPLITS:
@@ -210,6 +225,11 @@ M["cross_full"] = {d: crossing_year(fit_curve(annual, d)) for d in [1, 2, 3]}
 M["cross_train"] = {d: crossing_year(fit_curve(train, d)) for d in [1, 2]}
 M["cross_spread"] = max(M["cross_full"][1], M["cross_train"][1]) - min(
     M["cross_full"][2], M["cross_train"][2])
+# The four years the homework computes, so the opening hook can name the stake in the week's own
+# numbers instead of a decade nothing here produces.
+_crossings = [M["cross_full"][1], M["cross_full"][2], M["cross_train"][1], M["cross_train"][2]]
+M["cross_early_decade"] = min(_crossings) // 10 * 10
+M["cross_late_decade"] = max(_crossings) // 10 * 10
 
 
 # ---------------------------------------------------------------------------
@@ -283,7 +303,7 @@ It goes up. Everybody knows it goes up. The question worth asking is whether it 
 *straight line* — because a straight line and a gently bending curve look nearly identical over
 the years you have measured, and say completely different things about the years you have not.
 The difference between them is the difference between reaching {TARGET_PPM} parts per million in
-the 2050s and reaching it in the next century.
+the {M['cross_early_decade']}s and reaching it in the {M['cross_late_decade']}s.
 
 Today you decide how much bend this record can actually support. Not by arguing about it: by
 hiding {M['n_later']} years of it from yourself, fitting curves to what is left, and checking
@@ -369,21 +389,27 @@ recent = monthly[monthly["year"] == last_full]      # the last whole year
 unfinished = monthly[monthly["year"] > last_full]   # the year still being measured
 months_so_far = unfinished["month"].max()
 
+whole_year = recent["average"].mean()
+part_year = recent[recent["month"] <= months_so_far]["average"].mean()
+
 print(last_full, "ran from", round(recent["average"].min(), 2), "to",
       round(recent["average"].max(), 2), "ppm — a swing of",
       round(recent["average"].max() - recent["average"].min(), 2), "ppm inside one year")
-print("its average over all twelve months:", round(recent["average"].mean(), 2), "ppm")
-print("its average over the first", months_so_far, "months only:",
-      round(recent[recent["month"] <= months_so_far]["average"].mean(), 2), "ppm")
+print("its average over all twelve months:", round(whole_year, 2), "ppm")
+print("its average over the first", months_so_far, "months only:", round(part_year, 2), "ppm")
+print("so keeping only", months_so_far, "months shifts that year's mean by",
+      round(part_year - whole_year, 2), "ppm")
 """)
 
 md(f"""
-{M['season_range']} ppm of swing inside a single year — and averaging only the months a part-year
-happens to have shifts that year's mean by around a ppm, because the months you keep are not a
-fair sample of the seasons. That is why the setup cell kept only whole years: the record begins
-partway through {M['record_first_year']} and its last year is still being measured, so both would
-have carried that bias into every curve we fit. It also means nothing below changes when NOAA
-publishes next month's number.
+{M['season_range']} ppm of swing inside a single year — and the last line printed above is what
+averaging only the months a part-year happens to have does to that year's mean, because the
+months you keep are not a fair sample of the seasons. That shift is not written here because it
+is not a fixed number: it depends on how many months NOAA has published on the day you run this,
+and it shrinks as the year fills up. That is why the setup cell kept only whole years: the record
+begins partway through {M['record_first_year']} and its last year is still being measured, so
+both would have carried that bias into every curve we fit. It also means nothing below changes
+when NOAA publishes next month's number.
 
 The teeth otherwise are not what this week is about. Averaging each year removes them and leaves
 the rise, which is what we want to model. So from here on we work with `annual`: one number per
@@ -722,9 +748,12 @@ plt.title(f"Fitted on {len(train)} years, checked on {len(later)}")
 plt.legend()
 plt.show()
 """, """
-assert train_miss.index(min(train_miss)) != test_miss.index(min(test_miss)), \\
-    "the best degree on the training years should not also be the best on the held-out years; \\
-if they match, both lists were scored against the same rows"
+assert max(test_miss) > 100 * max(train_miss), \\
+    "the most flexible degrees should miss the held-out years by hundreds or thousands of ppm, \\
+not by about as much as they miss the training years; if the two lists are the same size, the \\
+held-out years were inside the fit, or both lists were scored against the same rows \u2014 \\
+check you passed train, not annual, to fit_curve, and later, not train, to the second \\
+typical_miss"
 print("✓ two error curves — training is best at degree",
       degrees[train_miss.index(min(train_miss))], "and the held-out years at degree",
       degrees[test_miss.index(min(test_miss))])
@@ -735,9 +764,9 @@ md(f"""
 downhill the whole way, from {M['train_miss'][1]} ppm at degree 1 to {M['train_miss'][9]} at
 degree {M['best_train_degree']}, exactly as it must. The held-out line dives to
 {M['test_miss'][2]} ppm at degree {M['best_test_degree']} and then climbs: {M['test_miss'][3]} at
-degree 3, {M['test_miss'][5]:,.0f} at degree 5, {M['test_miss'][9]:,.0f} at degree 9. It does not
-climb smoothly — degree 4 dips back below degree 3 — but by degree 5 the direction is not in
-doubt. The widening gap between the two lines is the model learning the training years by heart.
+degree 3, {M['test_miss'][5]:,.0f} at degree 5, about {M['test_miss_9_about']} at degree 9. It
+does not climb smoothly — degree 4 dips back below degree 3 — but by degree 5 the direction is
+not in doubt. The widening gap between the two lines is the model learning the training years by heart.
 
 One cut is one cut, though. Before believing degree {M['best_test_degree']}, move the split and
 see whether the answer moves with it.
@@ -766,8 +795,8 @@ answer_prose(f"""
 Degree {M['best_test_degree']}. On the {SPLIT_YEAR} split the held-out miss falls from
 {M['test_miss'][1]} ppm at degree 1 to
 {M['test_miss'][2]} ppm at degree {M['best_test_degree']}, and then rises again —
-{M['test_miss'][3]} ppm at degree 3 and {M['test_miss'][9]:,.0f} ppm at degree 9 — so degree
-{M['best_test_degree']} is the bottom of that curve. The training miss cannot be used to choose,
+{M['test_miss'][3]} ppm at degree 3 and about {M['test_miss_9_about']} ppm at degree 9 — so
+degree {M['best_test_degree']} is the bottom of that curve. The training miss cannot be used to choose,
 because it falls the whole way, from {M['train_miss'][1]} ppm to {M['train_miss'][9]} ppm; that
 is what more flexibility always buys on the years you fitted. Moving the split did not change my
 mind much: {OTHER_SPLITS[1]} and {OTHER_SPLITS[2]} also chose degree
@@ -795,6 +824,8 @@ other. `.sample(frac=1, random_state=...)` shuffles a table into a random order,
 `random_state` fixes the shuffle so everyone in the room gets the same one.
 """)
 
+code(weekkit.CHECKPOINT.format(body=CLASS_TOOLKIT))
+
 code(f"""
 shuffled = annual.sample(frac=1, random_state={SHUFFLE_SEED})
 rand_test = shuffled.iloc[:len(later)]      # the same number of years as the honest split
@@ -807,36 +838,52 @@ print("held-out years, in order:", sorted(rand_test["year"])[:8], "...")
 ask(f"""
 ### ✏️ Your turn 5
 
-Score degrees 1, 2, 3 and 9 on this random split — fit on `rand_train`, measure the typical miss
-against `rand_test` — and print each one beside the held-out miss the same degree got in your
-turn 3, which is `test_miss[degree - 1]`.
+Score degrees 1, 2, 3 and 9 two ways, in one loop. The random split: fit on `rand_train`,
+measure the typical miss against `rand_test`. The honest split class used: fit on `train`,
+measure against `later`. Print the pair for each degree.
+
+You worked the honest split out in your turn 3, but build it again here rather than reading
+`test_miss` back — that list is above the checkpoint, and this part should still run if you
+restarted the kernel since.
 
 **Use these names**, because the self-check looks for them: `rand_train`, `rand_test`,
-`rand_miss`.
+`rand_miss`, `honest_miss`.
 """)
 
 answer("""
 rand_miss = []
+honest_miss = []
 
 for degree in [1, 2, 3, 9]:
-    coeffs = fit_curve(rand_train, degree)
-    rand_miss.append(typical_miss(rand_test["co2"], curve_value(coeffs, rand_test["year"])))
+    rand_coeffs = fit_curve(rand_train, degree)
+    rand_miss.append(typical_miss(rand_test["co2"], curve_value(rand_coeffs, rand_test["year"])))
+
+    honest_coeffs = fit_curve(train, degree)
+    honest_miss.append(typical_miss(later["co2"], curve_value(honest_coeffs, later["year"])))
+
     print("degree", degree, "  random split", round(rand_miss[-1], 3),
-          "  future held back", round(test_miss[degree - 1], 3))
+          "  future held back", round(honest_miss[-1], 3))
 """, """
-assert len(rand_miss) == 4, "rand_miss should hold one miss per degree — 1, 2, 3 and 9"
-assert rand_miss[3] < test_miss[8] / 100, \\
+assert len(rand_miss) == 4 and len(honest_miss) == 4, \\
+    "each list should hold one miss per degree — 1, 2, 3 and 9"
+assert rand_miss[3] > typical_miss(rand_train["co2"],
+                                   curve_value(fit_curve(rand_train, 9), rand_train["year"])), \\
+    "a curve always sits closer to the years it was fitted on than to years it has never seen, \\
+so a degree-9 miss below the fitted-on miss means the score did not come from held-out years \\
+\u2014 check you fitted on rand_train and scored against rand_test"
+assert rand_miss[3] < honest_miss[3] / 100, \\
     "scattering the held-out years through the record should flatter degree 9 by orders of \\
-magnitude; if it does not, check you fitted on rand_train and scored against rand_test"
+magnitude; if it does not, check rand_miss and honest_miss did not both get the same split"
 print("✓ two ways to split — at degree 9 the random split says",
       round(rand_miss[3], 3), "ppm and the held-back future says",
-      round(test_miss[8], 3), "ppm")
+      round(honest_miss[3], 3), "ppm")
 """)
 
 md(f"""
 The random split says degree 9 is the *best* of the four, missing by {M['rand_miss'][9]} ppm. The
-honest split says degree 9 misses by {M['test_miss'][9]:,.0f} ppm. Same data, same curve, an
-answer roughly {int(round(M['leak_factor'], -3)):,} times apart, and only one of them is true.
+honest split says degree 9 misses by about {M['test_miss_9_about']} ppm. Same data, same curve,
+an answer roughly {int(round(M['leak_factor'], -3)):,} times apart, and only one of them is
+true.
 
 The reason is that a year is not independent of its neighbours. Shuffle the record and 1987 can
 end up in the held-out set while 1986 and 1988 stay in the training set — and a curve that has
@@ -912,6 +959,10 @@ def crossing_year(coeffs):
 for degree in [1, 2, 3]:
     print("degree", degree, "reaches {TARGET_PPM} ppm in", crossing_year(fit_curve(annual, degree)))
 """, f"""
+assert crossing_year(fit_curve(annual, 1)) is not None, \\
+    "crossing_year gave back nothing for the straight line, which does reach {TARGET_PPM} ppm \\
+inside the loop: a function that prints the year hands back None instead, so end it with \\
+return, not print"
 assert 2027 <= crossing_year(fit_curve(annual, 1)) <= 2300, \\
     "crossing_year should hand back a YEAR, not a position in the loop"
 print("✓ the {TARGET_PPM} ppm crossing — a straight line through the whole record puts it in",
@@ -948,8 +999,10 @@ print("earliest", min(crossings), " latest", max(crossings),
       " spread", max(crossings) - min(crossings), "years")
 print("I would quote:", crossings[1])
 """, """
-assert max(crossings) - min(crossings) > 20, \\
-    "four years within twenty of each other means the degree or the training table did not change"
+assert max(crossings) - min(crossings) > 40, \\
+    "four years within forty of each other means the degree or the training table did not \\
+change: holding either one fixed leaves you two answers twice over, and they span about half \\
+what four different fits do"
 print("✓ four forecasts — they span", max(crossings) - min(crossings),
       "years, from", min(crossings), "to", max(crossings))
 """)
@@ -1022,6 +1075,10 @@ def main():
     (OUT / f"{SLUG}.ipynb").write_text(json.dumps(stu, indent=1) + "\n")
     print(f"wrote {SLUG}.ipynb ({len(CELLS)} cells) and the executed solution")
     print(f"cache: data/{CACHE_NAME}, downloaded {READ_DATE}")
+    print(f"part-year bias at build time: averaging {M['last_year']}'s first {M['part_months']} "
+          f"months shifts its mean by {M['lc_bias']:+} ppm. NOT written into the prose — the "
+          f"notebook recomputes and prints it, because it falls as the year fills up and the "
+          f"room splits between the live file and this cache.")
     print(f"NOAA file: {M['n_monthly']} monthly readings, "
           f"{M['record_first_year']}-{M['record_first_month']:02d} to "
           f"{M['part_year']}-{M['part_months']:02d}")

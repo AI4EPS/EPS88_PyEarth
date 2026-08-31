@@ -22,6 +22,7 @@
       "name": "Part 1 — the 500 ppm crossing",
       "marker": "✓ the 500 ppm crossing",
       "checks": [
+        "assert crossing_year(fit_curve(annual, 1)) is not None, \\",
         "assert 2027 <= crossing_year(fit_curve(annual, 1)) <= 2300, \\"
       ],
       "check_points": 30,
@@ -31,16 +32,16 @@
       "name": "Part 2 — four forecasts",
       "marker": "✓ four forecasts",
       "checks": [
-        "assert max(crossings) - min(crossings) > 20, \\"
+        "assert max(crossings) - min(crossings) > 40, \\"
       ],
       "check_points": 30,
       "code_points": 5
     }
   ],
   "released": {
-    "w09-c051": "# ── Checkpoint ── run this if you restarted the kernel or fell behind ──\ndef fit_curve(table, degree):\n    \"\"\"Fit a polynomial of this degree to a table of years and CO2; hand back its coefficients.\"\"\"\n    return np.polyfit(table[\"year\"] - START_YEAR, table[\"co2\"], degree)\n\n\ndef curve_value(coeffs, year):\n    \"\"\"What a fitted curve says CO2 is in that year — one year, or a whole column of them.\"\"\"\n    return np.polyval(coeffs, year - START_YEAR)\n\n\ndef typical_miss(actual, predicted):\n    \"\"\"The usual size of the gap between what happened and what the curve said, in ppm.\"\"\"\n    return np.sqrt(np.mean((actual - predicted) ** 2))\n\n\ntrain = annual[annual[\"year\"] <= 2000]\nlater = annual[annual[\"year\"] > 2000]",
-    "w09-q06-answer": "# ← your answer here\n\n\nassert 2027 <= crossing_year(fit_curve(annual, 1)) <= 2300, \\\n    \"crossing_year should hand back a YEAR, not a position in the loop\"\nprint(\"✓ the 500 ppm crossing — a straight line through the whole record puts it in\",\n      crossing_year(fit_curve(annual, 1)))",
-    "w09-q07-answer": "# ← your answer here\n\n\nassert max(crossings) - min(crossings) > 20, \\\n    \"four years within twenty of each other means the degree or the training table did not change\"\nprint(\"✓ four forecasts — they span\", max(crossings) - min(crossings),\n      \"years, from\", min(crossings), \"to\", max(crossings))"
+    "w09-c052": "# ── Checkpoint ── run this if you restarted the kernel or fell behind ──\ndef fit_curve(table, degree):\n    \"\"\"Fit a polynomial of this degree to a table of years and CO2; hand back its coefficients.\"\"\"\n    return np.polyfit(table[\"year\"] - START_YEAR, table[\"co2\"], degree)\n\n\ndef curve_value(coeffs, year):\n    \"\"\"What a fitted curve says CO2 is in that year — one year, or a whole column of them.\"\"\"\n    return np.polyval(coeffs, year - START_YEAR)\n\n\ndef typical_miss(actual, predicted):\n    \"\"\"The usual size of the gap between what happened and what the curve said, in ppm.\"\"\"\n    return np.sqrt(np.mean((actual - predicted) ** 2))\n\n\ntrain = annual[annual[\"year\"] <= 2000]\nlater = annual[annual[\"year\"] > 2000]",
+    "w09-q06-answer": "# ← your answer here\n\n\nassert crossing_year(fit_curve(annual, 1)) is not None, \\\n    \"crossing_year gave back nothing for the straight line, which does reach 500 ppm \\\ninside the loop: a function that prints the year hands back None instead, so end it with \\\nreturn, not print\"\nassert 2027 <= crossing_year(fit_curve(annual, 1)) <= 2300, \\\n    \"crossing_year should hand back a YEAR, not a position in the loop\"\nprint(\"✓ the 500 ppm crossing — a straight line through the whole record puts it in\",\n      crossing_year(fit_curve(annual, 1)))",
+    "w09-q07-answer": "# ← your answer here\n\n\nassert max(crossings) - min(crossings) > 40, \\\n    \"four years within forty of each other means the degree or the training table did not \\\nchange: holding either one fixed leaves you two answers twice over, and they span about half \\\nwhat four different fits do\"\nprint(\"✓ four forecasts — they span\", max(crossings) - min(crossings),\n      \"years, from\", min(crossings), \"to\", max(crossings))"
   },
   "hygiene": {
     "points": 5
