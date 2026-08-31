@@ -16,6 +16,9 @@
 # of a module taught live. Beginners skip self-study material first, and they are
 # exactly the students the Fall 2024 evaluations show were lost.
 
+# `problem:` on a module is the question it was DESIGNED around, kept across years. The term's
+# question: in course.yml always wins — a builder reading a week slice sees both, and 18 modules
+# carry a problem: that no tool reads. Where they say the same thing, delete the module's.
 meta:
   course: EPS 88 — PyEarth
   session_minutes: 100        # of a 120-minute Monday, after setup and transitions

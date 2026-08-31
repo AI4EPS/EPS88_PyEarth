@@ -33,19 +33,16 @@ wording of an idea already named.
 - Work from `{REPO}`
 - Python: `{PY}` (pandas, numpy, matplotlib, sklearn, torch, nbformat, nbclient, yaml)
 - Put every temporary file in `{SCRATCH}/wk{n}{variant}/` — never in the repo
-- Students may import ONLY the libraries the spec file lists. The standard library is not a
-  loophole for dodging one of them.
+- Students may import ONLY the libraries the spec file lists.
 
 ## Produce
 
-- `{script}` — emits BOTH notebooks from one source so they cannot drift apart
+- `{script}` — the build script (TEMPLATE §7 says what it must emit and how)
 - `{solution}` — **executed**, with every output and figure saved in it
 - `{student}` — the student version, no outputs
-- `data/week{n:02d}_*.csv` — a cached fallback for every live cell, read from `platform:
-  cache_base:`. The one thing you write into the repo rather than scratch. `main` is pushed, so
-  these URLs resolve once you commit; until then only the files already there will load.
-  **Exempt: any query built from data the student supplies** — it cannot be cached, and it should
-  fail loudly with a message naming the fix rather than quietly returning someone else's data.
+- `data/week{n:02d}_*.csv` — the cached fallbacks, and the one thing you write into the repo
+  rather than scratch. TEMPLATE §8 gives the rule and its exemption. `main` is pushed, so these
+  URLs resolve once you commit; until then only the files already there will load.
 
 ## Do not edit anything else
 
@@ -73,8 +70,8 @@ build script — which must refuse to finish if any fails:
 sentence beside a number. That is writing, not reviewing, and it catches real errors.
 
 What you do NOT do is grade yourself against the standards below. That was tried: it produced a
-notebook self-graded PASS on 27 of 27 standards which the reviewer returned with two blocking
-defects, and it was where most of the build time went.
+notebook self-graded PASS on 27 of 27 standards which the reviewer then returned with two
+blocking defects.
 
 The standards below are what the reviewer will grade you against. Build to them — but the check
 that they hold is not yours to make.
