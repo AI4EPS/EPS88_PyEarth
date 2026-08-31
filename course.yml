@@ -532,8 +532,13 @@ schedule:
       whole YEARS roughly doubles it to [1.79, 2.14]. Teach the IID version, then show the block
       version as the extension — the interval getting WIDER when you respect the data's structure
       is the honest lesson.
-      Also verified: the California M7 forecast gives a CI of [1.01, 2.50] against 5 observed,
-      which turns an ambiguous "maybe unlucky" into a model that is demonstrably failing.
+      Also verified: the California M7 forecast gives a CI of [1.01, 2.50] against 5 observed.
+      ⚠️ CORRECTED 2026-08-31 — this line used to end "which turns an ambiguous 'maybe
+      unlucky' into a model that is demonstrably failing". That is the error the week
+      EXISTS to teach against: [1.01, 2.50] is an interval on a RATE and 5 is a COUNT, and
+      comparing them is a category error. The count interval is [0, 5], so 5 sits on its
+      edge, not outside it. Takeaway 3 now says check you are comparing like with like
+      before calling a model broken. The builder was right to disobey this note.
     takeaways:
       - "A single number is not an answer. Report an interval."
       - "Resampling your own data tells you how much your estimate would have wobbled."

@@ -6,9 +6,9 @@ The autograder scores the two code parts. This is the part it cannot: mark it in
 
 ## What the student was asked
 
-### ✏️ Your turn 8
+### ✏️ Your turn 9
 
-Two or three sentences, quoting your own numbers from part 2.
+Two or three sentences, quoting your own numbers from your turn 8.
 
 Class's fitting range put five large earthquakes at the top edge of the interval. Say what your
 range put it at, and whether your choice changes the verdict — whether a reader of your notebook

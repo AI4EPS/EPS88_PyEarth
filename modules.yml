@@ -391,8 +391,10 @@ modules:
       VERIFIED 2026-08-30. San Francisco sea level, 1,503 monthly means 1900-2025:
       slope 1.96 mm/yr, bootstrap 95% CI [1.87, 2.05] — zero far outside, 20 cm by 2100
       (CI 19-21). Then the same method on S3's earthquake forecast: predicted 1.66 M7+ events
-      in 36 years, CI [1.01, 2.50], OBSERVED 5 — outside the interval, so Gutenberg-Richter
-      extrapolation is genuinely failing rather than merely unlucky. Every flagship problem in
+      in 36 years, CI [1.01, 2.50], OBSERVED 5. ⚠️ CORRECTED 2026-08-31: this said 5 was
+      "outside the interval, so Gutenberg-Richter extrapolation is genuinely failing" —
+      a rate interval against a count, which is the category error the week teaches
+      against. The COUNT interval is [0, 5] and 5 sits on its edge. Every flagship problem in
       this course has a punchline that needs an interval.
     problem: "How fast is San Francisco Bay rising — and could the answer be zero?"
     contrast_with_S2: >

@@ -11,12 +11,25 @@ It also writes the three cached fallbacks the week reads, into data/.
 Every number that appears in prose or in a model answer is computed HERE, by running the same
 code the notebook runs, with the same seed. Nothing is typed from memory or copied from the plan.
 
-    python tools/build_week08.py
+Both USGS queries are pinned by date range and magnitude floor, so they reproduce. NOAA's monthly
+means are not: the query is pinned to 1900-2025, but the gauge record has gaps the operators
+backfill later (nine months are missing as this is written, seven of them in 2024), and the
+student's notebook reads NOAA LIVE. A cache downloaded once and never again is how that goes wrong
+quietly — the build describes 1,503 months while the class sees more. Three things stop it:
+`--refresh` downloads again, a cache older than STALE_DAYS says so rather than passing for
+current, and the counts that can move are printed by the notebook's own cells at run time instead
+of being written into markdown. What is still literal, and why, is in the build's closing report.
+
+    python tools/build_week08.py              # build from the cached copies
+    python tools/build_week08.py --refresh    # download all four again — do this before class
 """
+import datetime
 import json
 import pathlib
+import re
 import subprocess
 import sys
+import time
 import urllib.request
 
 import numpy as np
@@ -61,20 +74,39 @@ SEED = 88
 CHUNK_STARTS = [1900, 1925, 1950, 1975, 2000]
 WINDOW_STARTS = [1918, 1954, 1990]
 WINDOW_YEARS = 36
+AHEAD = 30          # the forecast window week 5 used, and the one this week puts an interval on
+
+REFRESH = "--refresh" in sys.argv
+STALE_DAYS = 30     # after this NOAA may hold months the cached copy does not
 
 
-def cache(url, name):
-    """Fetch a live source once and store it byte-for-byte as the week's fallback."""
+def cache(url, name, volatile=False):
+    """Fetch a live source, store it byte-for-byte as the week's fallback, return the path.
+
+    The cache used to be downloaded once and then never again, which is the quiet way a week
+    goes wrong: the student's notebook reads the archive live, the build reads a months-old
+    copy, and the two disagree in front of a class. `--refresh` downloads again. The USGS
+    queries are pinned by date range and magnitude floor and reproduce; NOAA's monthly means are
+    `volatile`, because a missing month can be filled in inside a window that is already closed,
+    so an old cache of them warns.
+    """
     out = ROOT / "data" / name
-    if not out.exists():
+    if REFRESH or not out.exists():
+        print(f"downloading {name}")
         out.write_bytes(urllib.request.urlopen(url, timeout=180).read())
+    elif volatile:
+        age = (time.time() - out.stat().st_mtime) / 86400
+        if age > STALE_DAYS:
+            print(f"WARNING: data/{name} was downloaded {age:.0f} days ago. NOAA backfills gaps "
+                  f"in this record, and the student's notebook reads NOAA live. Rebuild with "
+                  f"--refresh before the class.")
     return out
 
 
 # ---------------------------------------------------------------------------
 # 1. measure everything the notebook will say, with the notebook's own code
 # ---------------------------------------------------------------------------
-sea = pd.read_csv(cache(SEA_URL, SEA_CACHE))
+sea = pd.read_csv(cache(SEA_URL, SEA_CACHE, volatile=True))
 sea.columns = sea.columns.str.strip()
 sea["year"] = sea["Year"] + (sea["Month"] - 0.5) / 12
 sea["sea_mm"] = sea["MSL"] * 1000
@@ -120,6 +152,24 @@ M["ci_low"], M["ci_high"] = (float(x) for x in np.percentile(slopes, [2.5, 97.5]
 M["n_below_zero"] = int((slopes <= 0).sum())
 M["boot_min"] = float(slopes.min())
 M["boot_max"] = float(slopes.max())
+M["iid_width"] = M["ci_high"] - M["ci_low"]
+
+# --- the same interval on the two end chunks ------------------------------
+# The class cannot say whether the 4.03 mm/yr spread between the five chunks is short-window
+# wobble or a real change of rate without giving the chunks intervals of their own, and saying
+# it without them is the error the week's third takeaway is about.
+M["ends"] = []
+for start in (CHUNK_STARTS[0], CHUNK_STARTS[-1]):
+    chunk = sea[(sea["year"] >= start) & (sea["year"] < start + 25)]
+    s = slope_bootstrap(chunk)
+    M["ends"].append({
+        "start": start, "n": len(chunk),
+        "slope": float(LinearRegression().fit(chunk[["year"]], chunk["sea_mm"]).coef_[0]),
+        "low": float(np.percentile(s, 2.5)), "high": float(np.percentile(s, 97.5))})
+for end in M["ends"]:
+    end["width"] = end["high"] - end["low"]
+M["ends_gap"] = M["ends"][1]["low"] - M["ends"][0]["high"]
+M["ends_ratio"] = M["ends"][0]["width"] / M["iid_width"]
 
 M["cm_century"] = M["slope"] * 100 / 10
 M["cm_century_low"] = M["ci_low"] * 100 / 10
@@ -140,10 +190,13 @@ for _ in range(B):
     block_slopes.append(LinearRegression().fit(boot[["year"]], boot["sea_mm"]).coef_[0])
 block_slopes = np.array(block_slopes)
 M["block_low"], M["block_high"] = (float(x) for x in np.percentile(block_slopes, [2.5, 97.5]))
-M["iid_width"] = M["ci_high"] - M["ci_low"]
 M["block_width"] = M["block_high"] - M["block_low"]
 M["width_ratio"] = M["block_width"] / M["iid_width"]
 M["n_calendar_years"] = len(year_list)
+# What the widening MEASURES: an interval that is k times wider is the interval you would have
+# got from n / k**2 independent months. 126 is how many blocks the loop drew, which is the
+# method, not the result.
+M["n_effective"] = M["n_months"] / M["width_ratio"] ** 2
 
 # --- the earthquake forecast ----------------------------------------------
 EDGES = np.arange(4.0, 5.6, 0.1).round(1)
@@ -193,6 +246,30 @@ M["observed"] = M["window_counts"][-1]
 M["total_big"] = sum(M["window_counts"])
 M["n_windows"] = len(WINDOW_STARTS)
 M["span_years"] = WINDOW_YEARS * M["n_windows"]
+M["excess_7"] = M["observed"] / np.mean(M["window_counts"][:-1])
+
+# The Poisson draw above assumes the large earthquakes arrive independently. The catalogue's own
+# clock says they do not, so the notebook prints the gaps and the caveat names what they mean.
+ordered = big.sort_values("time").reset_index(drop=True)
+day_gaps = pd.to_datetime(ordered["time"]).diff().dt.days
+M["gaps"] = sorted(int(g) for g in day_gaps.dropna())
+M["shortest_gap"] = M["gaps"][0]
+
+
+def short_name(place):
+    """'The 1992 Petrolia, California Earthquake' -> '1992 Petrolia'."""
+    return f"{place.split(' ')[1]} {place.split(',')[0].split(' ', 2)[2]}"
+
+
+closest = int(day_gaps.iloc[1:].idxmin())
+M["pair"] = [short_name(ordered["place"][closest - 1]), short_name(ordered["place"][closest])]
+M["dispersion"] = float(np.var(M["window_counts"], ddof=1) / np.mean(M["window_counts"]))
+
+# Week 5 counted events, turned the count into a rate, and turned the rate into a chance. This
+# week's exercise is that chance with an interval on it.
+M["p_class"] = float(1 - np.exp(-M["rate"] / WINDOW_YEARS * AHEAD))
+boot_probs = 1 - np.exp(-boot_rates / WINDOW_YEARS * AHEAD)
+M["p_low"], M["p_high"] = (float(x) for x in np.percentile(boot_probs, [2.5, 97.5]))
 
 big69["when"] = pd.to_datetime(big69["time"])
 M["window_counts_69"] = []
@@ -201,10 +278,17 @@ for start in WINDOW_STARTS:
               & (big69["when"] < f"{start + WINDOW_YEARS}-01-01"))
     M["window_counts_69"].append(int(inside.sum()))
 M["total_big_69"] = sum(M["window_counts_69"])
+M["excess_69"] = M["window_counts_69"][-1] / np.mean(M["window_counts_69"][:-1])
+ordered69 = big69.sort_values("time").reset_index(drop=True)
+when69 = pd.to_datetime(ordered69["time"])
+M["gaps_69"] = sorted(int(g) for g in when69.diff().dropna().dt.days)
+# The closest pair in the record, which is where "independent events" stops being tenable.
+tight = int(when69.diff().iloc[1:].idxmin())
+M["pair_69"] = [short_name(ordered69["place"][tight - 1]), short_name(ordered69["place"][tight])]
+M["pair_69_minutes"] = int((when69[tight] - when69[tight - 1]).total_seconds() // 60)
 # The events the threshold move adds, named so the prose cannot invent a different four.
 added = big69[~big69["id"].isin(big["id"])]
-M["added_69"] = [f"{p.split(' ')[1]} {p.split(',')[0].split(' ', 2)[2]}"
-                 for p in added["place"]]
+M["added_69"] = [short_name(p) for p in added["place"]]
 M["n_added_69"] = len(added)
 
 np.random.seed(SEED)
@@ -234,6 +318,39 @@ for key, edges in FORKS.items():
         "rate": float(predicted_m7(quakes["mag"], edges)),
         "rate_low": float(np.percentile(r, 2.5)), "rate_high": float(np.percentile(r, 97.5)),
         "count_high": int(np.percentile(c, 97.5)), "frac_5": float((c >= 5).mean())}
+
+# --- has the ground moved under the prose? --------------------------------
+have_month = set(zip(sea["Year"], sea["Month"]))
+M["missing_months"] = [f"{y}-{m:02d}" for y in range(M["first_year"], M["last_year"] + 1)
+                       for m in range(1, 13) if (y, m) not in have_month]
+M["pinned_months"] = int(re.search(r"([\d,]+) monthly means",
+                                   WEEK["pinned"]["slice"]).group(1).replace(",", ""))
+
+
+def pinned_drift():
+    """Re-measure everything course.yml pinned for this week and report anything that moved.
+
+    Every number in the markdown is interpolated from M, so a rebuild refreshes the prose. What
+    a rebuild cannot do is notice that the record itself is no longer the record the plan was
+    verified against — and course.yml, not the notebook, is where that has to be corrected.
+    """
+    expect = WEEK["pinned"]["expect"]
+    measured = {"slope_mm_per_yr": [M["slope"]],
+                "ci95_iid": [M["ci_low"], M["ci_high"]],
+                "ci95_block_by_year": [M["block_low"], M["block_high"]],
+                "cm_per_century": [M["cm_century"]],
+                "cm_now_to_2100": [M["cm_2100"]]}
+    moved = []
+    if M["n_months"] != M["pinned_months"]:
+        moved.append(f"the record holds {M['n_months']:,} monthly means; course.yml's pinned "
+                     f"slice says {M['pinned_months']:,}")
+    for key, want in expect.items():
+        want = want if isinstance(want, list) else [want]
+        if any(abs(w - g) > 0.01 * abs(w) for w, g in zip(want, measured[key])):
+            moved.append(f"{key}: course.yml pins {want}, this build measures "
+                         f"{[round(g, 3) for g in measured[key]]}")
+    return moved
+
 
 if "--measure" in sys.argv:
     print(json.dumps(M, indent=1, default=float))
@@ -332,7 +449,7 @@ have, `np.percentile` turns a thousand answers into an interval, and a `for` loo
 together. You will put an error bar on a fitted slope, which is something a single call to
 `LinearRegression` will never give you.
 
-**Eight places where you write something: five in class, three at home.** Each one is headed
+**Nine places where you write something: six in class, three at home.** Each one is headed
 *Your turn*, with an empty cell under it.
 """)
 
@@ -369,10 +486,11 @@ md(f"""
 
 A tide gauge is a float in a stilling well, bolted to a pier, writing down where the water sits.
 The one in San Francisco — NOAA station 9414290 — has been doing that since before anyone thought
-sea level was a question, and NOAA publishes a monthly mean from it. That is what `sea` holds:
-{M['n_months']:,} monthly means from {M['first_year']} to {M['last_year']}, in the `MSL` column,
-which the setup cell turned into millimetres in `sea_mm`. ({M['n_years_sea']} years is
-{M['n_years_sea'] * 12:,} months, so {M['n_missing']} are missing.)
+sea level was a question, and NOAA publishes a monthly mean from it. That is what `sea` holds: one
+monthly mean per month from {M['first_year']} to {M['last_year']}, in the `MSL` column, which the
+setup cell turned into millimetres in `sea_mm`. The setup cell printed how many rows that is, and
+it is short of the {M['n_years_sea'] * 12:,} months those {M['n_years_sea']} years would hold: the
+gauge has gaps, and the most recent of them are new enough that NOAA may yet fill them in.
 
 Two warnings about what that column is. The zero is arbitrary: the heights are quoted against
 *station datum*, a mark on the pier chosen for convenience, so the height itself means nothing and
@@ -436,7 +554,10 @@ for start in {CHUNK_STARTS}:
     print(start, "-", start + 25, ":", len(chunk), "months, slope",
           round(chunk_fit.coef_[0], 3), "mm/yr")
 """, f"""
-assert len(chunk_slopes) == {len(CHUNK_STARTS)}, "one slope per twenty-five-year piece"
+assert chunk_slopes[-1] > chunk_slopes[0] + 1, \\
+    "the last piece should be more than 1 mm/yr steeper than the first"
+assert 3 < max(chunk_slopes) - min(chunk_slopes) < 5, \\
+    "the five slopes should span about {M['chunk_span']:.0f} mm/yr \u2014 check the filter"
 print("\u2713 the record cut five ways \u2014 slopes from", round(min(chunk_slopes), 2),
       "to", round(max(chunk_slopes), 2), "mm/yr, against", round(slope, 2), "for the whole record")
 """)
@@ -453,8 +574,8 @@ this is the fatal one — we did not ask how much a *twenty-five-year* slope wob
 much the {M['n_years_sea']}-year slope wobbles, and each of those fits threw away four fifths of
 the data. Five numbers also cannot tell you what "95% of the time" means.
 
-What we want is {M['n_months']:,} months' worth of answer, many times over. We only have one
-record. So we make more of it out of the one we have.
+What we want is the whole record's worth of answer, many times over. We only have one record. So
+we make more of it out of the one we have.
 """)
 
 # --- section 2 -------------------------------------------------------------
@@ -484,9 +605,9 @@ Repeats in one, holes in the other, same length as the original. `np.random.seed
 same reason as in the probability week: it makes the randomness repeatable, so your numbers and
 your neighbour's match.
 
-Now do it to the tide gauge. One resample of `sea` is {M['n_months']:,} months drawn with
-replacement from the {M['n_months']:,} months we have; fit the line to that and you get a slope
-that is nearly, but not quite, {M['slope']:.3f}. Do it {B:,} times and you have {B:,} slopes.
+Now do it to the tide gauge. One resample of `sea` is as many months as the record holds, drawn
+with replacement from those same months; fit the line to that and you get a slope that is nearly,
+but not quite, {M['slope']:.3f}. Do it {B:,} times and you have {B:,} slopes.
 
 Notice which way round this is. When you simulated earthquake times you started from a
 distribution you had *assumed* — `np.random.poisson(lam)` — and asked what worlds it would make.
@@ -524,7 +645,8 @@ print("slope:", round(slope, 3), "mm/yr")
 print("95% interval:", round(ci_low, 3), "to", round(ci_high, 3), "mm/yr")
 print("resamples at zero or below:", (slopes <= 0).sum(), "out of", len(slopes))
 """, f"""
-assert len(slopes) == {B}, "one slope per resample — the list should be as long as the loop"
+assert slopes.min() > 0, \\
+    "no resample of this record makes the Bay flat — check you fitted sea_mm against year"
 assert ci_low < slope < ci_high, "the interval should straddle the slope you started from"
 print("\u2713 the slope, with an interval \u2014", round(slope, 2), "mm/yr, 95% interval",
       round(ci_low, 2), "to", round(ci_high, 2))
@@ -555,10 +677,43 @@ off it. Nothing in it comes anywhere near zero — the count you printed of resa
 below was {M['n_below_zero']} out of {B:,} — so the answer to *could the Bay be flat?* is no, and
 now we can say so rather than assert it.
 
-Second, look at how narrow it is: {M['iid_width']:.2f} mm/yr wide, against the
-{M['chunk_span']:.2f} mm/yr that separated the highest of your five chunks from the lowest. Cutting
-the record up made the answer look far less certain than it is, because each piece had a
-quarter-century of noise to fit through and a quarter of the data to do it with.
+Second, look at how narrow it is: {M['iid_width']:.2f} mm/yr from end to end, against the
+{M['chunk_span']:.2f} mm/yr that separated the highest of your five chunks from the lowest. It is
+tempting to read that as the chunks having been noise all along — and it is the exact mistake this
+week exists to prevent. The two numbers are not the same kind of thing. {M['iid_width']:.2f} is a
+95% interval; {M['chunk_span']:.2f} is the largest of five point estimates minus the smallest.
+Setting one beside the other settles nothing, in either direction.
+
+What would settle it is giving the chunks intervals of their own, and that is the loop you have
+just written, run on a slice of `sea` instead of all of it. Do it for the two ends.
+""")
+
+code(f"""
+for start in [{CHUNK_STARTS[0]}, {CHUNK_STARTS[-1]}]:
+    chunk = sea[(sea["year"] >= start) & (sea["year"] < start + 25)]
+
+    np.random.seed(88)
+    chunk_boot = []
+    for i in range({B}):
+        boot = chunk.sample(len(chunk), replace=True)
+        chunk_boot.append(LinearRegression().fit(boot[["year"]], boot["sea_mm"]).coef_[0])
+
+    low, high = np.percentile(chunk_boot, [2.5, 97.5])
+    print(start, "-", start + 25, ": 95% interval", round(low, 2), "to", round(high, 2), "mm/yr")
+""")
+
+md(f"""
+[{M['ends'][0]['low']:.2f}, {M['ends'][0]['high']:.2f}] for the first quarter-century and
+[{M['ends'][1]['low']:.2f}, {M['ends'][1]['high']:.2f}] for the last. They do not overlap: there
+are {M['ends_gap']:.2f} mm/yr of daylight between the top of one and the bottom of the other.
+
+So both halves of the story are true and only one of them was worth saying. Short windows really
+are wobbly — the first chunk's interval is {M['ends'][0]['width']:.2f} mm/yr wide, nearly
+{M['ends_ratio']:.0f} times the whole record's {M['iid_width']:.2f}, because a quarter of the data
+has to fit through a quarter-century of weather. But that wobble is nowhere near large enough to
+open a gap of {M['ends_gap']:.2f}. Something in this record really did change, and
+{M['slope']:.3f} mm/yr is an average across a rate that was not constant. The interval around it
+says how well we know that average — not that the Bay rose steadily.
 """)
 
 # --- section 3 -------------------------------------------------------------
@@ -662,9 +817,7 @@ print("expected number of M7+ in the same span:", round(predicted_m7(quakes["mag
 md(f"""
 {M['rate']:.2f} expected, against five that actually happened. That is where the argument stopped
 when you first fitted the line.
-""")
 
-md(f"""
 ### Predict before you run
 
 Bootstrap that {M['rate']:.2f} the way you just bootstrapped the slope and you get a 95% interval
@@ -707,8 +860,9 @@ rate_low, rate_high = np.percentile(boot_rates, [2.5, 97.5])
 print("forecast:", round(predicted_m7(quakes["mag"]), 2), "M7+ earthquakes")
 print("95% interval:", round(rate_low, 2), "to", round(rate_high, 2))
 """, f"""
-assert len(boot_rates) == {B}, "one forecast per resample"
-assert rate_low < rate_high, "percentile returns the low end first"
+assert rate_low < predicted_m7(quakes["mag"]) < rate_high, \\
+    "the interval should straddle the forecast \u2014 check you resampled inside the loop"
+assert rate_high < 5, "if your interval reaches five, predicted_m7 was fed something else"
 print("\u2713 the forecast, with an interval \u2014", round(rate_low, 2), "to",
       round(rate_high, 2), "M7+ earthquakes, against 5 observed")
 """)
@@ -764,8 +918,10 @@ print("95% interval on the COUNT:", count_low, "to", count_high, "M7+ earthquake
 print("fraction of simulated worlds with 5 or more:", round((boot_counts >= 5).mean(), 4))
 print("the busiest simulated world had:", boot_counts.max())
 """, f"""
-assert len(boot_counts) == len(boot_rates), "one simulated world per bootstrapped rate"
-assert boot_counts.max() > boot_rates.max(), "a count scatters above the rate that made it — check you drew from Poisson"
+assert boot_counts.max() >= 5, \\
+    "a Poisson draw reaches five now and then; rounding the rates off never would"
+assert (boot_counts == 0).sum() > 0, \\
+    "and it delivers empty thirty-six-year stretches too — check you drew from Poisson"
 print("\u2713 an interval on the count \u2014 5 or more happened in",
       round(100 * (boot_counts >= 5).mean(), 1), "% of simulated worlds")
 """)
@@ -799,6 +955,7 @@ has had.
 code(f"""
 big["when"] = pd.to_datetime(big["time"])
 print(big[["mag", "place"]])
+print("days from each one to the next:", sorted(big["when"].diff().dropna().dt.days))
 
 window_counts = []
 for start in {WINDOW_STARTS}:
@@ -829,7 +986,7 @@ md(f"""
 of simulated {M['span_years']}-year worlds do at least that well. On the long record the forecast
 is not in trouble at all.
 
-Three caveats you should carry, because none of them is settled by anything above. The box is a
+Four caveats you should carry, because none of them is settled by anything above. The box is a
 rectangle of latitude and longitude, not the state, so it collects earthquakes in Nevada and Baja
 California as well: of the {M['total_big']} the cell above listed, Fairview Peak is in Nevada and
 Sierra El Mayor is in Baja California. And the earlier windows
@@ -838,7 +995,18 @@ not what happened.* If those windows are undercounted, the true long-run rate is
 {M['total_big']} in {M['span_years']} years, and that pushes the same way — it makes five look less
 exceptional, not more.
 
-The third is the one that moves the numbers, and it is hiding inside the words *magnitude 7*. A
+The third is an assumption every `np.random.poisson` in this section made without saying so: that
+large earthquakes arrive **independently**, one roll of the dice each. The gaps you printed say
+they do not. The shortest is {M['shortest_gap']} days — {M['pair'][0]} in April and
+{M['pair'][1]} in June, two months apart in a record whose typical gap is years — and the three
+window counts scatter more than a Poisson process allows, their variance
+{M['dispersion']:.2f} times their mean where Poisson holds the two equal. Clustered events make a
+count scatter *more* than Poisson, so the true share of thirty-six-year worlds reaching five or
+more is **larger** than the {100 * M['frac_5']:.1f}% you computed, not smaller. That is the same
+direction as the caveat before it, and it leaves the verdict standing — but it is an assumption,
+it is visible in our own table, and it should have been said out loud.
+
+The fourth is the one that moves the numbers, and it is hiding inside the words *magnitude 7*. A
 magnitude is a measurement with an uncertainty of a tenth or two, and 7.0 is a round number
 somebody chose, not a boundary in the rock. So try the number on the other side of it. Re-run the
 same query with the threshold at 6.9 — still an earthquake any seismologist would describe as
@@ -849,6 +1017,7 @@ code(f"""
 big69 = load(FDSN + "&starttime=1918-01-01&endtime=2026-01-01&minmagnitude=6.9" + CA_BOX,
              "{BIG69_CACHE}")
 big69["when"] = pd.to_datetime(big69["time"])
+print("days from each one to the next:", sorted(big69["when"].diff().dropna().dt.days))
 
 for start in {WINDOW_STARTS}:
     inside = (big69["when"] >= f"{{start}}-01-01") & (big69["when"] < f"{{start + {WINDOW_YEARS}}}-01-01")
@@ -859,13 +1028,57 @@ md(f"""
 {M['window_counts_69'][0]}, {M['window_counts_69'][1]}, {M['window_counts_69'][2]} — against
 {M['window_counts'][0]}, {M['window_counts'][1]}, {M['observed']} a moment ago. One tenth of a
 magnitude adds {M['n_added_69']} earthquakes ({', '.join(M['added_69'])}), every one of them in an
-earlier window, and the recent excess that the first count showed is simply gone.
+earlier window. The counts are still rising and the most recent window is still the busiest, so
+the excess has not vanished — it has **shrunk**, from {M['excess_7']:.1f} times the average of the
+two earlier windows to {M['excess_69']:.1f} times. The difference matters: {M['excess_7']:.1f}
+times is the sort of gap that starts an argument, and {M['excess_69']:.1f} times is what Poisson
+scatter around a mean of {np.mean(M['window_counts_69']):.0f} hands you routinely.
+
+One of the {M['n_added_69']} is worth a second look on its own. {M['pair_69'][1]} is the zero in
+that list of gaps: it follows {M['pair_69'][0]} by {M['pair_69_minutes']} minutes, and the two are
+counted here as two independent events. That is the third caveat made concrete.
 
 So *{M['window_counts'][0]}, {M['window_counts'][1]}, {M['observed']}* was never a fact about
 California on its own. It was a fact about California **and a threshold**, and the threshold moved
 the story further than the earthquakes did. That is the same lesson as the interval, applied to a
 choice instead of a sample: when a conclusion rests on one round number, try the number either
 side of it and report what you find.
+""")
+
+ask(f"""
+### ✏️ Your turn 6
+
+One last number out of that rate — and this time the interval comes with it from the start.
+
+In the probability week you counted earthquakes near campus, divided by the years to get a rate,
+and turned the rate into a chance of at least one with `1 - np.exp(-rate * years)`. You reported
+that chance as a single number, because a single rate was all you had. You now have {B:,} rates.
+
+`boot_rates` counts M7+ earthquakes per {WINDOW_YEARS} years, so `boot_rates / {WINDOW_YEARS}` is
+a rate per year, and `1 - np.exp(-boot_rates / {WINDOW_YEARS} * {AHEAD})` is the chance of at
+least one M7+ inside the box in the next {AHEAD} years — all {B:,} of them at once, no loop
+needed.
+
+Print the chance the class forecast gives, which is the same formula applied to
+`predicted_m7(quakes["mag"])`, and then the 95% interval from `np.percentile`.
+
+**Use these names**, because the self-check looks for them: `boot_probs`, `p_low`, `p_high`.
+""")
+
+answer(f"""
+boot_probs = 1 - np.exp(-boot_rates / {WINDOW_YEARS} * {AHEAD})
+p_low, p_high = np.percentile(boot_probs, [2.5, 97.5])
+
+print("chance of at least one M7+ in the next {AHEAD} years:",
+      round(1 - np.exp(-predicted_m7(quakes["mag"]) / {WINDOW_YEARS} * {AHEAD}), 3))
+print("95% interval:", round(p_low, 3), "to", round(p_high, 3))
+""", f"""
+assert p_low < 1 - np.exp(-predicted_m7(quakes["mag"]) / {WINDOW_YEARS} * {AHEAD}) < p_high, \\
+    "the interval should straddle the chance the class forecast gives"
+assert boot_probs.max() < 0.99, \\
+    "divide the rate by {WINDOW_YEARS} before multiplying it by {AHEAD}"
+print("✓ a probability with an interval — between", round(100 * p_low), "and",
+      round(100 * p_high), "% chance of at least one M7+ in the next {AHEAD} years")
 """)
 
 # --- section 5 -------------------------------------------------------------
@@ -875,8 +1088,8 @@ md(f"""
 Back to the Bay for the assumption the bootstrap slipped past you. Resampling *months* treats each
 month as an independent draw — as if the sea level in March told you nothing about April. It
 plainly does. A wet winter, an El Niño, a warm year: those last longer than a month, so
-neighbouring months carry much of the same information, and {M['n_months']:,} months is worth
-rather less than {M['n_months']:,} independent measurements.
+neighbouring months carry much of the same information, and the record's months are worth rather
+less than that many independent measurements.
 
 The fix is to resample bigger pieces. Draw whole **calendar years** with replacement — all twelve
 months of 1931 or none of them — so that whatever is shared inside a year travels with it. There
@@ -906,8 +1119,11 @@ print("resampling years: ", round(block_low, 2), "to", round(block_high, 2), "mm
 """)
 
 code("""
-plt.hist(slopes, bins=40, label="months resampled")
-plt.hist(block_slopes, bins=40, alpha=0.6, label="whole years resampled")
+bins = np.arange(min(slopes.min(), block_slopes.min()),               # ONE set of bins for both,
+                 max(slopes.max(), block_slopes.max()) + 0.01, 0.01)  # or the bar widths compare
+
+plt.hist(slopes, bins=bins, label="months resampled")
+plt.hist(block_slopes, bins=bins, alpha=0.6, label="whole years resampled")
 plt.xlabel("bootstrap slope (mm per year)")
 plt.ylabel("number of resamples")
 plt.title(f"{len(slopes):,} resamples each, the same record")
@@ -919,9 +1135,14 @@ md(f"""
 The interval got **wider** — [{M['block_low']:.2f}, {M['block_high']:.2f}] against
 [{M['ci_low']:.2f}, {M['ci_high']:.2f}], about {M['width_ratio']:.1f} times the width — and that is
 the direction nobody guesses. Respecting the structure of your data does not sharpen the answer;
-it stops you from claiming a sharpness you never had. The month-by-month interval was too narrow,
-because it counted {M['n_months']:,} pieces of information where there were closer to
-{M['n_calendar_years']}.
+it stops you from claiming a sharpness you never had.
+
+The month-by-month interval was too narrow because it counted every month as a fresh piece of
+information. How many were there really? An interval {M['width_ratio']:.1f} times wider is
+precisely the interval you would get from {M['n_effective']:.0f} independent months, so that is
+what this record is worth. And note that {M['n_effective']:.0f} is *not*
+{M['n_calendar_years']}: {M['n_calendar_years']} is how many blocks the loop drew, which is the
+method, not the result.
 
 Zero is still nowhere near either interval, so the conclusion about the Bay survives. That will
 not always be true, and when it is not, the wider interval is the one to believe.
@@ -940,7 +1161,10 @@ happens in {100 * M['frac_5']:.1f}% of simulated worlds, sitting on the top edge
 on the count rather than beyond it. Widen the window and the case for a broken model gets weaker still — {M['total_big']} large
 earthquakes in {M['span_years']} years against {M['n_windows'] * M['rate']:.1f} expected, which
 {100 * M['frac_total']:.0f}% of simulated worlds match or beat. The forecast was not convicted; it
-was not acquitted either, and the honest report is the interval rather than the verdict.
+was not acquitted either, and the honest report is the interval rather than the verdict. Written
+that way it is still usable: the same rate says the chance of at least one M7+ in the box in the
+next {AHEAD} years is {100 * M['p_class']:.0f}%, 95% CI [{100 * M['p_low']:.0f}%,
+{100 * M['p_high']:.0f}%].
 """)
 
 md(weekkit.week_cheatsheet(8))
@@ -958,21 +1182,28 @@ the checkpoint just below.
 code(weekkit.CHECKPOINT.format(body=REBUILD_FORECAST))
 
 ask(f"""
-### ✏️ Your turn 6
+### ✏️ Your turn 7
 
-Class cut the record into five pieces and found slopes from {M['chunk_low']:.2f} to
-{M['chunk_high']:.2f} mm/yr, then never went back to ask whether that spread was real. Settle it
-with two intervals rather than five point estimates.
+In class the first and the last twenty-five years came out with intervals that do not overlap —
+[{M['ends'][0]['low']:.2f}, {M['ends'][0]['high']:.2f}] against
+[{M['ends'][1]['low']:.2f}, {M['ends'][1]['high']:.2f}] — which is how we concluded that the rise
+had really changed. Those were the two extremes of five. Ask the same question of a cut that uses
+every month: does the conclusion survive?
 
 Split the record in half — {HALVES[0][0]} up to {HALVES[0][1]}, and {HALVES[1][0]} up to
 {HALVES[1][1]} — and bootstrap each half separately, exactly as you bootstrapped the whole record
 in your turn 2. Print each half's slope and 95% interval.
 
 Then print whether the two intervals overlap. Two intervals overlap when the lower one's top end is
-above the higher one's bottom end, so `first_high > second_low` is the test.
+above the higher one's bottom end, so `first_high > second_low` is the test. Report what you get,
+whichever way it comes out.
 
-**Use these names**, because the self-check looks for them: `first`, `second`, `first_low`,
-`first_high`, `second_low`, `second_high`.
+Resample **months**, as your turn 2 did, not whole years. Class showed that months give an
+interval that is too narrow — and too narrow is the direction that makes two intervals *miss* each
+other, so if these two overlap anyway, the wider honest version would only overlap more.
+
+**Use these names**, because the self-check looks for them: `first`, `second`, `first_slope`,
+`first_low`, `first_high`, `second_slope`, `second_low`, `second_high`.
 """)
 
 answer(f"""
@@ -993,22 +1224,27 @@ for i in range({B}):
     second_slopes.append(LinearRegression().fit(boot[["year"]], boot["sea_mm"]).coef_[0])
 second_low, second_high = np.percentile(second_slopes, [2.5, 97.5])
 
-print("{HALVES[0][0]}-{HALVES[0][1]}:", len(first), "months, slope",
-      round(LinearRegression().fit(first[["year"]], first["sea_mm"]).coef_[0], 2),
+first_slope = LinearRegression().fit(first[["year"]], first["sea_mm"]).coef_[0]
+second_slope = LinearRegression().fit(second[["year"]], second["sea_mm"]).coef_[0]
+
+print("{HALVES[0][0]}-{HALVES[0][1]}:", len(first), "months, slope", round(first_slope, 2),
       "95% interval", round(first_low, 2), "to", round(first_high, 2))
-print("{HALVES[1][0]}-{HALVES[1][1]}:", len(second), "months, slope",
-      round(LinearRegression().fit(second[["year"]], second["sea_mm"]).coef_[0], 2),
+print("{HALVES[1][0]}-{HALVES[1][1]}:", len(second), "months, slope", round(second_slope, 2),
       "95% interval", round(second_low, 2), "to", round(second_high, 2))
 print("do the intervals overlap?", first_high > second_low)
 """, """
 assert len(first) + len(second) == len(sea), "every month belongs to exactly one half"
+assert first_low < first_slope < first_high, \\
+    "the first half's interval should straddle the first half's own slope"
+assert second_low < second_slope < second_high, \\
+    "and the second half's should straddle the second half's"
 print("\u2713 the two halves \u2014 first", round(first_low, 2), "to", round(first_high, 2),
       ", second", round(second_low, 2), "to", round(second_high, 2),
       "; overlapping:", first_high > second_low)
 """)
 
 ask(f"""
-### ✏️ Your turn 7
+### ✏️ Your turn 8
 
 Class fit Gutenberg-Richter between magnitude 4.0 and 5.5. That was a choice, and it was not the
 only defensible one — too low and the catalogue is missing small events, too high and there are
@@ -1044,15 +1280,16 @@ print("95% interval on the count:", np.percentile(my_counts, [2.5, 97.5]))
 print("fraction of simulated worlds with 5 or more:", round(my_fraction, 4))
 """, f"""
 assert edges[0] != 4.0 or edges[-1] != 5.5, "change the range — this is class's fit, not a choice"
-assert len(my_counts) == {B}, "one simulated world per resample — re-run the whole loop on your range"
+assert 0 < my_fraction < 0.2, \\
+    "a small but nonzero share should reach five — zero means the Poisson draw is missing"
 print("\u2713 your own fitting range \u2014 magnitude", edges[0], "to", edges[-1],
       ", 5 or more reached in", round(100 * my_fraction, 1), "% of simulated worlds")
 """)
 
 ask("""
-### ✏️ Your turn 8
+### ✏️ Your turn 9
 
-Two or three sentences, quoting your own numbers from part 2.
+Two or three sentences, quoting your own numbers from your turn 8.
 
 Class's fitting range put five large earthquakes at the top edge of the interval. Say what your
 range put it at, and whether your choice changes the verdict — whether a reader of your notebook
@@ -1114,7 +1351,26 @@ def main():
 
     (OUT / f"{SLUG}.ipynb").write_text(json.dumps(stu, indent=1) + "\n")
     print(f"wrote {SLUG}.ipynb ({len(CELLS)} cells) and the executed solution")
-    print(f"cache: data/{SEA_CACHE}, data/{EQ_CACHE}, data/{BIG_CACHE}, data/{BIG69_CACHE}")
+    for name in (SEA_CACHE, EQ_CACHE, BIG_CACHE, BIG69_CACHE):
+        read = datetime.date.fromtimestamp((ROOT / "data" / name).stat().st_mtime)
+        print(f"cache: data/{name}, downloaded {read}")
+    print(f"NOAA file: {M['n_months']:,} monthly means, {M['first_year']}-{M['last_year']}, "
+          f"{M['n_missing']} months missing ({', '.join(M['missing_months'])})")
+    print("prose: every count that NOAA can move is printed by a notebook cell at run time, not "
+          "written into markdown — the setup cell's shape, the figure titles, and each "
+          "self-check's closing print. The literals left are the ones the pinned 1900-2025 range "
+          f"fixes ({M['n_years_sea']} years, {M['n_years_sea'] * 12:,} months) and the fitted "
+          "results themselves, which are interpolated from this build and so are refreshed by "
+          "rebuilding. Rebuild with --refresh before release.")
+    drift = pinned_drift()
+    if drift:
+        print("\nWARNING: the data has moved away from course.yml's pinned expectations. The "
+              "notebook prose has been rebuilt around the new numbers; course.yml has not.")
+        for line in drift:
+            print(f"  - {line}")
+    else:
+        print(f"pinned: course.yml's five expected values all reproduce within 1%, on "
+              f"{M['pinned_months']:,} monthly means.")
 
 
 if __name__ == "__main__":
