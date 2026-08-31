@@ -39,8 +39,10 @@ nobody finds an unfinished cell the night before it is due.
 
 ### Sections, in order
 
-0. **DataHub link** — generated from `platform:` in `course.yml`.
-1. **The question** — the week's Earth-science question, ~150 words.
+0. **The opening** — `weekkit.OPENING`, with only `{question}` and `{hook}` filled in. The
+   DataHub link, how to submit, what a pencil means and how to recover from a broken kernel are
+   identical in week 13 and week 1; do not rewrite them.
+1. **The hook** — the week's Earth-science question, ~150 words, into `{hook}`.
 2. **What you'll be able to do** — the science *and* the technical skill, naming the functions.
 3. **Setup** — one imports cell, one data cell. Use `weekkit.SETUP_CELL`: it carries the plot
    defaults and the live-source-with-cached-fallback pattern, so every week's setup is identical.
@@ -129,9 +131,8 @@ reassurance. Write ``**Use these names**, because the self-check looks for them.
 voice of a good student, using the numbers the notebook actually produced. A written question with
 no model answer cannot be graded or handed to a reader.
 
-**Time estimates are for planning, not for students.** `minutes=` on each question lets the build
-script total them. Never print them: a student slower than the number on screen learns only that
-they are behind.
+**Never print a time estimate.** Budget the week in minutes if it helps you plan, but a student
+slower than the number on screen learns only that they are behind.
 
 ---
 
@@ -262,7 +263,7 @@ Three fields feed the summary; fill them as you build:
 
 A week may need something it has not taught. Fine, in a setup cell, **as long as you say so**:
 
-> **Coming later:** the second uses **pandas** (week 3) to fetch the catalogue and hand us six
+> **Coming later:** the second uses **pandas**, which we meet properly in the tables week, to fetch the catalogue and hand us six
 > lists. You are not expected to follow it yet.
 
 **Never reach outside the six libraries to dodge this** — `csv`, `urllib` and `io` are three new
@@ -347,7 +348,10 @@ as the prose. Write it to be **copied**, not admired.
   Bond albedo on the NASA fact sheet changed from 0.306 to 0.294 during this course's own
   lifetime, and a citation with no read-date cannot be checked or defended.
 - **No OFFERING dates in a notebook** — no term, no meeting date, no due date; those live in
-  `course.yml` and the notebooks outlive the offering. Dates that are *data* are fine and often
+  `course.yml` and the notebooks outlive the offering. **Name a topic, never a week number** —
+  "we meet pandas properly in the tables week", not "(week 3)": weeks move when a semester is
+  re-planned, which is why `check_course.py` already forbids week numbers in the catalogue, and
+  the argument is stronger for the artifact than for the plan. Dates that are *data* are fine and often
   necessary: a pinned `starttime`/`endtime`, a demo birthday, the year a catalogue covers. Pin
   them, and record them in `course.yml` so the numbers reproduce.
 - **No local file paths** — always a URL. Every live cell reads its cached fallback from

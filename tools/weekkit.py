@@ -40,7 +40,8 @@ STANDARDS = [
         False),
     (1, "the sections run in TEMPLATE 1's order, each opening with the state it needs", False),
     (1, "the answer-cell convention holds throughout: a markdown ask, its own answer cell, "
-        "identical stubs, and a stated write-count that matches the file", True),
+        "identical stubs", True),
+    (1, "the opening cell is weekkit.OPENING with only the question and the hook changed", True),
     (1, "the week summary sits before the homework, and the opening cells carry the DataHub link",
         True),
     (1, "every self-check uses only names the prompt gave, and can fail", True),
@@ -99,6 +100,24 @@ TIER_NAMES = {1: "is it true, and is it a valid notebook?",
 # its shape — which is exactly the drift this template exists to prevent. {signature} and
 # {url_expr} keep the shape identical while the parameters vary: pass "" and a literal URL for
 # a one-query week, or a parameter list and an f-string for a week that loads several.
+OPENING = """# {question}
+
+**EPS 88 · PyEarth.** Open your own copy on DataHub: [click here]({datahub}).
+
+{hook}
+
+Every place you write something opens with a pencil icon and the words *Your turn*, and is
+followed by an empty cell. Fill them all in, then export the notebook as a PDF and upload that.
+
+Two habits from the first minute. A cell runs when you press **Shift+Enter**, and the notebook
+remembers everything it has already run — so when something breaks and you cannot see why,
+**Kernel → Restart Kernel and Run All Cells** throws the memory away and rebuilds it from the
+top. That is never the wrong thing to do.
+"""
+# Only {question} and {hook} change between weeks. Everything else a student reads on the way in
+# — where to click, how to submit, what a pencil means, how to recover — is the same in week 13
+# as in week 1, so it is written once here rather than re-invented thirteen times.
+
 SETUP_CELL = """import pandas as pd
 import matplotlib.pyplot as plt
 

@@ -48,14 +48,6 @@ CASES = [
     ("a notebook with no Predict cell", C.check_predict, [MD("## 1. Something")], True),
     ("...but not one that has the conventional heading", C.check_predict,
      [MD("### Predict before you run\n\nHow many do you expect?")], False),
-    ("a front-matter write-count that disagrees with the file", C.check_write_count,
-     [MD("2 places where you write something: 1 in class, 1 at home"),
-      CODE("# ← your answer here"), MD("## Homework"), CODE("# ← your answer here"),
-      CODE("# ← your answer here")], True),
-    ("...but not one that agrees, counting a prose stub too", C.check_write_count,
-     [MD("3 places where you write something: 1 in class and 2 at home"),
-      CODE("# ← your answer here"), MD("## Homework"), CODE("# ← your answer here"),
-      MD("*(Double-click this cell and replace this line with your answer.)*")], False),
 ]
 
 bad = 0

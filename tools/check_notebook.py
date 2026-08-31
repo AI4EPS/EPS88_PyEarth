@@ -96,8 +96,11 @@ def check_banned(cells):
 
 # --- questions ----------------------------------------------------------------
 def check_questions(cells):
+    # Anchored to a heading: the front matter that NAMES the convention ("every one is marked
+    # with a pencil") was counted as a question, and its neighbour failed for missing an answer
+    # stub. A question is a HEADING that carries the marker, not any mention of it.
     qs = [i for i, c in enumerate(cells)
-          if c["cell_type"] == "markdown" and "✏️" in src(c)]
+          if c["cell_type"] == "markdown" and re.search(r"(?m)^\s*(#{1,4}\s*)?✏️", src(c))]
     prose = 0
     for i in qs:
         nxt = cells[i + 1] if i + 1 < len(cells) else None
@@ -142,7 +145,10 @@ def check_plain_words(cells, n):
     """
     mraw = yaml.safe_load((ROOT / "modules.yml").read_text())
     wk = next(s for s in course["schedule"] if s["n"] == n)
-    text = re.sub(r"\s+", " ", " ".join(src(c) for c in cells))
+    # Strip blockquote and list markers before comparing: putting the binding sentence in a
+    # "> " blockquote is the obvious formatting choice and used to fail.
+    raw = " ".join(src(c) for c in cells)
+    text = re.sub(r"\s+", " ", re.sub(r"(?m)^\s*[>*-]\s?", "", raw))
     for d in mraw.get("plain_words", []):
         if d["module"] not in wk["modules"]:
             continue
@@ -151,6 +157,22 @@ def check_plain_words(cells, n):
             errs.append(f"the recorded wording for '{d['idea']}' does not appear verbatim — "
                         f"TEMPLATE 5 makes it binding, so paraphrasing it gives the course two "
                         f"names for one idea")
+
+
+def check_opening(cells):
+    """The two invariant paragraphs of weekkit.OPENING must appear verbatim.
+
+    Only the question and the hook change between weeks. Everything else a student reads on the
+    way in is the same in week 13 as in week 1, and thirteen agents left to write it themselves
+    will write thirteen versions of it.
+    """
+    fixed = [p for p in weekkit.OPENING.split("\n\n") if "{" not in p]
+    head = re.sub(r"\s+", " ", " ".join(src(c) for c in cells[:4]))
+    for para in fixed:
+        want = re.sub(r"\s+", " ", para).strip()
+        if want and want not in head:
+            errs.append(f"the opening does not match weekkit.OPENING — missing: "
+                        f"{want[:64]}...")
 
 
 def check_predict(cells):
@@ -229,7 +251,9 @@ def check_figures(cells):
             continue
         if "plt.xlabel" not in s or "plt.ylabel" not in s:
             errs.append(f"cell {i}: a plot with no axis labels")
-        if re.search(r"lons?\b|longitude", s) and "coast" not in s:
+        # The lon/lat names must be PLOTTED, not merely mentioned: a checkpoint line that
+        # unpacks six lists into a histogram cell made the histogram fail as a map.
+        if re.search(r"plt\.(scatter|plot)\(\s*lons?\b", s) and "coast" not in s:
             errs.append(f"cell {i}: a map that does not draw data/coastlines.csv")
 
 
@@ -242,43 +266,6 @@ def check_imports(cells):
                 errs.append(f"cell {i}: imports `{top}`, which is not one of the six libraries")
             if code and i != code[0][0]:
                 warns.append(f"cell {i}: import outside the setup cell")
-
-
-def check_write_count(cells):
-    """The notebook states how many places the student writes. Nothing checked it, so the
-    sentence could drift from the file silently. Week 2's builder wrote this check for itself;
-    it belongs to every week."""
-    hw = next((k for k, c in enumerate(cells) if c["cell_type"] == "markdown"
-               and re.search(r"(?im)^##\s*Homework\s*$", src(c))), len(cells))
-    # Count the ANSWER STUBS themselves. Two earlier versions counted the phrase anywhere
-    # (which matched the front matter that NAMES the convention) and then counted prompt
-    # successors (which misses a part with two answer cells, e.g. code then a prose paragraph
-    # after the self-check). Two independent reviewers proved the notebooks right and this
-    # check wrong, both times. A code stub is a code cell carrying the marker; a prose stub is
-    # the short italic markdown line and nothing else.
-    def is_stub(c):
-        s = src(c)
-        if c["cell_type"] == "code":
-            return "your answer here" in s.lower()
-        return "Double-click" in s and len(s.strip()) < 200
-    places = [i for i, c in enumerate(cells) if is_stub(c)]
-    n_class = sum(1 for i in places if i < hw)
-    n_home = len(places) - n_class
-    front = " ".join(src(c) for c in cells[:6]).lower()
-    m = re.search(r"(\w+)\s+places where you write something:\s*(\w+)\s+in class,?\s*"
-                  r"(?:and\s*)?(\w+)\s+at home", front)
-    if not m:
-        warns.append("the front matter does not state how many places the student writes")
-        return
-    words = {w: i for i, w in enumerate(
-        "zero one two three four five six seven eight nine ten eleven twelve "
-        "thirteen fourteen fifteen sixteen".split())}
-    num = lambda s: words.get(s, int(s) if s.isdigit() else -1)
-    said = (num(m.group(1)), num(m.group(2)), num(m.group(3)))
-    real = (n_class + n_home, n_class, n_home)
-    if said != real:
-        errs.append(f"front matter says {said[0]} write-places ({said[1]} class, {said[2]} home); "
-                    f"the file has {real[0]} ({real[1]} class, {real[2]} home)")
 
 
 def check_code_quality(cells):
@@ -330,13 +317,12 @@ def main():
     cells = student["cells"]
     figs = check_pair(student, solution)
     check_banned(cells); qs = check_questions(cells); check_order(cells)
-    check_predict(cells); check_plain_words(cells, n)
+    check_opening(cells); check_predict(cells); check_plain_words(cells, n)
     check_asserts(cells); check_imports(cells)
     # Figures live in the SOLUTION too: a model answer that draws a map was never
     # checked for labels or coastlines, because only the student copy was passed in.
     check_figures(cells); check_figures(solution['cells'])
     check_code_quality(cells); check_summary_is_generated(cells, n)
-    check_write_count(cells)
     print(f"week {n} · {len(cells)} cells · {len(qs)} questions · {figs} figures")
     for x in warns: print(f"  warn  {x}")
     for e in errs:  print(f"  ERROR {e}")
