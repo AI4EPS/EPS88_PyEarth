@@ -36,7 +36,8 @@ STANDARDS = [
     (1, "only the six libraries; the standard library is not a loophole"),
     (1, "nothing arrives before its week except in a setup cell flagged 'Coming later'"),
     (1, "no AI-disclosure cell, no EXTENSION or Buffer banner, no marker comments, no offering dates"),
-    (1, "the cached CSV this week needs is written into data/"),
+    (1, "every cached fallback URL this week reads actually RESOLVES \u2014 not merely that a "
+        "file sits in data/, which passed for weeks while every URL 404d"),
     (2, "every claim in prose is supported by the output or figure beside it"),
     (2, "nothing is asserted that was not computed in this session, except a cited published constant"),
     (2, "every map draws data/coastlines.csv; no map is dots in a blank rectangle"),
@@ -45,8 +46,9 @@ STANDARDS = [
     (2, "the code is clean enough to be imitated: plainest form that works, names that read "
         "as English, one job per cell and per function, nothing dead, nothing repeated "
         "that a function could say once"),
-    (2, "45-60 cells and 7-9 questions (5-6 in class, 2-3 homework); at most two "
-         "answered in prose \u2014 this is a data-science course"),
+    (2, "built to the TARGET of 50 cells and 8 questions rather than to the 60/9 ceiling "
+        "\u2014 every build so far has landed exactly on the ceiling; 5-6 questions in class, "
+        "2-3 homework, at most two answered in prose, because this is a data-science course"),
     (3, "every question serves a stated takeaway or a teaches: item, and you can say which"),
     (3, "the week contains a genuine surprise, and the predict-before-you-run cell catches a wrong "
         "guess a real student would make"),

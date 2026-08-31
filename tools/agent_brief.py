@@ -125,7 +125,7 @@ This brief tells you WHAT to produce and WHERE things are. It deliberately does 
 rules, because a summary of them would compete with the real thing. Read these in order:
 
 1. `{pathlib.Path(REPO).parent}/CLAUDE.md` — section "To build a week"
-2. `{REPO}/TEMPLATE.md` — **read all of it.** §7 is a loop you run, not a passage you read.
+2. `{REPO}/TEMPLATE.md` — **read all of it.** §7 is the two gates your build must pass.
 3. `{REPO}/tools/_week{n:02d}_spec.md` — **week {n}'s entire specification**: its `course.yml`
    entry and its modules' `modules.yml` entries, copied verbatim, with the `plain_words` that
    apply. Read every key on it, not a chosen few — a `pinned:` block is settled and must not be
@@ -157,16 +157,22 @@ reuse the exact wording of an idea already named.
 - `{script}` — emits BOTH notebooks from one source so they cannot drift apart
 - `{solution}` — **executed**, with every output and figure saved in it
 - `{student}` — the student version, no outputs
-- `data/<something>.csv` — the cached fallback for every live cell, read from
-  `platform: cache_base:`. This is the one thing you write into the repo rather than scratch. It
-  404s until someone pushes; say so in your report. (The homework is exempt: 46 unknown student
-  dates cannot be cached, and that query should fail loudly rather than silently.)
+- `data/week{n:02d}_*.csv` — a cached fallback for every live cell, read from `platform:
+  cache_base:`. The one thing you write into the repo rather than scratch. `main` is pushed, so
+  these URLs resolve once you commit; until then only the files already there will load.
+  **Exempt: any query built from data the student supplies** — it cannot be cached, and it should
+  fail loudly with a message naming the fix rather than quietly returning someone else's data.
 
 ## Do not edit anything else
 
-Not `course.yml`, not `modules.yml`, not `TEMPLATE.md`, not `CLAUDE.md`. Other agents are working
-in those files right now. If a week needs a `functions:` list added to its module, or you believe
-a specification file is wrong, **put it in your report** and the orchestrator will apply it.
+Not `course.yml`, not `modules.yml`, not `TEMPLATE.md`, not `CLAUDE.md`. They are shared by all
+fourteen weeks: a `functions:` entry you add for your week changes every other week's summary, and
+a rule you relax is relaxed everywhere. If one is wrong — and on every run so far at least one has
+been — **put it in your report**. The orchestrator applies it once, where it propagates correctly.
+
+**Deliver this week at the scope asked.** Make routine judgement calls yourself; where the spec is
+silent, choose and say what you chose. Do not widen the week, do not add a section nobody asked
+for, and do not re-decide anything the `pinned:` block settles.
 
 ## When you are done
 
@@ -212,6 +218,9 @@ or `teaches:` item it serves. A question serving neither is a drill and should n
 **5. `functions:` and `plain_words:` entries** that should be added to a module: name, and the
 one-line description in the exact wording your notebook uses.
 
+**Length: cover the substance and stop.** No padding, no restating the brief back, no summary of
+your summary. Six sections; a table where a table is clearer than prose.
+
 **6. Anything in the specification that was ambiguous, missing, contradictory, or that you had to
 guess at.** This is worth as much as the notebook. Every previous round of these reports found
 real defects in the specification and all of them were fixed — assume more remain. Where you made
@@ -220,6 +229,9 @@ a judgement call the spec does not cover, say what you chose and what it cost.
 
 
 def review_brief(n, variant=""):
+    write_slice(n)          # the reviewer reads it too; do not depend on a build having run
+    audits = ", ".join(f"`{ROOT.parent / e}`" for e in week(n).get("evidence", [])) \
+             or "(none cited — say so)"
     w = week(n)
     student, solution, script = names(n, variant)
     return f"""You are reviewing **week {n}** of EPS 88 "PyEarth", a course for freshmen with no
@@ -230,17 +242,30 @@ not go looking for it — that blindness is the point of asking you.
 
 ## What to read
 
-1. `{REPO}/TEMPLATE.md` — the specification the notebook must meet. The
-   standards it has to satisfy are reproduced below — that is your checklist.
-2. `{REPO}/course.yml` — week {n}: its `question`, `exercise`, `takeaways`, any `note:`
-3. The dataset audit in `{NOTES}/dataset-audit/` for this week's data
+1. `{REPO}/tools/_week{n:02d}_spec.md` — week {n}'s own specification: its `question`,
+   `exercise`, `takeaways`, `pinned:` values and any `note:`, copied verbatim from the plan.
+2. `{REPO}/TEMPLATE.md` — the rules the notebook was built to. The graded standards are
+   reproduced below and they are what you grade against; read TEMPLATE for the reasoning behind
+   them, not for extra criteria.
+3. This week's dataset audit: {audits} — measured, and it outranks the notebook
 4. `{REPO}/{student}` — **read this one first, straight through, as a student would.**
 5. `{REPO}/{solution}` — the executed version, for checking outputs and figures
 
 Do NOT read `{script}` until after you have formed a judgement from the notebooks. Reading the
 generator first tells you what the author intended, which is exactly what a student will not have.
 
-## What you must actually do, not merely inspect
+## First, let the machines do their half
+
+    {PY} tools/check_notebook.py {n}
+    {PY} tools/check_prior_knowledge.py {n}
+
+Report their output verbatim. They enforce the mechanical standards — counts, banned strings,
+labels, asserts that cannot fail, anything used before its week — so you can spend your attention
+on what they cannot see. If either reports something, say so; if you think either is WRONG, say
+that too and show your hand count. Twice now a reviewer has proved a checker wrong, and both times
+the checker was fixed.
+
+## Then do what only a reader can
 
 - **Open every figure as an image and look at it.** Then check the sentence printed beside it. A
   claim not visible in its figure is the single most common defect in this course, and it has
@@ -262,10 +287,15 @@ generator first tells you what the author intended, which is exactly what a stud
 - **Confirm every question has a complete model answer in the solution**, prose questions included.
 - **Check nothing arrives before its week.** Compare against `{PY} tools/prior_knowledge.py {n}`.
 
-## Judge it in three tiers, and stop early if a tier fails
+## Judge it in three tiers
 
-The tiers gate each other. A notebook that fails tier 1 is not ready to be judged on teaching, and
-saying so in one line is more useful than a long review of a file that has to be rebuilt anyway.
+The tiers say how much a defect matters, not when to stop looking. Review all three every time:
+a notebook can be true and still not teach, and the Tier 3 findings are the ones nobody else in
+this pipeline can produce.
+
+**This list is the complete set of graded criteria.** If you find something you think should be
+graded and it is not here, that is a defect in the specification, not in the notebook — put it in
+the last section rather than marking the notebook down for it.
 
 {weekkit.tiers()}
 *Report EVERYTHING you find, then classify. Do not stop early, do not decide something is too
@@ -279,10 +309,17 @@ mechanical. REBUILD only when the week does not teach what it claims.*
 
 ## Report
 
-A numbered list of findings, worst first, each tagged with its tier. For each: what is wrong, where, and the evidence — the
-number you computed, or what the figure actually shows. End with a verdict:
+A numbered list of findings, worst first, each tagged with its tier. For each: what is wrong,
+where, and the evidence — the number you computed, or what the figure actually shows.
 
-- **SHIP** — meets every standard below
+**Every Tier 1 finding carries the command that reproduces it.** One line someone else can paste.
+Your findings will be checked before they are acted on, and a finding that can be confirmed in
+thirty seconds gets fixed; one that has to be re-derived gets argued about.
+
+**Length: as long as the findings need and no longer.** No preamble, no restating the brief, no
+summary of your summary. End with a verdict:
+
+- **SHIP** — meets every standard above
 - **FIX** — specific defects listed, all of them mechanical
 - **REBUILD** — a structural problem: the week does not teach what it claims, or a question set
   does not serve the takeaways
