@@ -45,13 +45,11 @@ before it goes the way of Venus.
 What the test does not know is how much air TRAPPIST-1 c has. Its answer would be identical for a
 bare rock, for something Earth-like under 1.014 bar, and for something under 92 bar the way Venus
 is — and those three would sit hundreds of degrees apart. It knows nothing about the star either,
-and part 1 is where that shows. All twelve candidates orbit stars cooler than the Sun's 5772 K,
-but that count flatters the pattern: Kepler-1126 c's star is 5678 K, which is barely cooler at all.
-The other eleven run from 2566 K to 4262 K, and TRAPPIST-1's 2566 K is less than half the Sun's. A
-star that cool is small and faint, so the only way TRAPPIST-1 c reaches 339.9 K is by orbiting very
-close in — close enough to be tidally locked and to take its star's flares at full strength. My
-part-1 printout also shows TRAPPIST-1 d sharing that same 2566 K, which is `.index` reporting one
-planet where there were two. None of that is a number the formula ever asks for.
+and part 1 is where that shows. All twelve candidates orbit stars cooler than the Sun's 5772 K, and
+the coolest of them is TRAPPIST-1's own 2566 K, less than half the Sun's. A star that cool is small
+and faint, so the only way TRAPPIST-1 c reaches 339.9 K is by orbiting very close in — close enough
+to be tidally locked and to take its star's flares at full strength. None of that is a number the
+formula ever asks for.
 
 ## The week's takeaways, for context
 

@@ -219,6 +219,8 @@ modules:
               groupby, value_counts, isna/dropna/fillna, sentinel values]
     note_moved: "to_datetime, set_index, resample and rolling moved to S2, the first module that needs event times."
     functions:
+      # Added 2026-08-31 for track T5, which joins a river record to a climate index on year.
+      - {name: "table.merge(other, on=column)", does: "line two tables up on a shared column, keeping only rows both have", remember: false}
       - {name: "pd.DataFrame(data)",     does: "build a table from values you already have", remember: false}
       - {name: "table.info()",          does: "every column, its type, and how many rows are not blank"}
       - {name: "table.head()",          does: "the first five rows"}
@@ -311,6 +313,9 @@ modules:
       - {name: 'table.set_index("time")', does: "make one column the row labels, so the table knows when each row happened"}
       - {name: 'series.resample("D")',  does: 'regroup a time-labelled series into fixed windows — "D" is one day each'}
       - {name: "series.rolling(365).sum()", does: "slide a window of that many rows along and total what is inside it"}
+      # Track T2 slides a twelve-month MEAN to cancel the seasons; same move, different
+      # answer, and the summary could not list it while only .sum() was recorded.
+      - {name: "series.rolling(n).mean()", does: "slide a window of that many rows along and average what is inside it", remember: false}
       - {name: "series.idxmax()",       does: "the LABEL of the largest value — here, the date of the busiest day"}
       - {name: "series.mean()",         does: "the average value"}
       - {name: "column.diff()",         does: "the gap between each row and the one before it"}
@@ -373,6 +378,9 @@ modules:
               intervals, error bars on a fitted slope, "is this difference real or is it scatter",
               reporting a number with an interval rather than a point]
     functions:
+      # Added 2026-08-31 for track T5, which needs one number for "do these two move
+      # together". No week uses it, so it is remember: false — taught where met, not carried.
+      - {name: "np.corrcoef(a, b)[0, 1]", does: "one number for how tightly two series move together, -1 to +1", remember: false}
       - {name: "table.sample(n, replace=True)", does: "draw a new table the same size, picking rows at random and putting each back"}
       - {name: "np.percentile(values, [2.5, 97.5])", does: "the two values that cut off the bottom and top 2.5% — a 95% interval"}
       - {name: "np.random.choice(items, size=n, replace=True)", does: "pick n items at random, repeats allowed", remember: false}
@@ -515,6 +523,8 @@ modules:
     topic: "SVM, Decision Trees"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
     teaches: [decision tree, random forest, SVM (widest gap), feature importance, comparing models behind one API]
     functions:
+      # Added 2026-08-31 for track T1, which predicts a number rather than a class.
+      - {name: "RandomForestRegressor(n_estimators=...)", does: "the same forest, predicting a number instead of a label", remember: false}
       - {name: "DecisionTreeClassifier(random_state=0)", does: "learn the flowchart of yes/no questions from the data"}
       - {name: "RandomForestClassifier(n_estimators=200, random_state=0)", does: "a hundred slightly different trees, voting"}
       - {name: "SVC()",                 does: "the widest-gap classifier; give it scaled columns or the gap means nothing"}
@@ -568,6 +578,10 @@ modules:
     topic: "Neural networks"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
     teaches: [perceptron, stacking, activation, loss, gradient descent, epochs, learning curves, 1-D convolution, PyTorch nn.Module]
     functions:
+      # Added 2026-08-31 for track T8. Both are shape plumbing a student meets the first
+      # time they hand a 1-D waveform to a 2-D layer.
+      - {name: "nn.Flatten()", does: "fold every dimension but the first into one long row", remember: false}
+      - {name: "tensor.unsqueeze(1)", does: "add a length-1 dimension, so one channel looks like one channel", remember: false}
       - {name: "np.clip(a, low, high)", does: "trim every value into a range — here, a guard: the file already carries the same cut at ±10"}
       - {name: 'np.convolve(signal, weights, mode="same")', does: "slide a small pattern-detector along a signal"}
       - {name: "np.unique(a)",          does: "each different value in an array, once"}
