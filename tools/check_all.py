@@ -23,8 +23,31 @@ def run(label, *args):
     return r.returncode
 
 
+def generated_is_current():
+    """Every generated file matches what its generator would emit right now.
+
+    docs/README.md sat on main with an EMPTY week table on the morning of the first class: the
+    notebooks were moved aside for a test, make_docs.py correctly emptied the table, and nobody
+    re-ran it when they came back. A generated file that is not regenerated is stale, and only a
+    comparison catches it.
+    """
+    import shutil, tempfile
+    stale = []
+    for gen, out in (("make_docs.py", "docs/README.md"),
+                     ("make_mkdocs.py", "mkdocs.yml"),
+                     ("make_schedule.py", "SCHEDULE.md")):
+        before = (ROOT / out).read_text()
+        subprocess.run([PY, str(ROOT / "tools" / gen)], capture_output=True, cwd=ROOT)
+        if (ROOT / out).read_text() != before:
+            stale.append(out)
+    print(f"  {'ok  ' if not stale else 'FAIL'}  {'generated files are current':<34} "
+          f"{'' if not stale else 'stale: ' + ', '.join(stale)}")
+    return 1 if stale else 0
+
+
 bad = 0
 bad += run("the plan", "check_course.py")
+bad += generated_is_current()
 bad += run("the checkers themselves", "selftest_checks.py")
 
 built = [s for s in course["schedule"] if s["modules"]
