@@ -20,3 +20,16 @@ both notebooks from one source so the student version cannot drift from the solu
 | `check_notebook.py` | Validates a BUILT week: counts, banned strings, asserts that cannot fail, figures, imports, summary drift. Run by the build gate. |
 | `check_prior_knowledge.py` | Does week N use anything the course has not taught by week N? The only check that sees across weeks. |
 | `selftest_checks.py` | Proves every check_notebook rule fires on its motivating defect and stays quiet on the near-miss beside it. |
+
+## Running a build or a review
+
+Give the agent the COMMAND, not a copy of its output:
+
+    python tools/agent_brief.py build 3     # then follow what it prints
+    python tools/agent_brief.py review 3
+
+Writing the brief to a file first and pointing the agent at the file makes a snapshot: edit the
+generator afterwards and the agent follows a stale brief. That happened once — a build was
+running against a brief whose loop had already been deleted, and had to be stopped. Having the
+agent run the generator itself means it cannot read a version that no longer exists.
+

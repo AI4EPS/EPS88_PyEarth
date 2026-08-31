@@ -7,15 +7,17 @@ paths and names come from course.yml rather than from whoever is orchestrating.
     python tools/agent_brief.py build 2
     python tools/agent_brief.py review 2
 """
-import re, sys, pathlib, yaml
+import os, re, sys, pathlib, tempfile, yaml
 import prior_knowledge
 import weekkit
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 REPO = str(ROOT)
 NOTES = str((ROOT.parent / "notes").resolve())
-SCRATCH = ("/private/tmp/claude-501/-Users-weiqiang-claude/"
-           "87e4d8f5-3d10-44f3-ad9b-9137fd827f94/scratchpad")
+# A session-specific scratch path was hardcoded here, so every brief this generated told its
+# agent to write into a directory that vanishes with the session that wrote it. Derive it, and
+# let the caller override.
+SCRATCH = os.environ.get("EPS88_SCRATCH", str(pathlib.Path(tempfile.gettempdir()) / "eps88-build"))
 PY = "/Users/weiqiang/.venvs/base/bin/python"
 MAX_ROUNDS = 2   # REVIEW cycles, not builder self-review rounds; a third means the spec is wrong
 
