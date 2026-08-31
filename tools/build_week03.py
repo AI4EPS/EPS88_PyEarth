@@ -49,10 +49,9 @@ BINS = np.arange(-10000, 21000, 250)      # 250-metre bins, the same ones for bo
 # ---------------------------------------------------------------------------
 # 1. measure everything the notebook will say
 # ---------------------------------------------------------------------------
-def read_grid(planet, first_column):
+def read_grid(planet):
     """Read one shipped elevation CSV the same way the notebook does."""
-    grid = pd.read_csv(ROOT / f"data/{planet}_elevation.csv", header=None).values
-    return np.concatenate([grid[:, first_column:], grid[:, :first_column]], axis=1)
+    return pd.read_csv(ROOT / f"data/{planet}_elevation.csv", header=None).values
 
 
 def peak_position(grid, lowest, highest):
@@ -79,8 +78,8 @@ def fetch_catalogue():
     return pd.read_csv(out)
 
 
-earth = read_grid("earth", 160)[::-1]     # the Earth file starts at the south pole
-mars = read_grid("mars", 180)
+earth = read_grid("earth")
+mars = read_grid("mars")
 coast = pd.read_csv(ROOT / "data/coastlines.csv")
 quakes_full = fetch_catalogue()
 
@@ -208,6 +207,7 @@ A table with named columns is a **pandas DataFrame**: `.info()`, `.head()`, `.is
 """)
 
 setup = weekkit.SETUP_CELL.format(
+    imports="import numpy as np\n",
     figsize="(7, 4)",
     cache_base=CACHE_BASE,
     signature="start, end, minmag",
@@ -216,23 +216,21 @@ setup = weekkit.SETUP_CELL.format(
               '                       f"&starttime={start}&endtime={end}&minmagnitude={minmag}"'),
     cache_expr='f"week03_{start}_{end}_M{minmag}.csv"',
     unpack=f'''
-def elevation(planet, first_column):
-    """Read one planet's 1-degree elevation grid, with -180 degrees at the left edge."""
-    grid = pd.read_csv(CACHE + "/" + planet + "_elevation.csv", header=None).values
-    return np.concatenate([grid[:, first_column:], grid[:, :first_column]], axis=1)
+def elevation(planet):
+    """Read one planet's 1-degree elevation grid: row 0 is the north, column 0 is -180 degrees."""
+    return pd.read_csv(CACHE + "/" + planet + "_elevation.csv", header=None).values
 
 
 # These three files live in this repository, so CACHE is their home rather than their fallback:
 # there is no live server to try first. The catalogue below is the live read.
-earth = elevation("earth", 160)[::-1]      # the Earth file starts at the south pole, so turn it over
-mars = elevation("mars", 180)
+earth = elevation("earth")
+mars = elevation("mars")
 coast = pd.read_csv(CACHE + "/coastlines.csv")
 
 quakes = load("{START}", "{END}", {MINMAG})
 bins = np.arange(-10000, 21000, 250)       # 250-metre bins, the same ones for both planets
 print("elevation grids:", earth.shape, mars.shape, " catalogue:", quakes.shape)
 '''.strip("\n"))
-setup = setup.replace("import pandas as pd\n", "import numpy as np\nimport pandas as pd\n", 1)
 code(setup)
 
 # --- section 1 -------------------------------------------------------------
@@ -256,13 +254,14 @@ print("array times 2:", heights_array * 2)
 
 md("""
 The list did not double anything — it made a longer list, with the same three numbers twice.
-That is what `*` means for a list. An **array** is the container that does what you meant:
-arithmetic on an array happens to every number inside it at once, and the answer is the same
-shape as what you started with.
+That is what `*` means for a list. What you meant is what an **array** does. An array is
+a grid of numbers where every cell is the same kind of thing, so one line of arithmetic changes
+all of them at once.
 
-That one difference is why the elevation data is an array. And because an array can be
-two-dimensional, it can keep the *shape* of the planet: one row per line of latitude, one
-column per line of longitude.
+That is why the elevation data is an array. And because an array can be two-dimensional, it
+keeps the *shape* of the planet: one row per line of latitude, one column per line of longitude.
+Row 0 of both files is the northernmost band and column 0 is the westernmost, so the grid is
+already the right way up — nothing needs turning over.
 """)
 
 code("""
@@ -300,8 +299,8 @@ A histogram wants one long line of numbers, not a grid. `.ravel()` reads the gri
 lays it out flat — the same 64,800 numbers, in one line instead of 180 of them.
 """)
 
-code(weekkit.CHECKPOINT.format(body="""earth = elevation("earth", 160)[::-1]
-mars = elevation("mars", 180)"""))
+code(weekkit.CHECKPOINT.format(body="""earth = elevation("earth")
+mars = elevation("mars")"""))
 
 code("""
 flat = earth.ravel()
@@ -310,8 +309,8 @@ print(flat.shape)
 
 md("""
 Before the histogram, one number. Comparing an array with a number asks the same question of
-every cell at once and hands back a grid of `True` and `False` — a **mask**. Adding a mask up
-counts the `True`s, because Python counts `True` as 1.
+every cell at once and hands back a grid of True and False. That is a **mask**, and adding one up
+counts the Trues, because Python counts True as 1.
 
 ### Predict before you run
 
@@ -414,7 +413,7 @@ say, it is already a map. `plt.imshow` draws any grid as a picture, one pixel pe
 `data/coastlines.csv`, exactly as in week one, so you can see whether the mask agrees with it.
 """)
 
-code(weekkit.CHECKPOINT.format(body="""earth = elevation("earth", 160)[::-1]
+code(weekkit.CHECKPOINT.format(body="""earth = elevation("earth")
 below = earth < 0"""))
 
 code(f"""
@@ -458,8 +457,8 @@ below-and-above mask we colour the whole range. The colour scale is the one norm
 topography, so the blue end means nothing more than *low* — there is no water on this map.
 """)
 
-code(weekkit.CHECKPOINT.format(body="""mars = elevation("mars", 180)
-flat = elevation("earth", 160)[::-1].ravel()"""))
+code(weekkit.CHECKPOINT.format(body="""mars = elevation("mars")
+flat = elevation("earth").ravel()"""))
 
 code(f"""
 # the colour scale stops at 4000 m, or the step between the two halves is invisible
@@ -559,7 +558,8 @@ md("""
 An array is the right container when every number means the same thing — here, metres of
 elevation — and position is what tells them apart. Plenty of data is not like that. An earthquake
 catalogue has a time, a latitude, a depth, a magnitude and a place name on every row, and those
-are five different kinds of thing. That is a **table**, and pandas calls it a DataFrame.
+are five different kinds of thing. What that wants is a **table**: a table with a name on every
+column, so you ask for data by name instead of by position. Pandas calls one a DataFrame.
 
 The catalogue below is every earthquake of magnitude 5.5 and above that the USGS has recorded
 since the start of 2000. Remember what such a file is: *A catalogue lists what somebody's
@@ -583,9 +583,9 @@ print("rows left if you drop every row with any blank:", len(quakes.dropna()))
 md(f"""
 {M['n_quakes']:,} rows and {M['n_columns']} columns. Read down the non-null counts: `time`,
 `latitude`, `depth` and `mag` are complete, but several columns are not. Where the file had
-nothing at all, pandas puts **NaN** — "not a number". A NaN is a hole, not a zero, and the
-difference matters: a depth of 0 km is a real, shallow earthquake, while a NaN depth is an
-earthquake whose depth nobody recorded.
+nothing at all, pandas puts NaN. A NaN is a hole, not a zero. The difference matters: a depth of
+0 km is a real, shallow earthquake, while a NaN depth is an earthquake whose depth nobody
+recorded.
 
 `.isna()` marks the holes — it is exactly the mask move from the first half of the notebook, with
 `is this blank?` as the question instead of `is this below zero?`. `.dropna()` throws away every
@@ -712,8 +712,10 @@ ask(f"""
 
 Class measured that {M['frac_below']:.3f} of the *cells* in the Earth grid are below sea level,
 and parked the question of whether that is the fraction of the *planet*. Here is the missing
-piece: the grid counts every one-degree square once, but those squares are not the same size. A
-square at latitude *lat* is `cos(lat)` times as wide, east to west, as one at the equator.
+piece, and it has a name — **area weighting**. A longitude-latitude grid counts every square
+once, but a square near the pole is a sliver; weight each row by cos(latitude) before quoting a
+percentage. A square at latitude *lat* is `cos(lat)` times as wide, east to west, as one at the
+equator.
 
 So count each row of the grid by how wide its cells are instead of by how many there are:
 

@@ -102,20 +102,10 @@ TIER_NAMES = {1: "is it true, and is it a valid notebook?",
 # its shape — which is exactly the drift this template exists to prevent. {signature} and
 # {url_expr} keep the shape identical while the parameters vary: pass "" and a literal URL for
 # a one-query week, or a parameter list and an f-string for a week that loads several.
-OPENING = """# {question}
-
-**EPS 88 · PyEarth.** Open your own copy on DataHub: [click here]({datahub}).
-
-{hook}
-
-Every place you write something opens with a pencil icon and the words *Your turn*, and is
-followed by an empty cell. Fill them all in, then export the notebook as a PDF and upload that.
-
-Two habits from the first minute. A cell runs when you press **Shift+Enter**, and the notebook
-remembers everything it has already run — so when something breaks and you cannot see why,
-**Kernel → Restart Kernel and Run All Cells** throws the memory away and rebuilds it from the
-top. That is never the wrong thing to do.
-"""
+OPENING = (ROOT / "tools/opening.md").read_text()
+# Student-facing prose lives in tools/opening.md, not in this file. It is the first thing 46
+# people read and the instructor reviews it directly; prose nobody can open as prose goes stale
+# invisibly, which is why the agent briefs moved out of agent_brief.py for the same reason.
 # Only {question} and {hook} change between weeks. Everything else a student reads on the way in
 # — where to click, how to submit, what a pencil means, how to recover — is the same in week 13
 # as in week 1, so it is written once here rather than re-invented thirteen times.
@@ -181,8 +171,7 @@ def week_cheatsheet(week_n, module_ids=None):
     checked: an id the catalogue does not have raises rather than silently producing an empty
     section, and an id that is not part of this week raises too.
     """
-    course = yaml.safe_load((ROOT / "course.yml").read_text())
-    mods = yaml.safe_load((ROOT / "modules.yml").read_text())
+    course, mods = _course(), _modules()
     wk = next(s for s in course["schedule"] if s["n"] == week_n)
     by_id = {m["id"]: m for m in mods["modules"]}
 
@@ -223,7 +212,13 @@ if __name__ == "__main__":
 
 
 def _course():
-    return yaml.safe_load((pathlib.Path(__file__).resolve().parent.parent / "course.yml").read_text())
+    """One loader. course.yml was being read three times in this file, by three different
+    expressions, two of which re-derived ROOT instead of using it."""
+    return yaml.safe_load((ROOT / "course.yml").read_text())
+
+
+def _modules():
+    return yaml.safe_load((ROOT / "modules.yml").read_text())
 
 
 def modules_upto(week_n, inclusive):
@@ -242,10 +237,9 @@ def gate(week_n, variant=""):
     to run: it lives in the build script and exits non-zero. Judging whether the notebook is
     GOOD is a separate job, done by an agent that did not write it.
     """
-    import json, pathlib, subprocess, sys
-    root = pathlib.Path(__file__).resolve().parent.parent
-    slug = next(s["slug"] for s in yaml.safe_load((root / "course.yml").read_text())["schedule"]
-                if s["n"] == week_n)
+    import json, subprocess, sys
+    root = ROOT
+    slug = next(s["slug"] for s in _course()["schedule"] if s["n"] == week_n)
     sol = root / f"docs/notebooks{variant}" / f"{slug}_solution.ipynb"
     bad = []
 
