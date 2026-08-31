@@ -585,13 +585,26 @@ schedule:
       # ENDTIME IS PINNED. "2015-01-01 onward" grows daily, so every student would print numbers
       # the prose contradicts. The earthquake half cannot be a live query at all — 128,735 events
       # against FDSN's 20,000 ceiling, and 2019 alone is 23,175 — so it travels as a gzipped CSV
-      # read directly; only the blast half runs live.
+      # read directly.
+      # CORRECTED 2026-08-31: THE BLAST HALF SHIPS TOO, and the notebook has no live branch at
+      # all. The blast query is small enough to run live and used to, but the two halves are one
+      # catalogue cut by `type`: a live half joined to a frozen half is not the pinned slice, and
+      # USGS keeps editing events inside a closed window (18 revisions in the month before the
+      # build). One late insert or one revised depth moves n_blasts, both split sizes and all four
+      # F1 scores, under prose that hardcodes 2803, 39462, 92076 and four F1s to four decimals,
+      # with every assert still passing. Weeks 7 and 9 keep a live read and take --refresh because
+      # a student's live read reproduces their cache; that route is closed here, because the other
+      # half can never be refreshed. So the shipped files ARE the data (TEMPLATE 1.3's exception,
+      # weekkit.asset_setup_cell) and --refresh is the instructor's, re-pulling both halves
+      # together before a term and rebuilding every number in the prose from them.
       slice: "USGS FDSN M1.5+ 2015-01-01 to 2026-08-31, box lat 32-42 lon -125..-114,
-        eventtype=earthquake (repo asset) vs eventtype=quarry blast (live, with fallback)"
+        eventtype=earthquake and eventtype=quarry blast — BOTH repo assets, read directly,
+        no live branch; rebuild both with `python tools/build_week10.py --refresh`"
       # THE FEATURE SET DECIDES WHETHER THE WEEK'S POINT SURVIVES. Measured:
       #   depth+hour only          -> logistic 0.14, and the model looks sabotaged
       #   lat,lon,depth,mag,hour   -> naive Bayes 0.785 BEATS the hand rule and the week collapses
-      #   the six below            -> hand 0.772, logistic 0.770, naive Bayes 0.761 — a tie
+      #   the six below            -> hand 0.772, logistic 0.770, naive Bayes 0.761 — no fitted
+      #                               model clears the hand rule, which is the week's whole point
       # The principle, not the score, chooses it: every column the catalogue gives, plus the two
       # clock columns derived from time. There is no defensible reason to take hour and drop
       # weekday. Do not re-choose this.
@@ -608,21 +621,36 @@ schedule:
         always_say_earthquake: 0.9787    # accuracy, and useless
         f1: {hand_rule: 0.7718, logistic: 0.7701, naive_bayes: 0.7612,
              random_forest: 0.975}       # rf is the audit's read, NOT measured by this build
-        # THE THREE F1s ABOVE ARE A TIE, NOT AN ORDERING. Over the 10 re-splits the notebook runs
-        # (seeds 0-9, same data, only the shuffle changed) the hand rule ran 0.7564-0.7774 and
-        # logistic regression 0.7359-0.7744; the gap between them swung -0.0122 to +0.0372 and
-        # logistic won 1 of the 10. Over 20 seeds the gap's SD is 0.0128, so the pinned split's
-        # 0.0017 is 0.13 SD — the week says the models TIE the two-line rule. Do not restore "the
-        # hand rule wins": that is one draw's noise, and week 8 taught them to ask.
+        # THE THREE F1s ABOVE ARE NOT AN ORDERING, AND NOT A TIE EITHER. Read the PAIRED
+        # difference, not the two ranges — every seed scores both on the same held-out rows.
+        # CORRECTED 2026-08-31: this block used to record only the ranges and `logistic_ahead_on:
+        # 1`, and the week's prose read that as a tie. It is not one. 1 of 10 is not a straddle,
+        # and the statistic that settles a paired re-split — the mean gap and its sign count —
+        # was the one this pin did not carry. It does now.
+        # THE FINDING: the two-line hand rule is NEGLIGIBLY BUT CONSISTENTLY AHEAD of both fitted
+        # models. Do not write "they tie" (the sign count refutes it) and do not write "the hand
+        # rule wins" (0.0095 of an F1 point is worth nothing). Both halves have to be said.
+        # The pinned split's 0.0017 is 0.13 SD of the gap and is noise on its own; the mean over
+        # 20 seeds is not.
         split_to_split: {seeds: 10, hand_f1: [0.7564, 0.7774], logistic_f1: [0.7359, 0.7744],
-                         gap_hand_minus_logistic: [-0.0122, 0.0372], logistic_ahead_on: 1,
-                         gap_sd_over_20_seeds: 0.0128}
+                         gap_hand_minus_logistic: [-0.0122, 0.0372],
+                         # over the 10 splits the notebook prints:
+                         hand_ahead_on: 8, level_on: 1, logistic_ahead_on: 1,
+                         gap_mean_over_10_seeds: 0.0125,
+                         # over 20 seeds, which is what settles it:
+                         seeds_for_stats: 20, gap_mean: 0.0095, gap_sd: 0.0128, gap_t: 3.34,
+                         hand_ahead_on_20: 15, logistic_ahead_on_20: 4}
         hand_rule: "depth <= 0 AND 10:00 <= local hour < 17:00 — students write it FIRST and no
           fitted model clears it"
         blast_depth: "median -0.519 km, 93.8% below zero, top 20 repeated values cover 53%"
         blast_depth_leakage: "the most repeated depth, -0.82 km, is shared by 360 blasts at TWO
           quarries 0.67 deg of longitude (~61 km) apart — 322 at Boron, 38 at Mojave — and the
-          next, -0.79 km, is shared across 5.7 deg of latitude. depthError is the constant
+          next, -0.79 km, by 247 blasts spread over 5.73 deg of latitude (~637 km), 229 of them
+          (93%) back at BORON, the same site already given -0.82. One site, two depths, so
+          neither is its elevation — that pair, not the two-quarry coincidence, is the decisive
+          leg. Site names need `place.str.split(' of ').str[-1].str.split(',').str[0]`: raw
+          `place` strings scatter one quarry over dozens of spellings (the biggest raw row at
+          -0.79 is 69 of 247, which reads as 28% and is really 93%). depthError is the constant
           31.61 km on 96% of blasts: the depth was assigned, not solved for."
       verified: 2026-08-31
     exercise: "Retrain without depth. Explain why the score fell and why the second model is the honest one."
@@ -639,14 +667,18 @@ schedule:
       better story.
     note_critical: >
       MEASURED on the pinned split: the hand rule "depth <= 0 AND 10:00 <= local hour < 17:00"
-      scores F1 0.7718 against logistic regression 0.7701 and Naive Bayes 0.7612. That 0.0017 is
-      NOISE — see expect.split_to_split — so the honest statement is that the fitted models TIE
-      two hand-written conditions. Either way the taught classifier buys nothing, which is the
-      exact failure the project spec forbids if it is left unsaid.
+      scores F1 0.7718 against logistic regression 0.7701 and Naive Bayes 0.7612. That single
+      0.0017 is NOISE — see expect.split_to_split — but the re-splits do not make the comparison a
+      tie: paired over 20 draws the rule is ahead by 0.0095 on average (sd 0.0128, t 3.34, ahead
+      on 15 and behind on 4), so it is CONSISTENTLY BUT NEGLIGIBLY ahead. Either way the taught
+      classifier buys nothing, which is the exact failure the project spec forbids if it is left
+      unsaid.
       FIX: make the two-if-statement hand rule the baseline students must BEAT, not an afterthought.
       They write it first, nothing clears it, and the week becomes "why did my clever model buy me
-      nothing over two ifs?" The notebook re-splits ten times so the tie is shown rather than
-      asserted; do not let a later edit turn 0.0017 back into a victory.
+      nothing over two ifs?" The notebook re-splits ten times and prints the GAP COLUMN with its
+      average and sign count, so the comparison is shown rather than asserted; do not let a later
+      edit turn 0.0017 into a victory, and do not let one negative excursion turn a consistent
+      +0.0095 into a tie.
       Random forest reaches F1 0.975, so the answer arrives in week 11 — which turns a dead end into
       the strongest bridge between the two ML weeks in the course.
 

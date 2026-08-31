@@ -40,17 +40,17 @@
       "name": "Part 3 — what dropna costs",
       "marker": "✓ what dropna costs",
       "checks": [
-        "assert rows_left_all < rows_left_oxides, \\"
+        "assert rows_left_oxides > 1, \\"
       ],
       "check_points": 26,
       "code_points": 5
     }
   ],
   "released": {
-    "w11-c047": "# ── Checkpoint ── run this if you restarted the kernel or fell behind ──\nmissing = basalts[feature_columns].isna().sum() / len(basalts)\nbaseline = basalts[\"affinity\"].value_counts().max() / len(basalts)\nmajor_oxides = [\"SiO2_wt_percent\", \"TiO2_wt_percent\", \"Al2O3_wt_percent\", \"Fe2O3_wt_percent\",\n                \"FeO_wt_percent\", \"CaO_wt_percent\", \"MgO_wt_percent\", \"MnO_wt_percent\",\n                \"K2O_wt_percent\", \"Na2O_wt_percent\"]\n\n\ndef accuracy(model, features, seed=0):\n    \"\"\"Fit one model on one set of columns and score it on the held-out third of the samples.\"\"\"\n    labels = basalts[\"affinity\"]\n    X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.3,\n                                                        random_state=seed, stratify=labels)\n    filler = SimpleImputer(strategy=\"median\")\n    X_train = filler.fit_transform(X_train)\n    X_test = filler.transform(X_test)\n    scaler = StandardScaler()\n    X_train = scaler.fit_transform(X_train)\n    X_test = scaler.transform(X_test)\n    model.fit(X_train, y_train)\n    return model.score(X_test, y_test)",
+    "w11-c049": "# ── Checkpoint ── run this if you restarted the kernel or fell behind ──\nmissing = basalts[feature_columns].isna().sum() / len(basalts)\nbaseline = basalts[\"affinity\"].value_counts().max() / len(basalts)\nmajor_oxides = [\"SiO2_wt_percent\", \"TiO2_wt_percent\", \"Al2O3_wt_percent\", \"Fe2O3_wt_percent\",\n                \"FeO_wt_percent\", \"CaO_wt_percent\", \"MgO_wt_percent\", \"MnO_wt_percent\",\n                \"K2O_wt_percent\", \"Na2O_wt_percent\"]\n\n\ndef accuracy(model, features, seed=0):\n    \"\"\"Fit one model on one set of columns and score it on the held-out third of the samples.\"\"\"\n    labels = basalts[\"affinity\"]\n    X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.3,\n                                                        random_state=seed, stratify=labels)\n    filler = SimpleImputer(strategy=\"median\")\n    X_train = filler.fit_transform(X_train)\n    X_test = filler.transform(X_test)\n    scaler = StandardScaler()\n    X_train = scaler.fit_transform(X_train)\n    X_test = scaler.transform(X_test)\n    model.fit(X_train, y_train)\n    return model.score(X_test, y_test)",
     "w11-q06-answer": "# ← your answer here\n\n\nassert missing[sparse_columns].min() > 0.5, \"every column in sparse_columns should be over half empty\"\nprint(\"✓ the emptiest columns alone —\", len(sparse_columns), \"columns,\",\n      round(sparse_score, 3), \"against a baseline of\", round(baseline, 3))",
     "w11-q07-answer": "# ← your answer here\n\n\nassert missing[kept_columns].max() < cutoff, \"every column you kept should be emptier than cutoff\"\nprint(\"✓ your cutoff —\", cutoff, \"keeps\", len(kept_columns), \"columns and scores\",\n      round(kept_score, 3))",
-    "w11-q08-answer": "# ← your answer here\n\n\nassert rows_left_all < rows_left_oxides, \\\n    \"dropping over all the columns cannot leave more rows than dropping over ten of them\"\nprint(\"✓ what dropna costs —\", rows_left_oxides, \"rows on the ten oxides and\",\n      rows_left_all, \"on all of them\")"
+    "w11-q08-answer": "# ← your answer here\n\n\nassert rows_left_oxides > 1, \\\n    \"ten columns should leave far more rows than all of them - did you pass subset=?\"\nprint(\"✓ what dropna costs —\", rows_left_oxides,\n      \"rows survive on the ten major oxides, against 1 on the whole table\")"
   },
   "hygiene": {
     "points": 5

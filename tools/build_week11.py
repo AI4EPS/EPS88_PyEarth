@@ -105,6 +105,16 @@ def longhand(columns, seed=0):
     return len(kept), tree.score(X_test, y_test)
 
 
+def _pair_subset_score(rows, columns, seed=0):
+    """One element of a two-element pair, on the pair's own rows and the pair's own split."""
+    X_train, X_test, y_train, y_test = train_test_split(
+        rows[columns], rows["affinity"], test_size=0.3, random_state=seed,
+        stratify=rows["affinity"])
+    tree = DecisionTreeClassifier(random_state=0)
+    tree.fit(X_train, y_train)
+    return tree.score(X_test, y_test)
+
+
 TI_V = ["TiO2_wt_percent", "V_ppm"]
 ZR_Y = ["Zr_ppm", "Y_ppm"]
 
@@ -130,9 +140,61 @@ M["best_missing"] = float(missing.min())
 M["worst_column"] = str(missing.idxmax())
 M["worst_missing"] = float(missing.max())
 M["rows_left"] = len(basalts.dropna())
+M["n_train"] = len(train_test_split(basalts[feature_columns], basalts["affinity"], test_size=0.3,
+                                    random_state=0, stratify=basalts["affinity"])[0])
 
 M["ti_v_filled"] = accuracy(DecisionTreeClassifier(random_state=0), basalts[TI_V])
 M["n_ti_v_extra"] = M["n_rows"] - M["n_ti_v"]
+M["ti_v_drop"] = M["ti_v_tree"] - M["ti_v_filled"]
+
+
+def ti_v_by_completeness():
+    """Score the filled tree separately on the test rocks that were measured and those that were
+    filled in. Same model, same split, so the two are directly comparable — which is what says
+    how much of the drop is the imputed rows and how much is the split."""
+    labels = basalts["affinity"]
+    X_train, X_test, y_train, y_test = train_test_split(
+        basalts[TI_V], labels, test_size=0.3, random_state=0, stratify=labels)
+    measured = X_test.notna().all(axis=1).to_numpy()
+    filler = SimpleImputer(strategy="median")
+    A = filler.fit_transform(X_train)
+    B = filler.transform(X_test)
+    scaler = StandardScaler()
+    A = scaler.fit_transform(A)
+    B = scaler.transform(B)
+    tree = DecisionTreeClassifier(random_state=0)
+    tree.fit(A, y_train)
+    return (int(measured.sum()), float(tree.score(B[measured], y_test[measured])),
+            int((~measured).sum()), float(tree.score(B[~measured], y_test[~measured])))
+
+
+(M["n_measured_test"], M["measured_test"],
+ M["n_filled_test"], M["filled_test"]) = ti_v_by_completeness()
+M["n_test"] = M["n_measured_test"] + M["n_filled_test"]
+M["imputed_part"] = M["measured_test"] - M["ti_v_filled"]
+M["split_part"] = M["ti_v_tree"] - M["measured_test"]
+
+TI_V_SEEDS = list(range(10))
+M["ti_v_sweep"] = [(s, longhand(TI_V, s)[1],
+                    accuracy(DecisionTreeClassifier(random_state=0), basalts[TI_V], s))
+                   for s in TI_V_SEEDS]
+M["ti_v_mean_dropna"] = sum(d for _, d, _ in M["ti_v_sweep"]) / len(M["ti_v_sweep"])
+M["ti_v_mean_filled"] = sum(f for _, _, f in M["ti_v_sweep"]) / len(M["ti_v_sweep"])
+M["ti_v_mean_gap"] = M["ti_v_mean_dropna"] - M["ti_v_mean_filled"]
+M["ti_v_min_gap_split"], M["ti_v_min_gap"] = min(
+    ((s, d - f) for s, d, f in M["ti_v_sweep"]), key=lambda r: r[1])
+M["ti_v_max_gap_split"], M["ti_v_max_gap"] = max(
+    ((s, d - f) for s, d, f in M["ti_v_sweep"]), key=lambda r: r[1])
+_rank = 1 + sum(1 for _, d, f in M["ti_v_sweep"] if d - f > M["ti_v_drop"])
+M["ti_v_seed0_rank"] = {1: "biggest", 2: "second biggest", 3: "third biggest",
+                        4: "fourth biggest"}.get(_rank, f"{_rank}th biggest")
+
+# the scatter: what the two axes actually separate, measured before the prose describes them
+pairs_measured = basalts[TI_V + ["affinity"]].dropna()
+v_medians = pairs_measured.groupby("affinity")["V_ppm"].median()
+M["v_median_spread"] = float(v_medians.max() - v_medians.min())
+M["v_alone_same_rows"] = float(_pair_subset_score(pairs_measured, ["V_ppm"]))
+M["ti_alone_same_rows"] = float(_pair_subset_score(pairs_measured, ["TiO2_wt_percent"]))
 
 M["oxide_tree"] = accuracy(DecisionTreeClassifier(random_state=0), basalts[MAJOR_OXIDES])
 M["oxide_forest"] = accuracy(forest(), basalts[MAJOR_OXIDES])
@@ -169,7 +231,6 @@ M["cut20"] = [c for c in feature_columns if missing[c] < 0.2]
 M["cut50_score"] = accuracy(forest(), basalts[M["cut50"]])
 M["cut20_score"] = accuracy(forest(), basalts[M["cut20"]])
 M["rows_left_oxides"] = len(basalts.dropna(subset=MAJOR_OXIDES))
-M["rows_left_all"] = len(basalts.dropna(subset=feature_columns))
 
 
 def pct(x):
@@ -358,8 +419,12 @@ plt.show()
 
 md(f"""
 The three settings do sit in different places, and they overlap badly. Almost all of the separation
-runs left to right: titanium does the work here and vanadium adds very little. You could draw a
-boundary on that picture with a ruler, and you would get a lot of samples wrong.
+runs left to right: the three clouds sit at three different titanium levels, while their vanadium
+ranges lie on top of one another — the three median vanadium values are within
+{M['v_median_spread']:.0f} ppm of each other, so vanadium on its own would tell you almost nothing
+here. That does not make it decoration. It is the second direction a boundary can cut in, and where
+the clouds meet it is the only one left. You could draw a boundary on that picture with a ruler, and
+you would get a lot of samples wrong.
 
 A **decision tree** draws the boundary for you. A flowchart of yes/no questions, learned from the
 data instead of written by hand. *Is TiO2 above some value?* If it is, *is V below another?* — and
@@ -391,8 +456,9 @@ print("test accuracy:", round(ti_v_score, 3))
 ask("""
 ### ✏️ Your turn 2
 
-Pearce and Cann's pair instead of Shervais's. Do exactly what the cell above did, but for
-`Zr_ppm` and `Y_ppm`: drop the rows where either is blank, split with `test_size=0.3`,
+Two of Pearce and Cann's three elements now, instead of Shervais's pair. Do exactly what the cell
+above did, but for `Zr_ppm` and `Y_ppm`: drop the rows where either is blank, split with
+`test_size=0.3`,
 `random_state=0` and `stratify=`, fit a `DecisionTreeClassifier(random_state=0)`, and print how
 many rows survived and the test accuracy.
 
@@ -416,7 +482,9 @@ print("rows kept:", len(zr_y), "of", len(basalts))
 print("test accuracy:", round(zr_y_score, 3))
 """, """
 assert "Zr_ppm" in zr_y.columns, "zr_y should be built from Zr and Y, not from TiO2 and V"
-print("✓ the other classic pair —", len(zr_y), "rows survived and the tree scored",
+assert 0.5 < zr_y_score < 1, \\
+    "1.000 would mean you scored the tree on the rows it was fitted on"
+print("✓ zirconium and yttrium —", len(zr_y), "rows survived and the tree scored",
       round(zr_y_score, 3))
 """)
 
@@ -470,36 +538,39 @@ ask("""
 
 Three counts, from `missing` and from the table itself.
 
-1. How many of the columns have no holes at all — `missing[name] == 0`?
+1. How many of the columns have at least one hole in them — `missing[name] > 0`?
 2. How many are more than half empty — `missing[name] > 0.5`?
 3. How many rows survive `basalts.dropna()`, which throws away every row with a hole anywhere in
    it?
 
 One loop over `feature_columns` with two counters will do the first two. Print all three.
 
-**Use these names**, because the self-check looks for them: `n_complete`, `n_half_empty`,
+**Use these names**, because the self-check looks for them: `n_with_holes`, `n_half_empty`,
 `rows_left`.
 """)
 
 answer("""
-n_complete = 0
+n_with_holes = 0
 n_half_empty = 0
 
 for name in feature_columns:
-    if missing[name] == 0:
-        n_complete = n_complete + 1
+    if missing[name] > 0:
+        n_with_holes = n_with_holes + 1
     if missing[name] > 0.5:
         n_half_empty = n_half_empty + 1
 
 rows_left = len(basalts.dropna())
 
-print("columns with no holes at all:", n_complete)
-print("columns more than half empty:", n_half_empty)
+print("columns with at least one hole:", n_with_holes, "of", len(feature_columns))
+print("columns more than half empty: ", n_half_empty)
 print("rows surviving basalts.dropna():", rows_left, "of", len(basalts))
 """, """
 assert n_half_empty > 0, "n_half_empty came out 0 - 'missing' is a fraction, so half empty is 0.5"
-print("✓ the holes —", n_complete, "complete columns,", n_half_empty,
-      "more than half empty, and dropna() leaves", rows_left, "of", len(basalts), "rows")
+assert n_with_holes >= n_half_empty, \\
+    "a half-empty column is a column with holes - the first count cannot be the smaller"
+print("✓ the holes —", n_with_holes, "of the", len(feature_columns),
+      "columns have holes in them,", n_half_empty, "are more than half empty, and dropna() leaves",
+      rows_left, "of", len(basalts), "rows")
 """)
 
 md(f"""
@@ -554,10 +625,46 @@ The same two elements and the same tree score {M['ti_v_filled']:.3f} rather than
 {M['ti_v_tree']:.3f} once every sample is included — and those two are exactly the kind of pair you
 were just told not to compare, because the second was tested on rocks the first never saw. Which is
 the point. Nothing about the rocks changed; what changed is which rocks were allowed into the exam.
-The {M['n_ti_v_extra']} extra samples are exactly the ones with a hole in titanium or vanadium,
-they have arrived with a median in place of a measurement, and the tree has almost nothing to go on
-for them. `.dropna()` was not solving that difficulty; it was hiding it, by quietly grading itself
-on the easy rocks only, and the drop is the size of what it was hiding.
+The {M['n_ti_v_extra']} extra samples are exactly the ones with a hole in titanium or vanadium, and
+they have arrived with a median in place of a measurement.
+
+So where did that {M['ti_v_drop']:.3f} go? Part of it is those samples, and you can see how much by
+scoring the filled tree separately on the two kinds of rock in its own test set: the
+{M['n_measured_test']} test rocks that were really measured score {M['measured_test']:.3f}, the
+{M['n_filled_test']} that arrived carrying a median score {M['filled_test']:.3f}. The filled-in
+rocks are genuinely harder, and that is the honest half of the story — `.dropna()` was not solving
+that difficulty, it was hiding it, by quietly grading itself on the easy rocks only. But
+{M['n_filled_test']} rocks out of {M['n_test']} cannot move an average by {M['ti_v_drop']:.3f}.
+They account for {M['imputed_part']:.3f} of it. The other {M['split_part']:.3f} has nothing to do
+with holes at all — it is the single split. Check that rather than believe it: fit both trees again
+on ten different splits.
+""")
+
+code(f"""
+for seed in range({len(M['ti_v_sweep'])}):
+    X_train, X_test, y_train, y_test = train_test_split(pairs[["TiO2_wt_percent", "V_ppm"]],
+                                                        pairs["affinity"], test_size=0.3,
+                                                        random_state=seed,
+                                                        stratify=pairs["affinity"])
+    dropped = DecisionTreeClassifier(random_state=0)
+    dropped.fit(X_train, y_train)
+    dropna_score = dropped.score(X_test, y_test)
+    filled_again = accuracy(DecisionTreeClassifier(random_state=0),
+                            basalts[["TiO2_wt_percent", "V_ppm"]], seed)
+    print("split", seed, "- dropna", round(dropna_score, 3),
+          " filled", round(filled_again, 3),
+          " gap", round(dropna_score - filled_again, 3))
+""")
+
+md(f"""
+The first split was a flattering one: its gap is the {M['ti_v_seed0_rank']} of the ten,
+and across all ten the dropna tree averages {M['ti_v_mean_dropna']:.3f} and the filled tree
+{M['ti_v_mean_filled']:.3f} — a gap of {M['ti_v_mean_gap']:.3f}, half of what the first split
+showed, running from {M['ti_v_min_gap']:.3f} on split {M['ti_v_min_gap_split']} to
+{M['ti_v_max_gap']:.3f} on split {M['ti_v_max_gap_split']}. So: filling the holes does cost a few
+points, part of that cost is the difficulty deletion was hiding, and no single split can tell you
+the size of anything. One held-out third of {M['n_ti_v']} samples wobbles by more than the effect
+you are trying to measure.
 
 From here every number comes out of `accuracy`, so every number is measured on the same
 {M['n_rows']} samples and the same held-out third of them, and they can be compared.
@@ -642,31 +749,32 @@ number before you run anything — you will write it down in the next cell.
 ask("""
 ### ✏️ Your turn 4
 
-Set `my_guess` to the accuracy you expect from all the columns. Then use `accuracy` twice — once on
-`basalts[major_oxides]` and once on `basalts[feature_columns]`, both with a fresh
-`RandomForestClassifier(n_estimators=200, random_state=0)` — and print both scores and the
-difference between them.
+Set `my_guess` to the accuracy you expect from all the columns. Then call `accuracy` once, on
+`basalts[feature_columns]` with a fresh `RandomForestClassifier(n_estimators=200, random_state=0)`,
+and print your guess, that score, and the difference between it and the `forest_score` the ten
+oxides already got two cells above.
 
-**Use these names**, because the self-check looks for them: `my_guess`, `oxide_score`, `all_score`.
+**Use these names**, because the self-check looks for them: `my_guess`, `all_score`.
 """)
 
 answer("""
 my_guess = 0.85
 
-oxide_score = accuracy(RandomForestClassifier(n_estimators=200, random_state=0),
-                       basalts[major_oxides])
 all_score = accuracy(RandomForestClassifier(n_estimators=200, random_state=0),
                      basalts[feature_columns])
 
 print("you guessed:      ", my_guess)
-print("ten major oxides: ", round(oxide_score, 3))
+print("ten major oxides: ", round(forest_score, 3))
 print("all the columns:  ", round(all_score, 3))
-print("difference:       ", round(all_score - oxide_score, 3))
+print("difference:       ", round(all_score - forest_score, 3))
 """, """
 assert 0 <= my_guess <= 1, "my_guess is an accuracy, so a number between 0 and 1"
-assert oxide_score != all_score, "the two scores are identical - did you pass the same columns twice?"
-print("✓ ten columns against all of them —", round(oxide_score, 3), "and", round(all_score, 3),
-      "- a difference of", round(all_score - oxide_score, 3))
+assert 0 < all_score < 1, \\
+    "all_score is an accuracy, a fraction of 1 - not a percentage"
+assert abs(all_score - forest_score) > 0.01, \\
+    "that is the ten oxides' score again - this call takes basalts[feature_columns]"
+print("✓ all", len(feature_columns), "columns —", round(all_score, 3), "against the ten oxides'",
+      round(forest_score, 3), "- a difference of", round(all_score - forest_score, 3))
 """)
 
 md(f"""
@@ -721,7 +829,8 @@ top_ten = importance.head(10)
 plt.barh(top_ten.index[::-1], top_ten.values[::-1])
 plt.xlabel("share of the forest's decisions")
 plt.ylabel("chemistry column")
-plt.title("The 10 columns the forest leaned on, of {M['n_features']} ({M['n_rows']} basalts)")
+plt.title("The 10 columns the forest leaned on, of {M['n_features']} "
+          "(fitted on {M['n_train']} training basalts)")
 plt.show()
 """)
 
@@ -731,9 +840,9 @@ Read that list against the petrology from the start of the notebook and it is no
 travels in the water coming off a sinking plate and niobium does not, so an arc basalt carries more
 strontium than a ridge basalt and is conspicuously short of niobium, while an ocean island basalt,
 which owes nothing to subduction, is the niobium-rich one. `{M['top'][1][0]}` and
-`{M['top'][2][0]}` are the titanium and zirconium that Pearce and Cann and Shervais were already
-plotting by hand in the 1970s. The model has, on its own, arrived at the elements a petrologist
-would have nominated.
+`{M['top'][2][0]}` are the titanium and zirconium that Pearce and Cann were already plotting by
+hand in the 1970s, and titanium is half of Shervais's pair as well. The model has, on its own,
+arrived at the elements a petrologist would have nominated.
 
 It has also leaned hard on something a petrologist would want flagged. Strontium and potassium are
 *mobile*: seawater and low-grade metamorphism move them around long after the rock has solidified,
@@ -955,40 +1064,41 @@ ask("""
 Back to `.dropna()`, the tool you started the day with. `basalts.dropna(subset=major_oxides)` drops
 a row only when one of *those* columns is blank, and leaves holes elsewhere alone.
 
-Print how many rows survive `basalts.dropna(subset=major_oxides)` and how many survive
-`basalts.dropna(subset=feature_columns)`.
+Print how many rows survive `basalts.dropna(subset=major_oxides)`. You already have the number to
+set it against: your turn 3 found that dropping every row with a hole anywhere in it leaves {rows}
+of the {total} samples.
 
-Then, in the cell after, write two or three sentences using **your own two counts**: what would you
+Then, in the cell after, write two or three sentences using **those two counts**: what would you
 have concluded about the {n} columns outside `major_oxides` — mostly trace elements and isotope
 ratios — if `.dropna()` were the only tool you knew? Say what you would have measured, what you
 would have reported, and which of this week's three takeaways that story would have broken.
 
-**Use these names**, because the self-check looks for them: `rows_left_oxides`, `rows_left_all`.
-""".replace("{n}", str(M["n_features"] - 10)))
+**Use this name**, because the self-check looks for it: `rows_left_oxides`.
+""".replace("{n}", str(M["n_features"] - 10))
+   .replace("{rows}", str(M["rows_left"])).replace("{total}", str(M["n_rows"])))
 
 answer("""
 rows_left_oxides = len(basalts.dropna(subset=major_oxides))
-rows_left_all = len(basalts.dropna(subset=feature_columns))
 
 print("rows left dropping on the ten major oxides:", rows_left_oxides, "of", len(basalts))
-print("rows left dropping on all the columns:     ", rows_left_all, "of", len(basalts))
-""", """
-assert rows_left_all < rows_left_oxides, \\
-    "dropping over all the columns cannot leave more rows than dropping over ten of them"
-print("✓ what dropna costs —", rows_left_oxides, "rows on the ten oxides and",
-      rows_left_all, "on all of them")
+""", f"""
+assert rows_left_oxides > {M['rows_left']}, \\
+    "ten columns should leave far more rows than all of them - did you pass subset=?"
+print("✓ what dropna costs —", rows_left_oxides,
+      "rows survive on the ten major oxides, against {M['rows_left']} on the whole table")
 """)
 
 answer_prose(f"""
 Dropping incomplete rows on the ten major oxides leaves {M['rows_left_oxides']} samples of
-{M['n_rows']}, which is a small but workable dataset. Doing the same over all {M['n_features']}
-columns leaves {M['rows_left_all']}. With `.dropna()` as my only tool I would have measured a
+{M['n_rows']}, which is a small but workable dataset. Doing the same over every one of the
+{M['n_features']} columns leaves {M['rows_left']}. With `.dropna()` as my only tool I would have
+measured a
 ten-oxide model on {M['rows_left_oxides']} rocks, tried to add the trace elements, watched my
-training set collapse to {M['rows_left_all']} sample, and reported that the trace elements are
+training set collapse to {M['rows_left']} sample, and reported that the trace elements are
 unusable — when what actually happened is that no single laboratory measured all
 {M['n_features']} things on one rock, so a rule that demands all of them at once matches almost
 nothing. That story breaks the second takeaway completely: filling the holes instead shows those
-columns carrying real information — {M['sparse_forest']:.3f} from the
+columns carrying real signal — {M['sparse_forest']:.3f} from the
 {M['n_half_empty']} emptiest columns alone, against a baseline of {M['baseline']:.3f} — and it is
 the third takeaway, that deleting rows can destroy a dataset entirely, that explains why deletion
 made them look worthless.
