@@ -1,0 +1,84 @@
+time,latitude,longitude,depth,mag,magType,nst,gap,dmin,rms,net,id,updated,place,type,horizontalError,depthError,magError,magNst,status,locationSource,magSource
+1901-03-03T07:45:00.000Z,36.0,-120.5,,6.4,ms,,,,,ushis,ushis393,2026-01-30T23:26:12.025Z,"1901 Parkfield, California Earthquake",earthquake,,,,,reviewed,ushis,ell
+1902-05-19T18:31:00.000Z,38.3,-121.9,,5.4,ml,,,,,ushis,ushis402,2024-03-14T07:13:32.747Z,"South of Elmira, California",earthquake,,,,,reviewed,ushis,cdmg
+1903-06-11T13:12:00.000Z,37.2,-121.8,,6.1,mw,,,,,cdmg,cdmg19030611131200000,2024-05-04T00:40:19.959Z,"Near San Jose, California",earthquake,,,,,reviewed,cdmg,cdmg
+1903-08-03T06:49:00.000Z,37.3,-121.8,,6.2,mw,,,,,ushis,ushis421,2024-05-04T23:28:20.722Z,"Near San Jose, California",earthquake,,,,,reviewed,ushis,cdmg
+1905-05-26T02:50:00.000Z,36.5,-120.6,,6.1,mw,,,,,cdmg,cdmg19050526025000000,2024-07-24T21:37:03.252Z,"Northwest of Huron, California",earthquake,,,,,reviewed,cdmg,cdmg
+1906-04-18T13:12:26.300Z,37.75,-122.55,11.7,7.9,mw,,,,,official,official19060418131226300_12,2026-08-29T00:13:37.758Z,"The 1906 San Francisco, California Earthquake",earthquake,10.0,7.0,,,reviewed,official,official
+1909-03-03T12:00:00.000Z,39.4,-120.9,,5.0,ml,,,,,ushis,ushis483,2025-06-06T00:26:23.755Z,"Nevada County, California",earthquake,,,,,reviewed,ushis,cdmg
+1909-06-23T07:24:00.000Z,39.5,-121.0,,5.9,ml,,,,,cdmg,cdmg19090623072400000,2025-06-20T00:18:45.457Z,"West of Downieville, California",earthquake,,,,,reviewed,cdmg,cdmg
+1910-03-11T06:52:00.000Z,36.95,-121.7,,5.8,ms,,,,,cdmg,cdmg19100311065200000,2025-07-19T00:01:21.269Z,"Near Watsonville, California",earthquake,,,,,reviewed,cdmg,cdmg
+1910-12-31T12:11:00.000Z,36.8,-122.1,,5.7,ml,,,,,cdmg,cdmg19101231121100000,2025-08-02T23:50:32.728Z,"Monterey Bay area, California",earthquake,,,,,reviewed,cdmg,cdmg
+1911-07-01T21:59:58.350Z,37.111,-121.637,10.0,6.45,mw,,,,,iscgem,iscgem16958150,2024-02-06T00:11:00.472Z,"Near Morgan Hill, California",earthquake,,4.6,0.2,,reviewed,iscgem,iscgem
+1914-11-09T02:31:00.000Z,37.17,-122.0,,5.5,ml,,,,,ushis,ushis563,2026-02-03T08:47:23.527Z,"Santa Cruz Mountains, California",earthquake,,,,,reviewed,ushis,cdmg
+1916-08-06T19:38:00.000Z,36.67,-121.25,,5.8,mfa,,,,,ushis,ushis596,2026-04-29T23:39:25.138Z,"Near Paicines, California",earthquake,0.0,,,,reviewed,ushis,cdmg
+1920-10-05T19:03:58.000Z,36.58,-121.67,,5.2,uk,,,,,ushis,ushis664,2018-06-04T20:43:44.000Z,"5 km SSW of Spreckels, California",earthquake,,,,,reviewed,ushis,jon
+1926-07-25T17:57:57.830Z,36.3,-120.77,10.0,5.83,mw,,,,,iscgemsup,iscgemsup909954,2022-05-09T17:46:47.076Z,"29 km NE of San Lucas, California",earthquake,,3.9,0.2,,reviewed,iscgemsup,iscgemsup
+1926-10-22T12:35:16.170Z,36.808,-122.205,15.0,6.35,mw,,,,,iscgem,iscgem910174,2026-01-09T04:27:05.461Z,"22 km S of Davenport, California",earthquake,,3.7,0.36,,reviewed,iscgem,iscgem
+1926-10-22T13:35:29.310Z,36.924,-122.341,10.0,6.31,mw,,,,,iscgem,iscgem910175,2022-04-25T23:20:25.950Z,"16 km SW of Davenport, California",earthquake,,3.5,0.21,,reviewed,iscgem,iscgem
+1926-10-24T22:51:49.500Z,37.017,-122.208,,5.5,ml,,,,,ushis,ushis752,2018-06-04T20:43:44.000Z,"1 km WNW of Davenport, California",earthquake,,,,,reviewed,ushis,cdmg
+1926-12-27T09:19:00.000Z,36.17,-120.32,,5.0,ml,,,,,ushis,ushis756,2018-06-04T20:43:44.000Z,"4 km NE of Coalinga, California",earthquake,,,,,reviewed,ushis,cdmg
+1927-02-15T23:54:03.500Z,36.95,-122.267,,5.0,ml,,,,,ushis,ushis759,2018-06-04T20:43:44.000Z,"9 km SW of Davenport, California",earthquake,,,,,reviewed,ushis,cdmg
+1931-09-09T13:40:49.600Z,39.781,-123.735,15.0,5.92,mw,,,,,iscgem,iscgem906999,2022-04-25T21:10:04.110Z,"9 km S of Leggett, California",earthquake,,25.0,0.2,,reviewed,iscgem,iscgem
+1931-12-04T00:53:00.000Z,36.5,-121.67,,5.1,uk,,,,,ushis,ushis883,2018-06-04T20:43:44.000Z,"8 km E of Carmel Valley Village, California",earthquake,,,,,reviewed,ushis,jon
+1932-02-26T16:58:00.000Z,36.0,-121.0,,5.0,ml,,,,,ushis,ushis890,2018-06-04T20:43:44.000Z,"8 km WSW of San Ardo, California",earthquake,,,,,reviewed,ushis,brk
+1933-12-13T15:34:37.000Z,37.2,-122.0,,5.0,uk,,,,,ushis,ushis1015,2018-06-04T20:43:44.000Z,"3 km SW of Los Gatos, California",earthquake,,,,,reviewed,ushis,jon
+1934-06-08T04:30:20.790Z,35.8705,-120.6936667,6.0,5.09,ml,6.0,268.0,1.636,0.48,ci,ci3362223,2019-05-02T20:46:27.709Z,"13km N of San Miguel, CA",earthquake,5.87,31.61,0.276,14.0,reviewed,ci,ci
+1939-06-24T13:02:06.000Z,36.8,-121.45,,5.5,ml,,,,,ushis,ushis1260,2018-06-04T20:43:44.000Z,"7 km SW of Hollister, California",earthquake,,,,,reviewed,ushis,brk
+1939-12-28T12:15:32.150Z,35.9533333,-120.9733333,6.0,5.17,ml,5.0,277.0,1.827,0.69,ci,ci3365181,2018-06-04T20:43:44.000Z,"26km NNW of Lake Nacimiento, CA",earthquake,6.0,31.61,0.211,14.0,reviewed,ci,ci
+1943-03-30T21:07:28.000Z,39.43,-120.4,,5.3,ml,,,,,ushis,ushis1442,2018-06-04T20:43:44.000Z,"11 km N of Soda Springs, California",earthquake,,,,,reviewed,ushis,brk
+1951-07-29T10:53:45.000Z,36.583,-121.183,,5.0,ml,,,,,ushis,ushis1748,2018-06-04T20:43:44.000Z,"21 km NE of Soledad, California",earthquake,,,,,reviewed,ushis,brk
+1954-04-25T20:33:28.000Z,36.933,-121.683,,5.3,ml,,,,,ushis,ushis1934,2018-06-04T20:43:44.000Z,"4 km ESE of Interlaken, California",earthquake,,,,,reviewed,ushis,brk
+1955-09-05T02:01:18.680Z,37.189,-122.145,15.0,5.81,mw,,,,,iscgem,iscgem889890,2022-04-26T17:36:30.590Z,"7 km NNW of Boulder Creek, California",earthquake,,3.7,0.4,,reviewed,iscgem,iscgem
+1956-11-16T03:23:01.190Z,36.3756667,-120.8846667,6.0,5.0,ml,13.0,318.0,,0.48,ci,ci3295741,2018-06-04T20:43:44.000Z,"28km NE of King City, CA",earthquake,5.6,31.61,0.133,8.0,reviewed,ci,ci
+1957-03-22T19:44:21.000Z,37.667,-122.483,,5.3,ml,,,,,ushis,ushis2195,2025-02-13T21:42:13.940Z,"The 1957 San Francisco, California Earthquake",earthquake,,,,,reviewed,ushis,brk
+1959-03-02T23:27:17.000Z,36.983,-121.6,,5.3,ml,,,,,ushis,ushis2362,2018-06-04T20:43:45.000Z,"3 km SW of Gilroy, California",earthquake,,,,,reviewed,ushis,brk
+1960-01-20T03:25:53.000Z,36.783,-121.433,,5.0,ml,,,,,ushis,ushis2433,2018-06-04T20:43:45.000Z,"6 km WSW of Ridgemark, California",earthquake,,,,,reviewed,ushis,brk
+1961-04-09T07:23:21.580Z,36.732,-121.222,12.0,5.88,mw,,,,,iscgem,iscgem876374,2022-04-26T16:18:38.811Z,"10 km SE of Tres Pinos, California",earthquake,,3.9,0.24,,reviewed,iscgem,iscgem
+1961-04-09T07:25:41.000Z,36.683,-121.3,,5.5,ml,,,,,ushis,ushis2492,2018-06-04T20:43:45.000Z,"12 km S of Tres Pinos, California",earthquake,,,,,reviewed,ushis,brk
+1962-06-06T17:50:07.200Z,39.116,-123.097,10.0,5.2,ml,,,,,ushis,ushis2552,2018-06-04T20:43:45.000Z,"6 km ESE of Talmage, California",earthquake,,,,,reviewed,ushis,brk
+1963-09-14T19:46:17.000Z,36.89,-121.597,3.0,5.4,mb,,,,,ushis,ushis2622,2018-06-04T20:43:45.000Z,"4 km E of Aromas, California",earthquake,,,,,reviewed,ushis,us
+1964-11-16T02:46:41.700Z,37.055,-121.692,,5.2,mb,,,,,ushis,ushis2731,2018-06-04T20:43:45.000Z,"7 km WSW of San Martin, California",earthquake,,,,,reviewed,ushis,us
+1967-12-18T17:24:33.250Z,36.991,-121.839,10.0,5.28,mw,,,,,iscgem,iscgem828529,2022-04-26T22:41:26.172Z,"2 km W of Corralitos, California",earthquake,,3.7,0.2,,reviewed,iscgem,iscgem
+1969-10-02T04:56:49.050Z,38.315,-122.807,15.0,5.26,mw,,,,,iscgem,iscgem803001,2022-04-26T21:54:12.975Z,"3 km E of Bloomfield, California",earthquake,,7.0,0.2,,reviewed,iscgem,iscgem
+1969-10-02T06:19:59.000Z,38.321,-122.826,15.0,5.3,mw,,,,,iscgemsup,iscgemsup803006,2022-05-09T19:20:20.327Z,Northern California,earthquake,,7.0,0.75,,reviewed,iscgemsup,iscgemsup
+1972-02-24T15:56:51.740Z,36.424,-121.36,12.0,5.06,mw,,,,,iscgem,iscgem776436,2025-12-19T19:49:59.791Z,"3 km W of Soledad, California",earthquake,,3.6,0.2,,reviewed,iscgem,iscgem
+1972-02-27T22:13:08.600Z,36.553,-121.093,8.0,5.22,mw,,,,,ushis,ushis3186,2018-06-04T20:43:45.000Z,"25 km NE of Soledad, California",earthquake,,,,,reviewed,ushis,jm
+1974-11-28T23:01:24.590Z,36.9201667,-121.4673333,5.336,5.2,ml,51.0,61.0,0.03784,0.13,nc,nc1021949,2022-04-27T18:02:48.931Z,"9 km NW of Hollister, California",earthquake,0.26,0.59,,0.0,reviewed,nc,nc
+1975-08-01T20:20:12.900Z,39.4321667,-121.5458333,4.97,5.7,ml,,,,,nc,nc71105799,2025-12-19T20:27:22.948Z,"The 1975 Oroville, California Earthquake",earthquake,,,,0.0,reviewed,nc,nc
+1975-08-02T20:22:16.570Z,39.4493333,-121.4795,1.716,5.1,ml,7.0,102.0,0.01441,0.06,nc,nc1025145,2022-04-27T17:34:38.081Z,"5 km ENE of Palermo, California",earthquake,0.62,1.78,,0.0,reviewed,nc,nc
+1975-08-02T20:58:56.010Z,39.4378333,-121.4848333,1.506,5.2,ml,7.0,146.0,0.01802,0.03,nc,nc1025150,2025-12-19T20:27:26.642Z,"4 km E of Palermo, California",earthquake,0.5,1.34,,0.0,reviewed,nc,nc
+1979-08-06T17:05:22.930Z,37.1038333,-121.5123333,8.315,5.8,ml,95.0,97.0,0.05225,0.06,nc,nc1046962,2025-12-19T22:03:53.283Z,"The 1979 Coyote Lake, California Earthquake",earthquake,0.15,0.36,,0.0,reviewed,nc,nc
+1980-01-24T19:00:08.580Z,37.84,-121.7678333,14.488,5.8,ml,83.0,69.0,0.04054,0.13,nc,nc1050040,2025-12-19T22:01:14.369Z,"The 1980 Livermore, California Earthquake",earthquake,0.22,0.35,,0.0,reviewed,nc,nc
+1980-01-24T19:01:01.540Z,37.811,-121.775,6.523,5.1,ml,9.0,149.0,0.02252,0.21,nc,nc1050041,2018-06-04T20:43:45.000Z,"11 km E of Blackhawk, California",earthquake,0.85,1.41,,0.0,reviewed,nc,nc
+1980-01-27T02:33:35.340Z,37.749,-121.7063333,14.166,5.4,ml,82.0,102.0,0.07658,0.1,nc,nc1050437,2022-04-28T01:48:54.321Z,"9 km NE of Livermore, California",earthquake,0.18,0.33,,0.0,reviewed,nc,nc
+1980-11-28T18:21:13.040Z,39.2515,-120.4538333,5.921,5.1,ml,225.0,76.0,0.3396,0.33,nc,nc1057587,2020-07-10T14:18:12.171Z,"8 km SSW of Kingvale, California",earthquake,0.36,0.48,,0.0,reviewed,nc,nc
+1982-10-25T22:26:03.600Z,36.3198333,-120.5061667,11.37,5.4,ml,68.0,88.0,0.1108,0.11,nc,nc1080773,2022-04-28T00:24:09.245Z,"22 km SSW of Three Rocks, California",earthquake,0.27,0.46,,0.0,reviewed,nc,nc
+1983-05-02T23:42:38.060Z,36.2316667,-120.312,9.578,6.7,ml,64.0,137.0,0.03063,0.07,nc,nc1091100,2025-12-19T21:30:26.448Z,"The 1983 Coalinga, California Earthquake",earthquake,0.28,0.24,,0.0,reviewed,nc,nc
+1983-05-02T23:46:06.000Z,36.23,-120.29,8.0,5.5,mb,,,,,us,usp0001uxb,2021-03-09T23:55:28.978Z,"11 km NNE of Coalinga, California",earthquake,,,,3.0,reviewed,brk,us
+1983-05-09T02:49:11.540Z,36.2463333,-120.3008333,12.916,5.2,ml,66.0,32.0,0.03063,0.09,nc,nc1093715,2022-04-28T00:00:27.612Z,"12 km NNE of Coalinga, California",earthquake,0.13,0.15,,0.0,reviewed,nc,nc
+1983-07-22T02:39:53.960Z,36.2356667,-120.4138333,7.265,5.37,ma,50.0,47.0,0.05946,0.09,nc,nc1098982,2025-12-19T21:29:31.635Z,"11 km NNW of Coalinga, California",earthquake,0.14,0.33,0.23,4.0,reviewed,nc,nc
+1983-07-25T22:31:39.480Z,36.2245,-120.4023333,8.215,5.04,md,48.0,41.0,0.05405,0.08,nc,nc1099288,2025-12-19T21:29:35.836Z,"10 km NNW of Coalinga, California",earthquake,0.14,0.3,0.18,8.0,reviewed,nc,nc
+1983-09-09T09:16:13.510Z,36.2198333,-120.2796667,6.887,5.47,md,53.0,125.0,0.05946,0.05,nc,nc1102223,2026-01-07T19:36:24.202Z,"11 km NE of Coalinga, California",earthquake,0.17,0.27,0.35,21.0,reviewed,nc,nc
+1984-01-23T05:40:19.610Z,36.3766667,-121.8956667,6.634,5.1,ml,150.0,192.0,0.1775,0.21,nc,nc1110293,2022-04-27T23:39:24.529Z,"14 km NW of Big Sur, California",earthquake,0.43,0.62,,0.0,reviewed,nc,nc
+1984-04-24T21:15:18.760Z,37.3096667,-121.6788333,8.193,6.2,ml,101.0,26.0,0.05135,0.06,nc,nc17204,2024-02-25T07:56:43.159Z,"The 1984 Morgan Hill, California Earthquake",earthquake,0.11,0.31,,0.0,reviewed,nc,nc
+1986-01-26T19:20:50.950Z,36.8043333,-121.285,8.153,5.5,ml,91.0,27.0,0.05946,0.05,nc,nc64626,2022-04-27T22:27:13.812Z,"3 km ENE of Tres Pinos, California",earthquake,0.12,0.21,,8.0,reviewed,nc,nc
+1986-03-31T11:55:39.810Z,37.4791667,-121.6866667,8.502,5.7,ml,87.0,65.0,0.02703,0.06,nc,nc68932,2022-04-27T22:23:44.508Z,"15 km NE of East Foothills, California",earthquake,0.13,0.41,,6.0,reviewed,nc,nc
+1987-02-14T07:26:50.290Z,36.1723333,-120.3405,15.271,5.3,ml,52.0,51.0,0.07658,0.1,nc,nc10089611,2022-04-27T21:52:31.548Z,"4 km NNE of Coalinga, California",earthquake,0.22,0.55,,1.0,reviewed,nc,nc
+1988-02-20T08:39:57.260Z,36.7958333,-121.3111667,9.181,5.1,ml,88.0,26.0,0.02342,0.07,nc,nc10086194,2018-06-04T20:43:45.000Z,"1 km NE of Tres Pinos, California",earthquake,0.14,0.19,,8.0,reviewed,nc,nc
+1988-06-13T01:45:36.530Z,37.3926667,-121.7415,9.087,5.3,ml,98.0,29.0,0.03604,0.06,nc,nc10087352,2022-04-28T20:44:16.053Z,"6 km E of East Foothills, California",earthquake,0.11,0.37,,5.0,reviewed,nc,nc
+1988-06-27T18:43:22.330Z,37.1283333,-121.895,12.634,5.3,ml,91.0,45.0,0.04775,0.09,nc,nc10139668,2018-06-04T20:43:45.000Z,"8 km ESE of Lexington Hills, California",earthquake,0.16,0.36,,4.0,reviewed,nc,nc
+1989-08-08T08:13:27.390Z,37.1481667,-121.9268333,13.409,5.4,ml,92.0,51.0,0.02162,0.09,nc,nc10089897,2020-07-10T14:12:16.838Z,"4 km ESE of Lexington Hills, California",earthquake,0.16,0.34,,6.0,reviewed,nc,nc
+1989-10-18T00:04:15.190Z,37.0361667,-121.8798333,17.214,6.9,mw,84.0,89.0,,0.08,nc,nc216859,2026-08-26T17:31:03.342Z,"The 1989 Loma Prieta, California Earthquake",earthquake,0.21,0.31,,0.0,reviewed,nc,nc
+1989-10-18T00:41:23.770Z,37.1901667,-122.052,15.306,5.1,ml,50.0,57.0,0.03063,0.09,nc,nc10090725,2018-06-04T20:43:45.000Z,"7 km SW of Monte Sereno, California",earthquake,0.16,0.53,,4.0,reviewed,nc,nc
+1990-04-18T13:53:51.300Z,36.9323333,-121.6568333,5.488,5.4,ml,100.0,36.0,0.004505,0.11,nc,nc20091154,2022-04-28T19:52:06.307Z,"5 km NNW of Aromas, California",earthquake,0.16,0.29,,0.0,reviewed,nc,nc
+1990-04-18T15:46:03.450Z,36.9588333,-121.6845,6.641,5.1,ml,87.0,28.0,0.00991,0.09,nc,nc20091155,2016-12-17T05:06:53.470Z,"4 km E of Interlaken, California",earthquake,0.14,0.28,,0.0,reviewed,nc,nc
+1998-08-12T14:10:25.140Z,36.7545,-121.4615,8.822,5.1,mw,83.0,35.0,0.03784,0.19,nc,nc30190473,2022-04-29T17:37:33.343Z,"10 km SW of Ridgemark, California",earthquake,0.24,0.54,,5.0,reviewed,nc,nc
+2001-08-10T20:19:27.060Z,39.8111667,-120.6166667,5.011,5.2,mw,92.0,111.0,0.1459,0.34,nc,nc21188442,2022-06-18T03:59:37.157Z,"3 km N of Blairsden, California",earthquake,0.42,0.92,,5.0,reviewed,nc,nc
+2004-09-29T17:10:04.030Z,35.9536667,-120.5021667,10.772,5.0,mw,66.0,33.0,0.003604,0.07,nc,nc21401069,2022-08-08T22:16:20.365Z,"8 km NW of Parkfield, California",earthquake,0.15,0.21,,6.0,reviewed,nc,nc
+2007-10-31T03:04:54.810Z,37.4335,-121.7743333,9.741,5.45,mw,156.0,50.0,0.02703,0.11,nc,nc40204628,2026-06-04T22:23:02.642Z,"6 km NNE of East Foothills, California",earthquake,0.11,0.28,,6.0,reviewed,nc,nc
+2012-10-21T06:55:09.510Z,36.3096667,-120.856,8.619,5.29,mw,100.0,68.0,0.06126,0.13,nc,nc71863625,2022-08-06T12:13:01.276Z,"24 km NE of San Lucas, California",earthquake,0.17,0.42,,5.0,reviewed,nc,nc
+2014-08-24T10:20:44.070Z,38.2151667,-122.3123333,11.12,6.02,mw,369.0,28.0,0.03604,0.18,nc,nc72282711,2026-06-24T21:09:11.783Z,"The 2014 South Napa, California Earthquake",earthquake,0.11,0.15,,0.0,reviewed,nc,nc
+2016-08-10T02:57:17.510Z,39.3293333,-122.8018333,14.45,5.09,mw,120.0,32.0,0.155,0.15,nc,nc72672610,2026-01-14T00:25:15.720Z,"20 km NNE of Upper Lake, California",earthquake,0.12,0.21,,6.0,reviewed,nc,nc
+2016-12-14T16:41:05.530Z,38.8221667,-122.8413333,1.48,5.01,mw,85.0,26.0,0.01351,0.06,nc,nc72737985,2022-05-03T18:04:44.943Z,"10 km W of Cobb, California",earthquake,0.08,0.1,,6.0,reviewed,nc,nc
+2022-10-25T18:42:02.710Z,37.3115,-121.672,8.38,5.06,mw,199.0,28.0,0.03815,0.1,nc,nc73799091,2026-04-14T03:37:44.776Z,"15km ESE of Alum Rock, CA",earthquake,0.08,0.18,,3.0,reviewed,nc,nc

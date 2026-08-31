@@ -9,7 +9,7 @@ here; do not restate it in a prompt or in TEMPLATE.md.
 takeaway or a definition has one wording across the whole course. Import it; do not reimplement
 it per week.
 """
-import pathlib, yaml
+import pathlib, re, yaml
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
@@ -160,6 +160,32 @@ def setup_cell(**kw):
     return SETUP_CELL.format(**{**defaults, **kw})
 
 
+def stable_ids(cells, week_n):
+    """Give every cell an id that survives a rebuild — and give the GRADED cells one that also
+    survives reordering.
+
+    nbformat assigns random ids, so every rebuild reassigned all of them: a submission made
+    against an earlier release would grade as 'that cell is missing from your notebook', for
+    every cell, silently, mid-term. Graded cells (an answer stub, a self-check) are keyed to the
+    question they belong to, so inserting a paragraph above them changes nothing.
+    """
+    q = 0
+    for i, c in enumerate(cells):
+        s = "".join(c.get("source", []))
+        if c["cell_type"] == "markdown" and re.search(r"(?m)^\s*(#{1,4}\s*)?✏️", s):
+            q += 1
+            c["id"] = f"w{week_n:02d}-q{q:02d}-ask"
+        elif c["cell_type"] == "code" and re.search(r"your answer here", s, re.I):
+            c["id"] = f"w{week_n:02d}-q{q:02d}-answer"
+        elif c["cell_type"] == "markdown" and "Double-click" in s:
+            c["id"] = f"w{week_n:02d}-q{q:02d}-prose"
+        elif c["cell_type"] == "code" and "assert " in s:
+            c["id"] = f"w{week_n:02d}-q{q:02d}-check"
+        else:
+            c["id"] = f"w{week_n:02d}-c{i:03d}"
+    return cells
+
+
 def stop_list():
     """The builder's view: the same standards, marked with the tier that grades them."""
     mark = {1: "[must]", 2: "[craft]", 3: "[teaching]"}
@@ -259,6 +285,13 @@ def gate(week_n, variant=""):
     slug = next(s["slug"] for s in _course()["schedule"] if s["n"] == week_n)
     sol = root / f"docs/notebooks{variant}" / f"{slug}_solution.ipynb"
     bad = []
+
+    # Normalise ids here: it is the single point every build passes through, and a builder
+    # cannot forget it. Both notebooks, so a submission matches the released student copy.
+    for f in (sol, sol.with_name(sol.name.replace("_solution", ""))):
+        nb = json.loads(f.read_text())
+        stable_ids(nb["cells"], week_n)
+        f.write_text(json.dumps(nb, indent=1))
 
     cells = json.loads(sol.read_text())["cells"]
     counts = [c["execution_count"] for c in cells

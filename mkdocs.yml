@@ -18,4 +18,13 @@ nav:
   - Home: README.md
   - Weeks:
     - "Week 1: What was your birthquake?": notebooks/01_birthquake.ipynb
+    - "Week 2: Which of these worlds could have liquid water — and why does your test reject Earth?": notebooks/02_liquid_water.ipynb
     - "Week 3: Earth's elevation has two peaks. So does Mars's. Same reason?": notebooks/03_two_peaks.ipynb
+    - "Week 4: Where do earthquakes and volcanoes happen — and why there?": notebooks/04_where_and_why.ipynb
+    - "Week 5: Do earthquakes cluster — or is that just what randomness looks like?": notebooks/05_clustered_or_random.ipynb
+    - "Week 6: How old is the universe?": notebooks/06_age_of_the_universe.ipynb
+    - "Week 7: How often does a Tambora happen?": notebooks/07_how_often_tambora.ipynb
+    - "Week 8: Was our earthquake forecast wrong — or were we just unlucky?": notebooks/08_wrong_or_unlucky.ipynb
+    - "Week 9: Is CO2 rising faster than it used to?": notebooks/09_rising_faster.ipynb
+    - "Week 11: Where does a volcano get its magma?": notebooks/11_where_magma.ipynb
+    - "Week 12: Can you find a fault that nobody mapped?": notebooks/12_hidden_fault.ipynb

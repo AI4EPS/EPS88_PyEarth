@@ -21,6 +21,27 @@ def run(fn, cells, *a):
     return list(C.errs)
 
 
+# Week 2's modules list SYNTAX rather than functions, so the near-miss has to WRITE that syntax:
+# `if / elif / else` and `None` can never be an ast.Name, and the call test rejected them all.
+SYNTAX_WEEK = '''
+def check(temperatures, albedo):
+    """what it is for"""
+    kept = []
+    for i in range(len(temperatures)):
+        if temperatures[i] is None or not albedo:
+            kept.append(abs(albedo))
+        elif temperatures[i] < 273 and albedo > 0:
+            kept.append(0)
+        else:
+            kept.append(1)
+    return kept, albedo
+
+
+help(check)
+plt.axvline(273)
+plt.text(1, 2, "Venus")
+'''
+
 CASES = [
     ("assert names nothing declares", C.check_asserts,
      [MD("✏️ use `my_mags`"), CODE("assert len(other) > 0")], True),
@@ -51,6 +72,10 @@ CASES = [
      [MD("A catalogue lists what somebody's instruments recorded, not what happened. Where there are no seismometers there are no earthquakes in the file.")], False),
     ("a summary listing a function the week never calls",
      lambda c: C.check_summary_is_this_week(c, 1), [CODE("print(1)")], True),
+    ("a summary listing syntax the week never writes",
+     lambda c: C.check_summary_is_this_week(c, 2), [CODE("print(1)")], True),
+    ("...but not a week whose code writes all of it",
+     lambda c: C.check_summary_is_this_week(c, 2), [CODE(SYNTAX_WEEK)], False),
     ("a self-check with no conventional result line", C.check_conventions,
      [MD("## The question, answered"), CODE("assert x > 0\nprint('nice work')")], True),
     ("...but not one that uses weekkit.CHECK_LINE", C.check_conventions,

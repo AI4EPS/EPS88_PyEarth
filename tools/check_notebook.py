@@ -7,7 +7,7 @@ that actually reached the instructor at least once, mechanised so it cannot reac
     python tools/check_notebook.py 1
     python tools/check_notebook.py 1 --variant _b
 """
-import ast, builtins, json, pathlib, re, sys, yaml
+import ast, builtins, io, json, keyword, pathlib, re, sys, tokenize, yaml
 import weekkit
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -180,6 +180,25 @@ def check_opening(cells):
                         f"{want[:64]}...")
 
 
+def keywords_written(cells):
+    """Every Python keyword the notebook's code actually writes, from a real tokenizer.
+
+    Not a regex over the source: `not` inside a comment or a docstring is not the student
+    meeting `not`, and a rule that counted it would pass a week that never wrote one.
+    """
+    out = set()
+    for c in cells:
+        if c["cell_type"] != "code":
+            continue
+        try:
+            for tok in tokenize.generate_tokens(io.StringIO(src(c) + "\n").readline):
+                if tok.type == tokenize.NAME and keyword.iskeyword(tok.string):
+                    out.add(tok.string)
+        except (tokenize.TokenError, IndentationError, SyntaxError):
+            continue
+    return out
+
+
 def check_summary_is_this_week(cells, n):
     """Every function the summary lists is one this week's notebook actually calls.
 
@@ -187,6 +206,12 @@ def check_summary_is_this_week(cells, n):
     week does. A module can outlive the week that introduced it, or a week can drop a section —
     either way the summary starts advertising functions the student never met, which is the
     opposite of a summary.
+
+    Not every entry names a function, though. The loops-and-functions modules list SYNTAX —
+    `if / elif / else`, `and / or / not`, `None`, `return a, b` — and syntax is never an
+    ast.Name, so the call test rejected eight of P3 and P4's fifteen entries no matter what the
+    notebook contained. Those are checked on the keyword the student actually has to write; the
+    x and things of `for x in things:` are notation, not names to go looking for.
     """
     mods_ = {m["id"]: m for m in yaml.safe_load((ROOT / "modules.yml").read_text())["modules"]}
     wk = next(s for s in course["schedule"] if s["n"] == n)
@@ -206,11 +231,26 @@ def check_summary_is_this_week(cells, n):
                 called.add(f"{base}.{node.attr}" if base in ("plt", "pd", "np") else node.attr)
             elif isinstance(node, ast.Name):
                 called.add(node.id)
+    written = keywords_written(cells)
     for mid in wk["modules"]:
         for f in mods_.get(mid, {}).get("functions", []) or []:
             if not f.get("remember", True):
                 continue
             names = set(re.findall(r"[A-Za-z_][A-Za-z0-9_.]*", f["name"]))
+            kws = {x for x in names if keyword.iskeyword(x)}
+            if kws:
+                missing = sorted(kws - written)
+                if missing:
+                    errs.append(f"the summary lists `{f['name']}`, and this week's notebook never "
+                                f"writes `{missing[0]}` — a summary is what the student met, not "
+                                f"what the module owns")
+                continue
+            names -= kws
+            # An entry that writes neither a call nor an attribute names notation, not a
+            # function: `a docstring`, `list[i]`. There is nothing to look for.
+            if not re.search(r"[A-Za-z_][A-Za-z0-9_.]*\s*\(", f["name"]) \
+                    and not any("." in x for x in names):
+                continue
             if not (names & called) and not ({x.split(".")[-1] for x in names} & called):
                 errs.append(f"the summary lists `{f['name']}`, which this week's notebook never "
                             f"calls — a summary is what the student met, not what the module owns")

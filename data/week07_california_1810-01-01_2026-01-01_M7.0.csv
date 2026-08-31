@@ -1,0 +1,16 @@
+time,latitude,longitude,depth,mag,magType,nst,gap,dmin,rms,net,id,updated,place,type,horizontalError,depthError,magError,magNst,status,locationSource,magSource
+1812-12-08T15:00:00.000Z,34.37,-117.65,,7.5,mw,,,,,cdmg,cdmg18121208150000000,2026-07-27T23:04:51.768Z,"Northwest of San Bernardino, California",earthquake,,,,,reviewed,cdmg,cdmg
+1812-12-21T19:00:00.000Z,34.2,-119.9,,7.1,ml,,,,,ushis,ushis32,2026-07-27T23:12:33.963Z,"Santa Barbara Channel, California",earthquake,,,,,reviewed,ushis,cdmg
+1838-06-25T20:00:00.000Z,37.3,-122.15,,7.4,mw,,,,,official,official18380625200000000,2024-02-07T01:30:23.178Z,"The 1838 San Andreas Fault, California Earthquake",earthquake,,,,,reviewed,official,cdmg
+1857-01-09T16:24:00.000Z,35.7,-120.3,,7.93,mw,,,,,ushis,ushis92,2026-08-29T00:03:41.979Z,"The 1857 Fort Tejon, California Earthquake",earthquake,,,,,reviewed,ushis,hk
+1872-03-26T10:30:00.000Z,36.7,-118.1,,7.4,mw,,,,,ushis,ushis161,2026-07-30T23:08:51.669Z,"The 1872 Owens Valley, California Earthquake",earthquake,,,,,reviewed,ushis,cdmg
+1892-02-24T07:20:00.000Z,32.55,-115.65,,7.3,mw,,,,,cdmg,cdmg18920224072000000,2026-07-30T00:29:01.057Z,"The 1892 Laguna Salada, Baja California Earthquake, Mexico",earthquake,,,,,reviewed,cdmg,cdmg
+1906-04-18T13:12:26.300Z,37.75,-122.55,11.7,7.9,mw,,,,,official,official19060418131226300_12,2026-08-29T00:13:37.758Z,"The 1906 San Francisco, California Earthquake",earthquake,10.0,7.0,,,reviewed,official,official
+1952-07-21T11:52:14.540Z,34.9581667,-118.998,6.0,7.5,mw,8.0,146.0,,0.39,ci,ci3319401,2025-12-26T18:49:44.091Z,"The 1952 Kern County, California Earthquake",earthquake,1.42,31.61,,0.0,reviewed,ci,ci
+1954-12-16T11:07:00.000Z,39.2,-118.0,12.0,7.1,mw,,,,,nn,nn19541216110700000,2026-08-11T23:49:39.861Z,"The 1954 Fairview Peak, Nevada Earthquake",earthquake,,0.0,,,reviewed,nn,nn
+1980-11-08T10:27:34.000Z,41.117,-124.253,19.0,7.2,mw,,,,,us,usp0001aq1,2025-12-19T21:54:44.916Z,"The 1980 Eureka, California Earthquake",earthquake,,,,,reviewed,us,01023
+1992-04-25T18:06:05.180Z,40.3353333,-124.2286667,9.856,7.2,mw,9.0,115.0,,0.07,nc,nc269151,2026-04-20T22:30:55.722Z,"The 1992 Petrolia, California Earthquake",earthquake,0.33,0.64,,0.0,reviewed,nc,nc
+1992-06-28T11:57:34.130Z,34.2,-116.437,-0.097,7.3,mw,0.0,43.4,,0.194,ci,ci3031111,2026-08-18T02:10:22.893Z,"The 1992 Landers, California Earthquake",earthquake,,0.31,,0.0,reviewed,ci,ci
+1999-10-16T09:46:44.460Z,34.6033333,-116.265,13.73,7.1,mw,73.0,57.0,,0.31,ci,ci9108652,2026-08-11T02:24:04.126Z,"The 1999 Hector Mine, California Earthquake",earthquake,0.35,31.61,,0.0,reviewed,ci,ci
+2010-04-04T22:40:42.360Z,32.2861667,-115.2953333,9.987,7.2,mw,10.0,239.0,0.5137,0.11,ci,ci14607652,2026-05-26T02:57:40.282Z,"The 2010 Sierra El Mayor, B.C., Mexico Earthquake",earthquake,1.81,31.61,,0.0,reviewed,ci,ci
+2019-07-06T03:19:53.040Z,35.7695,-117.5993333,8.0,7.1,mw,77.0,43.0,0.04616,0.22,ci,ci38457511,2026-07-28T13:22:37.753Z,Ridgecrest Earthquake Sequence,earthquake,0.19,31.61,0.028,126.0,reviewed,ci,ci
