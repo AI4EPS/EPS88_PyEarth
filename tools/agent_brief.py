@@ -13,15 +13,28 @@ import weekkit
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 REPO = str(ROOT)
-NOTES = str((ROOT.parent / "notes").resolve())
 # A session-specific scratch path was hardcoded here, so every brief this generated told its
 # agent to write into a directory that vanishes with the session that wrote it. Derive it, and
 # let the caller override.
 SCRATCH = os.environ.get("EPS88_SCRATCH", str(pathlib.Path(tempfile.gettempdir()) / "eps88-build"))
-PY = "/Users/weiqiang/.venvs/base/bin/python"
-MAX_ROUNDS = 2   # REVIEW cycles, not builder self-review rounds; a third means the spec is wrong
+# NOT a hardcoded venv path: whoever runs this generator is the interpreter the agent should
+# use, and a literal path breaks on any other machine or if the venv moves.
+PY = sys.executable
 
 course = yaml.safe_load((ROOT / "course.yml").read_text())
+
+
+def _render(template, ns):
+    """Fill a brief template from the caller's locals.
+
+    The brief text used to live inside f-strings here, 220 lines of prose in a 350-line Python
+    file. Prose nobody can read as prose goes stale invisibly: a line telling every builder that
+    "TEMPLATE section 7 is a loop you run" survived for hours after section 7 stopped being a
+    loop, because it was buried in a string literal. As .md it diffs, and a stale sentence is
+    visible in review.
+    """
+    text = (pathlib.Path(__file__).parent / template).read_text()
+    return text.format(**{**globals(), **ns})   # module constants, then the caller's
 
 
 def week(n):
@@ -112,237 +125,27 @@ here rather than in a checker. Read them as things a reviewer will look for.
 
 
 def build_brief(n, variant=""):
+    variant_flag = f" --variant {variant}" if variant else ""
     write_slice(n)
     audits = ", ".join(f"`{ROOT.parent / e}`" for e in week(n).get("evidence", [])) \
              or "(none cited — say so in your report)"
     w = week(n)
     student, solution, script = names(n, variant)
-    return f"""You are building **week {n}** of EPS 88 "PyEarth", a Fall 2026 UC Berkeley course for
-freshmen with no programming experience.
-
-**The question this week answers:** {w['question']}
-
-## Read the specification. It is binding, and it is the source of truth — not this brief.
-
-This brief tells you WHAT to produce and WHERE things are. It deliberately does not restate the
-rules, because a summary of them would compete with the real thing. Read these in order:
-
-1. `{pathlib.Path(REPO).parent}/CLAUDE.md` — section "To build a week"
-2. `{REPO}/TEMPLATE.md` — **read all of it.** §7 is the two gates your build must pass.
-3. `{REPO}/tools/_week{n:02d}_spec.md` — **week {n}'s entire specification**: its `course.yml`
-   entry and its modules' `modules.yml` entries, copied verbatim, with the `plain_words` that
-   apply. Four keys carry the week's design and you read all four: **`pinned:`** is settled data —
-   the slice, the constants, the results that must come out — and you neither re-choose it nor go
-   measuring for a better one; **`note:`** and **`note_critical:`** record decisions already made
-   rather than ones to re-take; **`flagship:`** designs the week's central problem. You do NOT
-   need to open course.yml or modules.yml; this file is those two files' week-{n} content.
-4. This week's dataset audit: {audits}
-   **Its measured numbers and traps outrank your expectations.**
-
-## Know what students already know
-
-Run this first and obey it:
-
-    {PY} tools/prior_knowledge.py {n}
-
-Other weeks are being written at the same time as yours. You cannot read their notebooks; this
-contract is how you avoid using something a later week is supposed to introduce, and how you
-reuse the exact wording of an idea already named.
-
-## Environment
-
-- Work from `{REPO}`
-- Python: `{PY}` (pandas, numpy, matplotlib, sklearn, torch, nbformat, nbclient, yaml)
-- Put every temporary file in `{SCRATCH}/wk{n}{variant}/` — never in the repo
-- Students may import ONLY the libraries the spec file lists. The standard library is not a
-  loophole for dodging one of them.
-
-## Produce
-
-- `{script}` — emits BOTH notebooks from one source so they cannot drift apart
-- `{solution}` — **executed**, with every output and figure saved in it
-- `{student}` — the student version, no outputs
-- `data/week{n:02d}_*.csv` — a cached fallback for every live cell, read from `platform:
-  cache_base:`. The one thing you write into the repo rather than scratch. `main` is pushed, so
-  these URLs resolve once you commit; until then only the files already there will load.
-  **Exempt: any query built from data the student supplies** — it cannot be cached, and it should
-  fail loudly with a message naming the fix rather than quietly returning someone else's data.
-
-## Do not edit anything else
-
-Not `course.yml`, not `modules.yml`, not `TEMPLATE.md`, not `CLAUDE.md`. They are shared by all
-fourteen weeks: a `functions:` entry you add for your week changes every other week's summary, and
-a rule you relax is relaxed everywhere. If one is wrong — and on every run so far at least one has
-been — **put it in your report**. The orchestrator applies it once, where it propagates correctly.
-
-**Deliver this week at the scope asked.** Make routine judgement calls yourself; where the spec is
-silent, choose and say what you chose. Do not widen the week, do not add a section nobody asked
-for, and do not re-decide anything the `pinned:` block settles.
-
-## When you are done
-
-**Build it once.** You are not reviewing your own work — a separate reviewer does that, and does
-it better, because it did not write this. Your job ends at two gates, both objective:
-
-1. **The solution executes clean on a fresh kernel**, with no scaffolding cell, no redirect, and
-   execution counts contiguous from 1.
-2. **`{PY} tools/check_notebook.py {n}{' --variant ' + variant if variant else ''}` reports OK.**
-   Your build script must run it and refuse to finish if it fails.
-
-Then stop and report. Do not re-read your own prose looking for defects; that pass has been tried
-and it produced a notebook self-graded PASS on every standard which the reviewer then returned
-with two blocking defects. Spend the time on getting the science right the first time instead.
-
-The standards below are what the reviewer will grade you against. Build to them — but the check
-that they hold is not yours to make.
-
-{weekkit.stop_list()}
-
-If a gate will not pass, stop and report what and why. A reported failure is useful; a quiet one
-is not, and a fabricated PASS is worse than either.
-{past_defects()}
-**A separate reviewer will read your student notebook without seeing any of your reasoning.**
-Write for that reader.
-
-## Report
-
-**1. Every number the notebook prints.** As a table. Each one must have come from code you ran in
-this session, not from the plan, not from an audit, not from memory. If a number in your prose has
-no printed source, that is a defect — fix it or report it.
-
-**2. Every FAIL, and nothing else.** Do not walk the standards list emitting PASS — you are not
-grading your own work, and a builder that did exactly that reported PASS on 27 of 27 standards for
-a notebook the reviewer returned with two blocking defects. List only what you know is wrong, weak
-or unfinished, with the evidence. An empty list is a fine answer if it is true.
-
-**3. Each question against the standard it serves.** Number, class or homework, and which takeaway
-or `teaches:` item it serves. A question serving neither is a drill and should not have shipped.
-
-**4. Rounds** — how many, and what each one fixed.
-
-**5. `functions:` and `plain_words:` entries** that should be added to a module: name, and the
-one-line description in the exact wording your notebook uses.
-
-**Length: cover the substance and stop.** No padding, no restating the brief back, no summary of
-your summary. Six sections; a table where a table is clearer than prose.
-
-**6. Anything in the specification that was ambiguous, missing, contradictory, or that you had to
-guess at.** This is worth as much as the notebook. Every previous round of these reports found
-real defects in the specification and all of them were fixed — assume more remain. Where you made
-a judgement call the spec does not cover, say what you chose and what it cost.
-"""
+    question, EPS88 = w["question"], ROOT.parent
+    defects, standards_flat = past_defects(), weekkit.stop_list()
+    return _render("brief_build.md", locals())
 
 
 def review_brief(n, variant=""):
+    variant_flag = f" --variant {variant}" if variant else ""
     write_slice(n)          # the reviewer reads it too; do not depend on a build having run
     audits = ", ".join(f"`{ROOT.parent / e}`" for e in week(n).get("evidence", [])) \
              or "(none cited — say so)"
     w = week(n)
     student, solution, script = names(n, variant)
-    return f"""You are reviewing **week {n}** of EPS 88 "PyEarth", a course for freshmen with no
-programming experience. Someone else built it. You have not seen their reasoning, and you should
-not go looking for it — that blindness is the point of asking you.
-
-**The week's question:** {w['question']}
-
-## What to read
-
-1. `{REPO}/tools/_week{n:02d}_spec.md` — week {n}'s own specification: its `question`,
-   `exercise`, `takeaways`, `pinned:` values and any `note:`, copied verbatim from the plan.
-2. `{REPO}/TEMPLATE.md` — the rules the notebook was built to. The graded standards are
-   reproduced below and they are what you grade against; read TEMPLATE for the reasoning behind
-   them, not for extra criteria.
-3. This week's dataset audit: {audits} — measured, and it outranks the notebook
-4. `{REPO}/{student}` — **read this one first, straight through, as a student would.**
-5. `{REPO}/{solution}` — the executed version, for checking outputs and figures
-
-Do NOT read `{script}` until after you have formed a judgement from the notebooks. Reading the
-generator first tells you what the author intended, which is exactly what a student will not have.
-
-## First, let the machines do their half
-
-    {PY} tools/check_notebook.py {n}
-    {PY} tools/check_prior_knowledge.py {n}
-
-Report their output verbatim. They enforce the mechanical standards — counts, banned strings,
-labels, asserts that cannot fail, anything used before its week — so you can spend your attention
-on what they cannot see. If either reports something, say so; if you think either is WRONG, say
-that too and show your hand count. Twice now a reviewer has proved a checker wrong, and both times
-the checker was fixed.
-
-## Then do what only a reader can
-
-- **Open every figure as an image and look at it.** Then check the sentence printed beside it. A
-  claim not visible in its figure is the single most common defect in this course, and it has
-  survived clean execution more than once.
-- **Recompute every number quoted in prose.** Ratios, counts, factors. Run the code yourself.
-- **Check the science, not just the arithmetic.** Read every Earth-science sentence and ask whether
-  a specialist in that field would sign it. This is a separate job from checking the numbers, and
-  it is the one that matters most: a correct computation can sit under a wrong mechanism. Real
-  examples from this course, all of which executed cleanly — "the catalogue is in time order,
-  earliest first" (the endpoint returns newest first), "Earth fails its own test while Venus
-  passes" (only true if you use two different albedos), "the July excess is seasonal" (it is a
-  placeholder date). Check interpretations against the week's `evidence:` audit, and say plainly
-  when a claim is beyond what the data can support.
-- **Run each self-check as a student who followed the prompt exactly would**, including using only
-  the variable names the prompt actually gave them. An `assert` on a variable the prompt never
-  named fails for everyone; an assert that is true by construction tests nothing.
-- **Check every question against the week's `takeaways:`.** A question serving none is a syntax
-  drill. Say which takeaway each one serves, or that it serves none.
-- **Confirm every question has a complete model answer in the solution**, prose questions included.
-- **Check nothing arrives before its week.** Compare against `{PY} tools/prior_knowledge.py {n}`.
-
-## Judge it in three tiers
-
-The tiers say how much a defect matters, not when to stop looking. Review all three every time:
-a notebook can be true and still not teach, and the Tier 3 findings are the ones nobody else in
-this pipeline can produce.
-
-**This list is the complete set of graded criteria.** If you find something you think should be
-graded and it is not here, that is a defect in the specification, not in the notebook — put it in
-the last section rather than marking the notebook down for it.
-
-{weekkit.tiers()}
-**Items marked `[auto]` are already settled by the two checkers you ran.** Report what they said
-and move on; do not re-verify them by hand. Your attention belongs on the rest.
-{past_defects()}
-*Report EVERYTHING you find, then classify. Do not stop early, do not decide something is too
-minor to mention, and do not filter for severity as you go — filtering is a separate pass and it
-is not yours. A finding you withhold cannot be overruled; a finding you report costs one line.
-
-Then tag each: Tier 1 blocks release. The VERDICT follows the size of the fix, not the tier that
-blocked — the first reviewer to run this found two Tier 1 failures that were each a two-cell edit
-and said so, correctly, that "REBUILD" overstated them. FIX when the work is sentence-level or
-mechanical. REBUILD only when the week does not teach what it claims.*
-
-## Report
-
-A numbered list of findings, worst first, each tagged with its tier. For each: what is wrong,
-where, and the evidence — the number you computed, or what the figure actually shows.
-
-**Every Tier 1 finding carries the command that reproduces it.** One line someone else can paste.
-Your findings will be checked before they are acted on, and a finding that can be confirmed in
-thirty seconds gets fixed; one that has to be re-derived gets argued about.
-
-**Length: as long as the findings need and no longer.** No preamble, no restating the brief, no
-summary of your summary. End with a verdict:
-
-- **SHIP** — meets every standard above
-- **FIX** — specific defects listed, all of them mechanical
-- **REBUILD** — a structural problem: the week does not teach what it claims, or a question set
-  does not serve the takeaways
-
-Then one more section: **anything in the specification that is ambiguous, missing or
-contradictory** — judged from trying to grade against it. You are the second reader of these
-rules; where you could not tell whether something passed, the rule is the problem, not the
-notebook.
-
-Say SHIP only if you would put it in front of 46 students on Monday. Do not soften a finding
-because the notebook is otherwise good, and do not pad the list to look thorough — a short honest
-review is worth more than a long polite one. Report no findings at all if there are none.
-
-Do not edit any file. You are reading, computing and reporting.
-"""
+    question, EPS88 = week(n)["question"], ROOT.parent
+    defects, standards_tiered = past_defects(), weekkit.tiers()
+    return _render("brief_review.md", locals())
 
 
 if __name__ == "__main__":
