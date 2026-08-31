@@ -12,12 +12,23 @@ Smithsonian eruption table.
 Every number that appears in prose or in a model answer is computed HERE, from the same files
 the notebook reads, and formatted in. Nothing is typed from memory or copied from the plan.
 
-    python tools/build_week07.py
+The two USGS reads are pinned by date range, so they reproduce. The Smithsonian table is not:
+GVP edits it continuously and adds roughly thirty rated eruptions a year, and the student's
+notebook reads it LIVE — so a volcano count written into markdown expires between the build and
+the class. Two things stop that. `--refresh` downloads the table again, and a cache older than
+STALE_DAYS says so loudly rather than passing for current; and the volcano counts that move are
+printed by the notebook's own cells at run time rather than written into prose. What is still
+literal, and why, is listed in the build's closing report.
+
+    python tools/build_week07.py              # build from the cached copies
+    python tools/build_week07.py --refresh    # download all three again — do this before class
 """
+import datetime
 import json
 import pathlib
 import subprocess
 import sys
+import time
 
 import numpy as np
 import pandas as pd
@@ -61,15 +72,41 @@ FORK_YEARS = [1700, 1900]    # the homework's two other start years
 # each whole number of magnitude is about 32 times more energy released.
 ENERGY_PER_STEP = 32
 
+# The week's other constant off a page is the VEI volume step. It is quoted where a student can
+# see it, in the markdown of the first volcano section, with its source and read date — the same
+# standard as the 32 above, and the reason there is no literal for it here.
+
+# GVP publishes the HOLOCENE eruption record, and the Holocene began about 9700 BCE — the ICS
+# puts its base 11,700 years before 2000 CE; read from en.wikipedia.org/wiki/Holocene on
+# 2026-08-31. The catalogue-wide VEI 7 rate is anchored on that, not on the oldest VEI 7 in it:
+# anchoring a window on its own first event shortens the span and overstates the rate.
+HOLOCENE_START = -9700
+
+REFRESH = "--refresh" in sys.argv
+STALE_DAYS = 30              # after this GVP holds eruptions the cached table does not
+
 
 # ---------------------------------------------------------------------------
 # 1. measure everything the notebook will say
 # ---------------------------------------------------------------------------
-def fetch(url, name):
-    """Run one live query once, cache it beside the course, and return the cached copy."""
+def fetch(url, name, volatile=False):
+    """Run one live query, cache it beside the course, and return the cached copy.
+
+    The cache used to be downloaded once and then never again, which is the quiet way a week
+    goes wrong: the notebook reads the archive live, the build reads a months-old cache, and the
+    two disagree in front of a class. `--refresh` downloads again. The two USGS slices are pinned
+    by date range and reproduce; GVP's table is `volatile`, so an old cache of it warns.
+    """
     out = ROOT / "data" / name
-    if not out.exists():
+    if REFRESH or not out.exists():
+        print(f"downloading {name}")
         pd.read_csv(url).to_csv(out, index=False)
+    elif volatile:
+        age = (time.time() - out.stat().st_mtime) / 86400
+        if age > STALE_DAYS:
+            print(f"WARNING: data/{name} was downloaded {age:.0f} days ago. GVP edits its table "
+                  f"continuously and adds rated eruptions every month, and the student's notebook "
+                  f"reads it live. Rebuild with --refresh before the class.")
     return pd.read_csv(out)
 
 
@@ -99,7 +136,9 @@ def predict_count(values, levels, target):
 
 quakes = fetch(EQ_URL, EQ_CACHE)
 big_history = fetch(HIST_URL, HIST_CACHE)
-eruptions = fetch(GVP, GVP_CACHE)
+eruptions = fetch(GVP, GVP_CACHE, volatile=True)
+GVP_READ_DATE = datetime.date.fromtimestamp(
+    (ROOT / "data" / GVP_CACHE).stat().st_mtime).isoformat()
 
 # `mags` is EVERY magnitude the slice returned, the five magnitude 7s included. A count labelled
 # "at or above this magnitude" has to be that count: dropping the large events made the level-6.0
@@ -116,7 +155,9 @@ M["n_big"] = len(big)
 M["mean_mag"] = round(float(mags.mean()), 3)
 M["median_mag"] = round(float(np.median(mags)), 2)
 M["max_mag"] = float(mags.max())
-M["energy_ratio"] = round(float(ENERGY_PER_STEP ** (M["max_mag"] - mags.mean())))
+# 32 is a two-figure constant, so the ratio it produces is good to two figures and no more:
+# the exact 10 ** 1.5 gives 121,952 where 32 gives 127,453, and six digits of either are invented.
+M["energy_ratio"] = float(round(ENERGY_PER_STEP ** (M["max_mag"] - mags.mean()), -4))
 M["places"] = list(big["place"])
 M["big_years"] = [t[:4] for t in big["time"]]
 
@@ -125,6 +166,13 @@ M["n5"] = int(count_at_least(mags, 5.0))
 M["n6"] = int(count_at_least(mags, 6.0))
 M["ratio45"] = round(M["n4"] / M["n5"], 2)
 M["ratio56"] = round(M["n5"] / M["n6"], 2)
+# The two ratios differ by 40%, and the honest reason to treat them as one factor is that the
+# second rests on a count of 21, which carries about its own square root of counting scatter.
+M["ratio_gap"] = round(100 * (M["ratio45"] - M["ratio56"]) / M["ratio56"])
+M["n6_scatter"] = round(float(np.sqrt(M["n6"])))
+M["n6_low"] = M["n6"] - M["n6_scatter"]
+M["n6_high"] = M["n6"] + M["n6_scatter"]
+M["ratio56_low"] = round(M["n5"] / M["n6_low"], 2)
 
 MAG_LEVELS = levels_between(3.5, 5.0)
 eq_model, eq_counts = fit_line(mags, MAG_LEVELS)
@@ -132,6 +180,12 @@ M["n_at_3_5"] = int(eq_counts[0])
 M["n_at_4_5"] = int(eq_counts[10])
 M["n_at_5_0"] = int(eq_counts[-1])
 M["tail_share"] = round(100 * M["n_at_4_5"] / M["n_at_3_5"])
+# What the LINEAR scatter actually shows, measured off the counts rather than guessed at: the
+# right half of the levels lands in the bottom sixth of an axis that has to reach n_at_3_5.
+M["n_right_half"] = len(MAG_LEVELS) - len(MAG_LEVELS) // 2
+M["right_half_top"] = round(100 * eq_counts[len(MAG_LEVELS) // 2] / eq_counts[0])
+M["pct_at_4_5"] = round(100 * M["n_at_4_5"] / M["n_at_3_5"])
+M["pct_at_5_0"] = round(100 * M["n_at_5_0"] / M["n_at_3_5"])
 M["slope"] = round(float(eq_model.coef_[0]), 3)
 M["intercept"] = round(float(eq_model.intercept_), 3)
 M["step_factor"] = round(float(10 ** -eq_model.coef_[0]), 2)
@@ -181,12 +235,14 @@ M["vei_pred7"] = round(float(10 ** vei_model.predict([[7]])[0]), 2)
 M["vei_obs7"] = M["vei_counts"][7]
 M["one_per"] = round(M["span"] / float(10 ** vei_model.predict([[7]])[0]))
 
-top = rated[rated["ExplosivityIndexMax"] >= 7]
+# The whole-record rate, anchored on the record and not on its first event. A handful of rows
+# carry pre-Holocene dates (one at 55,500 BCE); the cut drops them and keeps every VEI 7.
+holocene = rated[rated["StartDateYear"] >= HOLOCENE_START]
+top = holocene[holocene["ExplosivityIndexMax"] >= 7]
 M["tambora_year"] = int(top[top["Volcano_Name"] == "Tambora"]["StartDateYear"].iloc[0])
 M["n_top_all"] = len(top)
-M["oldest_top"] = int(top["StartDateYear"].min())
-M["top_span"] = 2026 - M["oldest_top"]
-M["top_rate"] = round(M["top_span"] / M["n_top_all"])
+M["record_span"] = 2026 - HOLOCENE_START
+M["top_rate"] = round(M["record_span"] / M["n_top_all"])
 
 # --- how much one observation can settle -----------------------------------
 POISSON_RATES = [0.1, 0.5, 1.0, 2.0, 4.0]
@@ -195,6 +251,7 @@ M["poisson"] = [round(float((rng.poisson(rate, size=20000) == 1).mean()), 3)
                 for rate in POISSON_RATES]
 M["poisson_lo"] = min(M["poisson"])
 M["poisson_hi"] = max(M["poisson"])
+M["rarer_factor"] = round(M["top_rate"] / M["one_per"])
 
 # --- homework --------------------------------------------------------------
 hist_years = big_history["time"].str[:4].astype(int)
@@ -315,13 +372,15 @@ code(setup)
 
 # --- section 1 -------------------------------------------------------------
 md(f"""
-## One eruption is not a rate
+## Looking Tambora up in the catalogue
 
 The Smithsonian Institution's Global Volcanism Program keeps a table of every eruption it can
-document, {M['n_eruption_rows']:,} of them, and rates most of those on the **Volcanic Explosivity
-Index** — VEI, a whole number from 0 to 8. It works like an earthquake magnitude: each step up is
-roughly ten times the volume of material thrown out, so VEI 2 is a nuisance and VEI 7 rearranges
-the climate.
+document — the setup cell printed how many rows of it came back — and rates most of those on the
+**Volcanic Explosivity Index**: VEI, a whole number from 0 to 8. It works like an earthquake
+magnitude. From VEI 2 upwards each step stands for ten times the volume of material thrown out, so VEI 2 is a nuisance and VEI 7 rearranges the climate. (Newhall and Self defined the
+index in 1982, in *Journal of Geophysical Research* **87**, 1231–1238. The tenfold step, and the
+one place it breaks — from VEI 1 to VEI 2 the jump is a hundredfold, not tenfold — were read from
+`en.wikipedia.org/wiki/Volcanic_explosivity_index` on 2026-08-31.)
 
 Ask the catalogue how many eruptions of each size it holds since {VOLCANO_FROM}.
 """)
@@ -343,9 +402,9 @@ One event gives you no rate. Divide 1 by {M['span']} years and you get a number,
 got a different number from any other stretch of history, and nothing tells you which is right.
 Counting worked when we had hundreds of events to count; here it dies.
 
-What the catalogue does have is {M['vei_exact2']:,} eruptions rated VEI 2 and
-{M['vei_exact3']:,} rated VEI 3. If the small ones and the large ones are connected by something
-regular, that is thousands of measurements of the thing we want. Finding out whether they are
+What the catalogue does have is thousands of eruptions rated VEI 2 and hundreds rated VEI 3 — read
+them off the count you just printed. If the small ones and the large ones are connected by
+something regular, that is thousands of measurements of the thing we want. Finding out whether they are
 connected needs a catalogue where even the small events get counted properly — and the best such
 catalogue on Earth is a seismic network, so we go there first.
 """)
@@ -388,14 +447,17 @@ print("largest in the box:", mags.max())
 # USGS, "Earthquake Magnitude, Energy Release, and Shaking Intensity", read 2026-08-31:
 # one whole step of magnitude is about {ENERGY_PER_STEP} times more energy released.
 energy_ratio = {ENERGY_PER_STEP} ** (mags.max() - mags.mean())
-print(f"the largest released about {{round(energy_ratio):,}} times the energy of an average one")
+# {ENERGY_PER_STEP} is itself a rounded constant, so this answer is good to two figures and no
+# more. Rounding to the nearest ten thousand is how you say that on screen.
+print(f"the largest released about {{round(energy_ratio, -4):,.0f}} times the energy of an average one")
 """)
 
 md(f"""
 The average California earthquake in this file is magnitude {M['mean_mag']}. People nearby feel one
 of those, and it damages nothing; no plan for the state's next hundred years turns on it. Meanwhile
-the largest in the box released roughly {M['energy_ratio']:,} times as much energy as that average.
-When a distribution is shaped like this one, the mean describes the crowd
+the largest in the box released roughly {M['energy_ratio']:,.0f} times as much energy as that
+average — two figures and no more, because the {ENERGY_PER_STEP} behind it is itself a rounded
+number. When a distribution is shaped like this one, the mean describes the crowd
 and the crowd is irrelevant: everything that matters is in the part of the axis where the histogram
 looks like zero.
 
@@ -425,14 +487,23 @@ print("times more 4s than 5s:", round(n4 / n5, 2))
 print("times more 5s than 6s:", round(n5 / n6, 2))
 """, """
 assert n6 < n5 < n4, "the counts must fall as the magnitude rises — check which way your >= points"
+assert n4 + (mags < 4.0).sum() == len(mags), \\
+    ("n4 is every earthquake at 4.0 and above, so n4 and the ones below 4.0 have to account for "
+     "the whole catalogue between them. If they do not, n4 is the earthquakes IN a band — a "
+     "histogram bin — rather than the count at or above a level")
 print("✓ counting up the catalogue —", n4, "at M4+,", n5, "at M5+,", n6, "at M6+, so",
       round(n4 / n5, 2), "and", round(n5 / n6, 2), "times fewer at each step")
 """)
 
 md(f"""
 One step up in magnitude and there are {M['ratio45']} times fewer earthquakes; one more step and
-there are {M['ratio56']} times fewer again. The same factor twice is the sort of thing that stops
-being a coincidence, so the next job is to measure it properly instead of at three points.
+there are {M['ratio56']} times fewer again. Those are not the same number — they are about
+{M['ratio_gap']} per cent apart — and the reason to suspect one factor behind them anyway is that
+the second rests on the {M['n6']} earthquakes at magnitude 6 and above. Counts of rare things wobble
+by roughly their own square root, so that {M['n6']} could as easily have come out {M['n6_low']} or
+{M['n6_high']}; at {M['n6_low']} the second ratio would read {M['ratio56_low']} against the first's
+{M['ratio45']}. Two ratios that might be one is worth measuring properly instead of at three
+points.
 
 ## Counting upwards, at every level
 
@@ -495,6 +566,9 @@ print("at magnitude", mag_levels[-1], "and above:", counts[-1])
 """, """
 assert len(counts) == len(mag_levels), "one count per level — is the append inside the loop?"
 assert counts[0] > counts[-1], "the counts must fall as the level rises"
+assert count_at_least(np.array([1.0, 2.0, 3.0]), 2.0) == 2, \\
+    ("'at or above' has to include the values that are exactly equal to the level — a plain > "
+     "silently drops every event recorded at the level itself, and there are hundreds of those")
 print("✓ cumulative counts —", len(counts), "levels, from", counts[0], "down to",
       counts[-1])
 """)
@@ -513,10 +587,12 @@ plt.show()
 
 md(f"""
 A curve, and one that hides the half we came for. The left-hand point is {M['n_at_3_5']:,} and the
-right-hand one is {M['n_at_5_0']}, so the axis has to reach {M['n_at_3_5']:,} and the whole right
-half of the plot is packed into a thin band along the bottom. You cannot tell by looking whether
-those dots fall along a line, along a curve, or along nothing in particular — and they are the ones
-nearest the sizes that matter.
+right-hand one is {M['n_at_5_0']}, so the axis has to reach {M['n_at_3_5']:,} and the
+{M['n_right_half']} dots of the right half are all squeezed into the bottom {M['right_half_top']}
+per cent of it. You can see that they descend. What you cannot see is by how much: reading the
+factor between magnitude 4.5 and magnitude 5.0 off that band means comparing two dots sitting at
+{M['pct_at_4_5']} and {M['pct_at_5_0']} per cent of the axis height — and that factor is the whole
+question.
 
 The fix is the one the plotting week introduced. When the values span factors of a thousand, plot
 the exponents instead and a curve becomes a line. `plt.yscale("log")` does exactly that: the
@@ -723,6 +799,9 @@ for lowest, highest in [(3.5, 5.0), (4.0, 5.5), (4.5, 6.0)]:
 assert len(predictions) == 3, "three fitting ranges, three predictions"
 assert min(predictions) > 0.5, ("a prediction below 0.5 usually means the 10 ** was left off, so "
                                 "the function is returning the log of the count")
+assert max(predictions) - min(predictions) > 0.1, \\
+    ("three different fitting ranges cannot give three identical answers — build the levels "
+     "afresh inside the loop, one set per range, rather than passing the same ones each time")
 print("✓ three defensible choices — the line expects",
       round(min(predictions), 2), "to", round(max(predictions), 2),
       "at magnitude 7, against", len(big), "that happened")
@@ -762,20 +841,29 @@ recent = rated[rated["StartDateYear"] >= {VOLCANO_FROM}]
 vei = recent["ExplosivityIndexMax"].values"""))
 
 code("""
+counts_by_vei = []
 for level in range(0, 7):
-    print("VEI", level, "and above:", count_at_least(vei, level))
+    counts_by_vei.append(count_at_least(vei, level))
+    print("VEI", level, "and above:", counts_by_vei[-1])
+
+print()
+for level in range(1, 7):
+    print("from VEI", level - 1, "to VEI", level, ": divided by",
+          round(counts_by_vei[level - 1] / counts_by_vei[level], 1))
 """)
 
 md(f"""
-Read those from the bottom up. From VEI 2 onwards each step divides the count by roughly the same
-factor — {M['vei_counts'][2]:,}, {M['vei_counts'][3]}, {M['vei_counts'][4]}, {M['vei_counts'][5]},
-{M['vei_counts'][6]} — but the bottom two steps do not play along at all. Going from VEI 2 down to
-VEI 1 the count should multiply by about five, and it barely moves.
+Read the second block of numbers. From VEI 2 upwards each step divides the count by roughly the
+same factor, somewhere near five every time — but the bottom two steps do not play along at all.
+Going from VEI 2 down to VEI 1 the count should multiply by about five, and it barely moves.
 
-That is not volcanology, it is bookkeeping. A catalogue lists what somebody's instruments recorded,
-not what happened. Where there are no seismometers there are no earthquakes in the file — and
-nobody files a report on a VEI 1 eruption in an uninhabited part of the Andes in 1840. So the fit
-starts at VEI 2, where the record is thick enough to trust.
+That is not volcanology, and it is not the index either. The one place VEI departs from the tenfold
+rule is the step from VEI 1 to VEI 2, and it departs the wrong way for this: a VEI 1 covers a
+hundredfold range of volumes rather than a tenfold one, so there should be **more** VEI 1 eruptions
+than the line asks for, not fewer. What is left is bookkeeping. A catalogue lists what somebody's
+instruments recorded, not what happened. Where there are no seismometers there are no earthquakes in
+the file — and nobody files a report on a VEI 1 eruption in an uninhabited part of the Andes in
+1840. So the fit starts at VEI 2, where the record is thick enough to trust.
 """)
 
 ask(f"""
@@ -826,26 +914,29 @@ plt.plot(all_levels, vei_on_the_line, color="firebrick", label="the line fitted 
 plt.yscale("log")
 plt.xlabel("Volcanic Explosivity Index")
 plt.ylabel("number of eruptions at or above this VEI")
-plt.title("Eruptions since {VOLCANO_FROM}, {M['n_recent']:,} of them rated")
+plt.title(f"Eruptions since {VOLCANO_FROM}, {{len(vei):,}} of them rated")
 plt.legend()
 plt.show()
 """)
 
 md(f"""
-Above VEI 4 the line is uncanny. It was fitted to three points and never saw the rest, and it puts
-{M['vei_line'][5]} at VEI 5 where there are {M['vei_counts'][5]}, {M['vei_line'][6]} at VEI 6 where
-there are {M['vei_counts'][6]}, and {M['vei_pred7']} at VEI 7 where there is {M['vei_obs7']}.
+Above VEI 4 the line does something it had no obligation to do: it lands close to counts it was
+never shown. Compare the two columns you just printed at VEI 5, VEI 6 and VEI 7.
 
-Below VEI 2 it is a disaster, and the log axis is what makes the size of the disaster visible: the
-line calls for {M['vei_line'][0]:,.0f} eruptions at VEI 0 or above and the catalogue holds
-{M['vei_counts'][0]:,}. Taken literally that says more than nine in ten of the world's smallest
+Only the VEI 5 row carries much weight. There are enough eruptions there that the line had room to
+miss and did not. The two rows above it hold a handful and one, and what agreement on a handful is
+worth is the next thing we take up.
+
+Below VEI 2 the line is a disaster, and the log axis is what makes the size of the disaster visible:
+at VEI 0 and above it calls for close to twenty times what the catalogue holds — the top row of the
+same table. Taken literally that says more than nine in ten of the world's smallest
 eruptions never reached anybody's records; taken carefully it says the record cannot be trusted
 down there at all, which is the same conclusion and a safer way to say it. Either way the missing
 thing is the data, not the line.
 
 ## What one observation can settle
 
-{M['vei_pred7']} predicted against {M['vei_obs7']} observed looks like a triumph, and this is
+About one predicted against exactly {M['vei_obs7']} observed looks like a triumph, and this is
 exactly the moment to be suspicious. A prediction is only impressive if it could have been
 embarrassed, so ask what would have counted as a failure here: if the true rate of VEI 7 eruptions
 were something quite different, how often would {M['span']} years still hand you exactly one?
@@ -862,25 +953,31 @@ for rate in {POISSON_RATES}:
     print("if the true rate were", rate, "per", {M['span']}, "years, exactly 1 happens in",
           round((histories == 1).mean() * 100), "% of histories")
 
-top = rated[rated["ExplosivityIndexMax"] >= 7]
-oldest = int(top["StartDateYear"].min())
+# GVP publishes the Holocene record, and the Holocene began about {abs(HOLOCENE_START):,} BCE.
+# Anchor the window on the record itself; anchoring it on the oldest eruption IN the record
+# shortens the span and overstates the rate.
+record_start = {HOLOCENE_START}
+record_span = 2026 - record_start
+holocene = rated[rated["StartDateYear"] >= record_start]
+top = holocene[holocene["ExplosivityIndexMax"] >= 7]
+
 print()
 print("the fitted rate is one VEI 7 every", round({M['span']} / vei_predicted), "years")
-print("the whole catalogue holds", len(top), "of them, the oldest starting", oldest,
-      "— one every", round((2026 - oldest) / len(top)), "years")
+print("the whole record holds", len(top), "of them in", record_span,
+      "years — one every", round(record_span / len(top)), "years")
 """)
 
 md(f"""
 Every rate from {POISSON_RATES[0]} to {POISSON_RATES[-1]} produces exactly one eruption in a
 respectable fraction of histories — between {M['poisson_lo'] * 100:.0f} and
-{M['poisson_hi'] * 100:.0f} per cent. A single count cannot tell those apart, so a model predicting
-{M['vei_pred7']} and a model predicting {POISSON_RATES[-1]} both "pass" this test, and so would a
-model wrong by a factor of forty. The check has almost no power to fail, which means passing it
-carries almost no information.
+{M['poisson_hi'] * 100:.0f} per cent. A single count cannot tell those apart, so the fitted
+rate and a rate of {POISSON_RATES[-1]} both "pass" this test, and so would a
+model wrong by a factor of {round(POISSON_RATES[-1] / POISSON_RATES[0])}. The check has almost no
+power to fail, which means passing it carries almost no information.
 
-And the wider catalogue says the same thing from the other direction. It holds {M['n_top_all']} VEI
-7 eruptions in total, the oldest beginning {abs(M['oldest_top']):,} BCE, which over that span is one
-every {M['top_rate']:,} years — around {round(M['top_rate'] / M['one_per'])} times rarer than the
+And the wider record says the same thing from the other direction. Over the whole Holocene —
+{abs(HOLOCENE_START):,} BCE to now — {M['n_top_all']} eruptions reached VEI 7, one every
+{M['top_rate']:,} years, around {M['rarer_factor']} times rarer than the
 post-{VOLCANO_FROM} fit says. The old record is certainly missing some, so the truth is somewhere
 between. Notice which case is which: the earthquake prediction failed loudly and the volcano
 prediction passed quietly, and it is the loud failure that told us something.
@@ -891,16 +988,21 @@ md(f"""
 
 **Roughly once every few hundred to a couple of thousand years, and this week's data cannot do
 better than that.** Fitting the Gutenberg–Richter line to eruptions of VEI 2 to 4 since
-{VOLCANO_FROM} predicts {M['vei_pred7']} eruptions at VEI 7 in that window — one every
-{M['one_per']} years — and exactly {M['vei_obs7']} occurred. Across the whole catalogue the same
-kind of event has come every {M['top_rate']:,} years. Both numbers are defensible and they disagree
-by a factor of {round(M['top_rate'] / M['one_per'])}, because one rests on a single event and the
-other on a record that thins as it goes back. The line itself is the solid part, and for one reason
-only: fitted to VEI 2, 3 and 4, it reproduces VEI 5 and VEI 6 without ever being shown them, which
-is a test it could have failed. Its R squared is not such a test — magnitudes with no pattern in
-them scored {M['r2_flat']} on the same fit — and neither is landing near a count of
-{M['vei_obs7']}. Where the line was tested by something that could have refuted it, it duly was
-refuted: California's magnitude 7s outnumber what it expects by a factor of {M['under_by']}.
+{VOLCANO_FROM} predicts about one eruption at VEI 7 in that {M['span']}-year window — a rate of one
+every couple of centuries — and exactly {M['vei_obs7']} occurred. Across the whole Holocene record
+the same kind of event has come about once every {M['top_rate']:,} years. Both numbers are
+defensible and they disagree by a factor of {M['rarer_factor']}, because one rests on a single event
+and the other on a record that thins as it goes back.
+
+The line itself is the solid part, and one check is carrying that: fitted to VEI 2, 3 and 4, it
+reproduces the count at VEI 5 without ever being shown it, and there are enough eruptions at VEI 5 —
+a couple of dozen — that it had room to miss. That is the load-bearing test, and it is the only one.
+Landing near the count at VEI 6 is not a second one: a handful of eruptions is the same near-empty
+situation as the {M['vei_obs7']} at VEI 7, where every rate from {POISSON_RATES[0]} to
+{POISSON_RATES[-1]} passed. Neither is the R squared — magnitudes with no pattern in them scored
+{M['r2_flat']} on the same fit. Where the line was tested by something that could have refuted it,
+it duly was refuted: California's magnitude 7s outnumber what it expects by a factor of
+{M['under_by']}.
 """)
 
 # --- summary and homework --------------------------------------------------
@@ -1055,6 +1157,21 @@ def main():
     print(f"wrote {SLUG}.ipynb ({len(CELLS)} cells) and the executed solution")
     for name in (EQ_CACHE, HIST_CACHE, GVP_CACHE):
         print(f"cache: data/{name}")
+    print(f"GVP cache read {GVP_READ_DATE}: {M['n_eruption_rows']:,} eruption rows, "
+          f"{M['n_rated']:,} of them rated, {M['n_recent']:,} rated since {VOLCANO_FROM}; "
+          f"VEI 2 to 7 cumulative {M['vei_counts'][2:]}")
+    print("prose: every volcano count that GVP moves is printed by a notebook cell at run time, "
+          "not written into markdown. The literals left in the volcano prose are the ones GVP "
+          f"cannot move on any useful horizon — the {M['vei_obs7']} VEI 7 eruption since "
+          f"{VOLCANO_FROM} (Tambora, dated {M['tambora_year']}), the {M['n_top_all']} in the "
+          f"whole Holocene record and the one-every-{M['top_rate']:,}-years that follows from "
+          f"them, and two coarse ratios that survive drift: 'close to twenty times' for the "
+          f"VEI 0 shortfall (now {M['vei_line'][0] / M['vei_counts'][0]:.1f}) and 'a couple of "
+          f"dozen' for VEI 5 (now {M['vei_counts'][5]}). Model answers are build-time snapshots "
+          "by construction; rebuild with --refresh before release.")
+    print(f"earthquake prose is pinned by date range ({EQ_START} to {EQ_END}, M{EQ_FLOOR}) and "
+          f"reproduces; the energy ratio is quoted to two figures "
+          f"({M['energy_ratio']:,.0f}) because the 32 is two figures.")
 
 
 if __name__ == "__main__":

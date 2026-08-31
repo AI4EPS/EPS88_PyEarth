@@ -711,20 +711,64 @@ schedule:
           extent_km: {axis1: 58.0, axis3: 16.2}      # what the equal-aspect figure spans
           axis1: [-0.61, 0.79, -0.01]                # (east, north, down): horizontal, NW-SE
           axis2: [-0.29, -0.22, 0.93]                # near-vertical
-        # Cluster 0 is NOT one plane. The M6.4 epicentre (35.7053, -117.5038) is inside it, and
-        # within 5 km of it the leading axis turns vertical and carries barely half the spread:
-        # DBSCAN merged the M6.4's conjugate rupture into the M7.1's cluster.
-        pca_cluster0_near_M64: {radius_km: 5, n: 969, evr1: 0.537, axis1: [-0.24, -0.01, 0.97]}
+          # Axis 3 is the FAULT-NORMAL direction, 21 degrees off horizontal — NOT depth. The
+          # 16.2 km on axis 3 is the figure's across-plane span, and calling it "a band 16 km
+          # deep" was wrong twice: cluster 0's depths run 0.43-11.48 km.
+          axis3: [0.74, 0.57, 0.36]
+          depth_range_km: [0.43, 11.48]
+        # REFUTED 2026-08-31, and the refutation is now what week 12 teaches with it. The
+        # measurement is right; the interpretation this block used to carry — "the leading axis
+        # turns vertical and carries barely half the spread, so DBSCAN merged the M6.4's
+        # conjugate rupture into the M7.1's cluster" — was recalled, not measured, and the
+        # notebook duly proved a true conclusion with a statistic that proves nothing.
+        # The control kills it: a 5-km horizontal ball caps east/north at +/-5 km while depth
+        # runs free over cluster 0's whole 0.43-11.48 km range, so depth takes axis 1 nearly
+        # everywhere in cluster 0. The test returns the "discovery" on any single fault.
+        # Horizontal-only PCA is NOT a fix either and must not be swapped in: cluster 0 whole
+        # gives evr [0.984 0.016], the knot [0.668 0.332], the M7.1 epicentre [0.900 0.100] and
+        # a control patch nowhere near the M6.4 [0.646 0.354] — HIGHER second-axis power than
+        # the knot, which ranks 3rd of 20 arbitrary patches (median 0.188, max 0.366).
+        # The conclusion stands on Ross et al. 2019, Science 366, 346-351, whose title is
+        # "Hierarchical interlocked ORTHOGONAL faulting in the 2019 Ridgecrest earthquake
+        # sequence", and on the map the notebook now draws: the 707 events in the 34 hours
+        # between the M6.4 and the M7.1, at a 0.35 x 0.40 degree zoom (lat 35.55-35.90, lon
+        # -117.70 to -117.30), show the two arms crossing. At the full-box scale they do not.
+        pca_cluster0_near_M64:
+          status: refuted_as_evidence      # kept because the notebook teaches the failure
+          radius_km: 5
+          n: 969
+          evr1: 0.537
+          axis1: [-0.24, -0.01, 0.97]
+          control_M71_epicentre: {n: 457, evr1: 0.510, axis1: [-0.41, 0.44, 0.80]}
+          control_arbitrary_patches: {n_patches: 20, evr1_median: 0.555,
+                                      evr1_range: [0.446, 0.718], n_below_0537: 8}
+          conjugate_arm_zoom: {n_events: 707, lat: [35.55, 35.90], lon: [-117.70, -117.30]}
         # The trivial baseline the audit warns about: 97.9% of cluster 0 is inside the circle,
         # Jaccard 0.815 against the cluster. The largest cluster is the part worth the least.
-        trivial_circle: {radius_deg: 0.3, n: 5507, cluster0_inside: 4571, jaccard: 0.815}
+        # The circle's failure is OVER-inclusion, not truncation: it holds 936 events that are
+        # not in cluster 0 and cuts off only 99 that are. A notebook sentence claiming it "cuts
+        # the long limb off on the other side" was refuted by this same block and is gone.
+        trivial_circle: {radius_deg: 0.3, n: 5507, cluster0_inside: 4571, jaccard: 0.815,
+                         in_circle_not_cluster0: 936, cluster0_outside_circle: 99}
         # Two concentrations inside the 1,225 noise events, counted in these boxes, which the
         # week points at instead of claiming the grey is all fringe.
         noise_concentrations:
           patch: {n: 151, lat: [35.85, 36.05], lon: [-117.55, -117.25]}
           lineament: {n: 35, lat: [35.25, 35.42], lon: [-118.10, -117.85], length_km: 15.6}
+        # The eps sweep the homework runs, with min_samples=12 and with sklearn's default of 5.
+        # Both are pinned because a self-check that only counts list length ticks for the run
+        # that dropped min_samples, which is the parameter the week's third takeaway is about.
+        eps_sweep:
+          eps: [0.075, 0.15, 0.30]
+          clusters: [29, 11, 5]
+          noise_pct: [78.5, 18.4, 4.9]
+          clusters_if_min_samples_defaulted: [141, 22, 11]
+        # k-means inertia, for the same reason: fitting the raw degrees instead of `scaled`
+        # gives a 71.6% first drop against 42.4%, and prose two cells later quotes 42.4%.
+        kmeans_inertia_first_drop_pct: {scaled: 42.4, raw_degrees: 71.6}
       verified: 2026-08-30
       verified_pca_and_baseline: 2026-08-31
+      verified_controls_and_selfchecks: 2026-08-31
     exercise: "Re-run DBSCAN with eps halved and then doubled. Report how many clusters each gives, pick the value you would defend, and then name one cluster you think is a real fault and one you think the algorithm invented. You cannot prove either — say what evidence would settle it."
     note: >
       CLUSTERING, promoted to a real week (it had none). k-means, PCA and DBSCAN together, because
@@ -747,7 +791,7 @@ schedule:
     takeaways:
       - "Clustering finds structure with the labels hidden."
       - 'DBSCAN may say "this one belongs to nothing"; k-means must assign every point.'
-      - "The parameters decide the answer, so report them alongside it."
+      - "The parameters decide the answer, so report them — and before you trust a number, check it could have come out otherwise."
   - n: 13
     date: 2026-11-30
     slug: 13_machine_hears

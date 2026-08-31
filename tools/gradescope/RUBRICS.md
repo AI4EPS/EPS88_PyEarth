@@ -552,7 +552,7 @@ to be close together.
 
 1. Clustering finds structure with the labels hidden.
 2. DBSCAN may say "this one belongs to nothing"; k-means must assign every point.
-3. The parameters decide the answer, so report them alongside it.
+3. The parameters decide the answer, so report them — and before you trust a number, check it could have come out otherwise.
 
 
 ---
