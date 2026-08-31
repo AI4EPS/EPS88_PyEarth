@@ -209,23 +209,45 @@ M["stalta_best_setting"], M["stalta_best"] = max(M["stalta_sweep"].items(), key=
 # WHERE the textbook setting's misses are, which is the whole lesson of this section: with
 # long=500 the ratio is pinned at zero for the first five seconds, so a P arriving before 4.5 s
 # cannot be found however strong it is. Split the held-out set on that and score each half.
-textbook_ok, on_the_s, never = [], [], 0
+#
+# BOTH settings are scored on BOTH halves, in one pass. The old version scored only the textbook
+# setting here and then set its 0.602 on the late traces beside the sweep's 0.602 over all 741 —
+# two different denominators, and two rounded numbers agreeing is a coincidence, not a
+# demonstration. The claim "off the dead zone they are the same picker" is the load-bearing one
+# in this section, so the notebook now runs the comparison it rests on.
+BEST = tuple(int(x) for x in M["stalta_best_setting"].split(", "))
+textbook_ok, best_ok, on_the_s, never = [], [], [], []
 for i in np.nonzero(~is_train)[0]:
     pick = first_trigger(sta_lta(strength[i], 50, 500), 3)
-    if pick is None:
-        never = never + 1
+    tuned = first_trigger(sta_lta(strength[i], BEST[0], BEST[1]), BEST[2])
+    never.append(pick is None)
     textbook_ok.append(pick is not None and abs(pick - p_index[i]) <= 50)
+    best_ok.append(tuned is not None and abs(tuned - p_index[i]) <= 50)
     on_the_s.append(pick is not None and abs(pick - s_index[i]) <= 50)
 textbook_ok = np.array(textbook_ok)
+best_ok = np.array(best_ok)
 on_the_s = np.array(on_the_s)
+never = np.array(never)
 early = p_test < 450                    # the long window has not filled until sample 500
-M["stalta_never"] = round(never / M["n_test"], 3)
+dead_test = (waveform[~is_train].std(axis=2) == 0).all(axis=1)
+M["stalta_never"] = round(float(never.mean()), 3)
 M["stalta_near_s"] = round(float(on_the_s.mean()), 3)
 M["n_early"] = int(early.sum())
+M["n_late"] = int((~early).sum())
 M["early_frac"] = round(float(early.mean()), 3)
 M["textbook_early"] = round(float(textbook_ok[early].mean()), 3)
 M["textbook_late"] = round(float(textbook_ok[~early].mean()), 3)
+M["best_early"] = round(float(best_ok[early].mean()), 3)
+M["best_late"] = round(float(best_ok[~early].mean()), 3)
 M["s_in_dead_zone"] = round(float(early[on_the_s].mean()), 3)
+# The dead zone was being credited with the never-triggered as well, on no evidence at all — the
+# only number offered for it was the share of the S TRIGGERS that are in the dead zone. Measure
+# the never-triggered separately, and count how many of them are the flat dead channels the
+# notebook meets at the end and never used to connect to anything.
+M["n_never"] = int(never.sum())
+M["never_in_dead"] = int((never & early).sum())
+M["never_in_dead_frac"] = round(float(early[never].mean()), 3)
+M["never_dead_channel"] = int((never & dead_test).sum())
 
 # --- section 4: a pattern-detector made by hand
 
@@ -339,13 +361,9 @@ M["worst_values"] = sorted(round(float(v), 1) for v in np.unique(x_test[worst].n
 M["worst_is_flat"] = bool(max(M["worst_std"]) == 0)
 
 # --- homework: does the network fail where the classical picker fails?
-best = tuple(int(x) for x in M["stalta_best_setting"].split(", "))
-classic_ok, network_ok = [], list(np.abs(net_picks - p_test) <= 50)
-for j, i in enumerate(np.nonzero(~is_train)[0]):
-    pick = first_trigger(sta_lta(strength[i], best[0], best[1]), best[2])
-    classic_ok.append(pick is not None and abs(pick - p_index[i]) <= 50)
-classic_ok = np.array(classic_ok)
-network_ok = np.array(network_ok)
+# best_ok IS this loop, run once above at the same best setting on the same held-out traces.
+classic_ok = best_ok
+network_ok = np.abs(net_picks - p_test) <= 50
 M["both_right"] = int((classic_ok & network_ok).sum())
 M["network_only"] = int((~classic_ok & network_ok).sum())
 M["classic_only"] = int((classic_ok & ~network_ok).sum())
@@ -362,12 +380,19 @@ M["classic_quiet"] = round(float(classic_ok[quiet_half].mean()), 3)
 M["classic_loud"] = round(float(classic_ok[~quiet_half].mean()), 3)
 
 # --- homework: how wide should the label be?
+sigma_gaps = []
 for sigma in (5, 40):
     hw_model, hw_losses, hw_scores = train_picker(sigma=sigma)
     hw_picks = picks_from(hw_model, x_test)
     M[f"sigma{sigma}_acc"] = round(float(hw_scores[-1]), 3)
     M[f"sigma{sigma}_loss"] = round(float(hw_losses[-1]), 5)
     M[f"sigma{sigma}_med"] = round(float(np.median(np.abs(hw_picks - p_test)) / SAMPLE_RATE), 3)
+    sigma_gaps.append(abs(float(hw_scores[-1]) - float(scores[-1])))
+# The floor Q7's self-check compares against, MEASURED rather than chosen: whichever of the two
+# offered widths lands closest to the sigma=20 run still misses it by this much, so a student who
+# forgot to pass sigma= (and so re-ran the class model) trips the check and nobody else does.
+M["sigma_gap"] = round(min(sigma_gaps), 3)
+M["sigma_floor"] = round(min(sigma_gaps) / 2, 3)
 
 # --- how long this actually takes on a CPU, at the thread count a student's kernel uses.
 # modules.yml carried 1.2 s/epoch, which was measured on a different and much larger network.
@@ -448,6 +473,18 @@ def first_trigger(ratio, threshold):
         return None
     return int(above[0])'''
 
+# Written once here because it is used in a class cell AND named by Your turn 6, which a student
+# may reach on a cold kernel: a checkpoint that rebuilds the picker but not the function that
+# scores it is a NameError from the prompt's own words.
+SRC_STALTA_SCORE = '''def sta_lta_score(short, long, threshold):
+    """Fraction of test traces STA/LTA places within half a second of the analyst's pick."""
+    hits = 0
+    for i in np.nonzero(~is_train)[0]:
+        pick = first_trigger(sta_lta(strength[i], short, long), threshold)
+        if pick is not None and abs(pick - p_index[i]) <= 50:
+            hits = hits + 1
+    return hits / (~is_train).sum()'''
+
 SRC_TARGET = f'''def make_target(pick_index, sigma):
     """A bump centred on each trace's P arrival: what we want the network to output."""
     sample = np.arange({M['n_samples']})
@@ -503,9 +540,9 @@ def train_picker(sigma=20, epochs=25):
     return model, losses, scores'''
 
 # The checkpoint rebuilds everything the homework touches, silently: the split, the classical
-# picker, the network apparatus and the trained model itself.
-SRC_CHECKPOINT = "\n\n".join([SRC_SPLIT, SRC_STRENGTH, SRC_STALTA, SRC_TARGET, SRC_MODEL,
-                              SRC_TRAIN,
+# picker and the function that scores it, the network apparatus and the trained model itself.
+SRC_CHECKPOINT = "\n\n".join([SRC_SPLIT, SRC_STRENGTH, SRC_STALTA, SRC_STALTA_SCORE, SRC_TARGET,
+                              SRC_MODEL, SRC_TRAIN,
                               "picker, losses, scores = train_picker()\n"
                               "net_picks = picks_from(picker, x_test)"])
 
@@ -584,8 +621,8 @@ depth_km = data["depth_km"]                     # how far below the epicentre th
 event_id = data["event_id"]
 station = data["station"]
 magnitude = data["magnitude"]
-snr = data["snr"]                               # how many times louder the earthquake is than
-SAMPLE_RATE = 100                               # the background, on that recording
+snr = data["snr"]                               # how much louder the quake is than the background
+SAMPLE_RATE = 100                               # samples per second
 
 print("recordings:      ", waveform.shape)
 print("earthquakes:     ", len(np.unique(event_id)), " stations:", len(np.unique(station)))
@@ -596,6 +633,8 @@ print("distance (km):   ", round(np.median(distance_km), 1), "median,",
 print("depth (km):      ", round(depth_km.min(), 1), "to", round(depth_km.max(), 1))
 print("P arrives between", round(p_index.min() / SAMPLE_RATE, 2), "and",
       round(p_index.max() / SAMPLE_RATE, 2), "seconds in")
+print("samples sitting exactly on the ±10 cut-off:",
+      round((np.abs(waveform) >= 10).mean(), 3))
 '''.strip("\n"))
 
 # --- section 1 -------------------------------------------------------------
@@ -617,8 +656,9 @@ loudness here is always relative to the same trace's own background.
 It was then cut off at ±10, and that bound is worth remembering, because you will meet it twice
 more. **The file already carries the cut**, so the `np.clip` in the setup cell changes nothing —
 it is a guard, not a cleaning step. What the cut does do is throw away the tops of the big
-arrivals: {M['clip_frac']:.1%} of all the samples in the file sit exactly on ±10. Any "biggest
-swing" you measure is therefore a number with a ceiling on it, and the ceiling is ours.
+arrivals, and the last line the setup cell printed is how much of the file that touches:
+{M['clip_frac']:.1%} of all the samples sit exactly on ±10. Any "biggest swing" you measure is
+therefore a number with a ceiling on it, and the ceiling is ours.
 
 One thing was done deliberately when the file was built: the window was cut at a **random** offset
 before each P, so the arrival lands anywhere from {M['p_min_s']} to {M['p_max_s']} seconds in.
@@ -772,8 +812,10 @@ loud_shaken = np.abs(shaken).max(axis=(1, 2))   # biggest swing in each after-wi
 
 print("typical biggest swing before the P:", round(np.median(loud_quiet[is_train]), 2))
 print("typical biggest swing after the P: ", round(np.median(loud_shaken[is_train]), 2))
-print("after-windows sitting exactly on the cut-off:",
+print("after-windows sitting exactly on the cut-off: ",
       round((loud_shaken[is_train] == 10).mean(), 3))
+print("before-windows sitting exactly on the cut-off:",
+      round((loud_quiet[is_train] == 10).mean(), 3))
 """)
 
 md(f"""
@@ -819,8 +861,14 @@ print("✓ the one-number rule — it is right on",
 """)
 
 md(f"""
-So *detection* barely needs us. One `if` statement, one number, and most of the work is done —
-which is exactly why a neural network for this task would be decoration.
+So *detection* barely needs us. One `if` statement, one number, and it is right on about
+{M['detect_acc']:.0%} of held-out windows. Keep that number, because it is the **bar**: the
+week's second rule is that a new method has to beat the simple one, measured, on the same
+recordings — and a network arriving now would be starting from {M['detect_acc']:.0%}, not from
+zero. Notice what we have not done: we have not built a network for detection, so nothing on
+this page entitles us to say one would be better *or* worse. (When this dataset was audited
+before the course, a small convolutional network trained on windows like these did not beat the
+one-line rule. That is what the rule is for.)
 
 The interesting question was never whether the ground shook. It is **when it started**, and your
 own trace gave you one data point on that: compare the moment of its largest swing with the moment
@@ -900,14 +948,7 @@ code(f"""
 my_guess = 0.85
 
 
-def sta_lta_score(short, long, threshold):
-    \"\"\"Fraction of test traces STA/LTA places within half a second of the analyst's pick.\"\"\"
-    hits = 0
-    for i in np.nonzero(~is_train)[0]:
-        pick = first_trigger(sta_lta(strength[i], short, long), threshold)
-        if pick is not None and abs(pick - p_index[i]) <= 50:
-            hits = hits + 1
-    return hits / (~is_train).sum()
+{SRC_STALTA_SCORE}
 
 
 print("you guessed:", my_guess)
@@ -947,7 +988,9 @@ for short, long, threshold in [(30, 300, 3), (20, 200, 3), (50, 500, 5)]:
 best_stalta = max(stalta_scores + [{M['stalta_textbook']}])
 print("best of the four:", round(best_stalta, 3))
 """, f"""
-assert len(stalta_scores) == 3, "three more settings were asked for, so this should hold three"
+assert max(stalta_scores) > {M['stalta_textbook']}, \\
+    "at least one of these three should beat the textbook setting's {M['stalta_textbook']}; " \\
+    "if none does, check the argument order — sta_lta_score(short, long, threshold)"
 print("✓ the sweep — STA/LTA's best of four settings is",
       round(100 * best_stalta, 1), "%")
 """)
@@ -966,30 +1009,41 @@ It is not tuning. Go back to the sentence above the first STA/LTA cell: *the rat
 zero until there is a full long window behind it to average over.* At the textbook setting the
 long window is 500 samples, so for the first **five seconds** of every recording the ratio is
 identically zero and cannot cross anything. And the setup cell told you the P lands anywhere from
-{M['p_min_s']} to {M['p_max_s']} seconds in. Split the held-out set on that.
+{M['p_min_s']} to {M['p_max_s']} seconds in. Split the held-out set on that, and score **both**
+settings on **both** halves — the comparison only means something if the two numbers you set side
+by side were taken over the same recordings.
 """)
 
 code(f"""
 textbook_ok = []
+best_ok = []
 on_the_s = []
-never = 0
+never = []
 for i in np.nonzero(~is_train)[0]:
     pick = first_trigger(sta_lta(strength[i], 50, 500), 3)
-    if pick is None:
-        never = never + 1
+    tuned = first_trigger(sta_lta(strength[i], {BEST[0]}, {BEST[1]}), {BEST[2]})  # your winner
+    never.append(pick is None)
     textbook_ok.append(pick is not None and abs(pick - p_index[i]) <= 50)
+    best_ok.append(tuned is not None and abs(tuned - p_index[i]) <= 50)
     on_the_s.append(pick is not None and abs(pick - s_index[i]) <= 50)
 
 textbook_ok = np.array(textbook_ok)
+best_ok = np.array(best_ok)
 on_the_s = np.array(on_the_s)
+never = np.array(never)
 early = p_index[~is_train] < 450        # a P this early is gone before the ratio starts moving
+dead = (waveform[~is_train].std(axis=2) == 0).all(axis=1)   # nothing recorded on any row
 
-print("never triggered at all:  ", round(never / len(textbook_ok), 3))
-print("triggered on the S:      ", round(on_the_s.mean(), 3))
-print("P earlier than 4.5 s:    ", early.sum(), "of", len(textbook_ok))
-print("  textbook setting there:", round(textbook_ok[early].mean(), 3))
-print("  textbook setting after:", round(textbook_ok[~early].mean(), 3))
-print("  share of the S triggers that are in there:", round(early[on_the_s].mean(), 3))
+print("P earlier than 4.5 s:", early.sum(), " later:", (~early).sum())
+print("  textbook setting, early:", round(textbook_ok[early].mean(), 3),
+      " late:", round(textbook_ok[~early].mean(), 3))
+print("  best setting,     early:", round(best_ok[early].mean(), 3),
+      " late:", round(best_ok[~early].mean(), 3))
+print("triggered on the S:", round(on_the_s.mean(), 3),
+      " of those, share whose P is in the dead zone:", round(early[on_the_s].mean(), 3))
+print("never triggered at all:", never.sum(),
+      " of those, P in the dead zone:", (never & early).sum(),
+      " nothing recorded at all:", (never & dead).sum())
 """)
 
 md(f"""
@@ -1000,17 +1054,30 @@ zero, and no threshold can be crossed there. That is a **dead zone**, and we bui
 when we chose a five-second long window for recordings whose P can arrive as early as
 {M['p_min_s']} seconds.
 
-Now the other half. On the recordings whose P arrives after the dead zone, the textbook setting
-scores {M['textbook_late']:.3f} — which is, to three decimal places, the {M['stalta_best']:.3f}
-you got from the best of the four settings. So the {M['stalta_textbook']:.3f} → {M['stalta_best']:.3f}
-jump you just measured is not the shorter windows being better at finding P arrivals. It is the
-shorter windows having a shorter dead zone. Take the dead zone away and the two settings are the
-same picker.
+Now read the two settings against each other, on the same recordings both times. On the
+{M['n_late']} whose P arrives **after** the dead zone the textbook setting scores
+{M['textbook_late']:.3f} and your best setting scores {M['best_late']:.3f} — the same picker, to
+three decimal places. On the {M['n_early']} **inside** the dead zone they score
+{M['textbook_early']:.3f} and {M['best_early']:.3f}. So the {M['stalta_textbook']:.3f} →
+{M['stalta_best']:.3f} jump you measured over the whole held-out set is not the shorter windows
+being better at finding P arrivals. It is the shorter windows having a shorter dead zone. Take the
+dead zone away and the two settings really are the same picker.
 
-The other two numbers say the same thing from the other side. The {M['stalta_never']:.1%} that
-never triggered and the {M['stalta_near_s']:.1%} that triggered on the S are not all traces where
-the P was too gentle: {M['s_in_dead_zone']:.0%} of the S triggers are traces whose P was in the
-dead zone, so the S was simply the first arrival the ratio was awake for.
+That last comparison is the one worth copying. It would have been easy to stop a step earlier and
+say "{M['textbook_late']:.3f} on the late traces, and the sweep gave {M['stalta_best']:.3f} — same
+number". But those two are averages over different sets of recordings, {M['n_late']} against
+{M['n_test']}, and two rounded numbers agreeing across different denominators is a coincidence,
+not a demonstration. Scoring both settings on both halves is what turns it into one.
+
+The S triggers say the same thing from the other side. {M['stalta_near_s']:.1%} of the held-out
+recordings triggered on the S rather than the P, and {M['s_in_dead_zone']:.0%} of *those* are
+recordings whose P was in the dead zone — so the S was simply the first arrival the ratio was
+awake for. The {M['n_never']} that never
+triggered at all are a different story, and the cell keeps them apart rather than lumping them in:
+only {M['never_in_dead']} of those {M['n_never']} have their P in the dead zone. The rest are
+recordings where the ratio was wide awake and the arrival was still too gentle to cross 3 — and
+{M['never_dead_channel']} of them are recordings with no ground motion on them at all, which you
+will meet again in the last figure of the notebook.
 
 The general lesson is worth more than the seismology. **A parameter sweep will happily hand you a
 winner without telling you what it won on.** Ours was not measuring how well the picker finds
@@ -1061,7 +1128,9 @@ print("the analyst's P:    ", p_index[{TRACE}], "        the analyst's S:", s_in
 md("""
 On this recording the filter answers the question twice, and the two answers are not the same
 place. Its response **first crosses 3** at the P, within a sample of the analyst's mark. Its
-**largest** value is at the S, where the biggest jump in energy in a seismogram always is.
+**largest** value is at the S — which is where the biggest jump in energy in a seismogram usually
+sits, though "usually" is doing real work in that sentence and the next cell is where you find out
+how much: on a fair number of these recordings the largest response is at neither mark.
 
 Which of those two is "the detector's pick" is a decision we make, not something the twenty
 weights decide, so score it both ways.
@@ -1117,7 +1186,10 @@ Twenty weights, one set of responses, and a factor of {M['hand_acc'] / M['hand_a
 between the two ways of reading them. Read by first crossing, the hand-made filter finds the P on
 {M['hand_acc']:.1%} of held-out traces — a real picker, and only a little behind STA/LTA's
 {M['stalta_best']:.1%}. Read by taking its largest value, the same responses find the P on
-{M['hand_argmax_acc']:.1%} and land on the **S** on {M['hand_argmax_near_s']:.1%}.
+{M['hand_argmax_acc']:.1%} and land on the **S** on {M['hand_argmax_near_s']:.1%} — which settles
+the "usually" above. The biggest jump in energy is at the S more often than anywhere else, but on
+well under two-thirds of these recordings, and on the ones left over it is at neither mark. A
+tendency, not a rule.
 
 So the weights are not what separates a good picker from a bad one here. The decision rule is,
 and the reason is a property of every fixed filter of this kind: **it has no way to be quiet away
@@ -1177,6 +1249,13 @@ The last thing to decide is what "what we wanted" means. We are not asking for a
 asking the network, at each of the {M['n_samples']:,} samples, *how much does this look like the
 P arrival* — so the answer we train it towards is a bump centred on the analyst's mark, and the
 pick we read back out is wherever the network's answer is highest.
+
+That is not a trick invented for this notebook. It is how the pickers that time modern earthquake
+catalogues work: Zhu, W. and Beroza, G.C. (2019), *PhaseNet: a deep-neural-network-based seismic
+arrival-time picking method*, Geophysical Journal International 216, 261–273, trains on exactly
+this kind of input — three components at 100 Hz, P and S marked by analysts — towards exactly this
+kind of bump, with a much larger network and a great many more recordings. What you are about to
+build is that idea at classroom scale.
 """)
 
 code(f"""
@@ -1198,12 +1277,17 @@ Now the network. `nn.Conv1d(3, 8, 7)` is eight pattern-detectors, each 7 samples
 looking at all 3 rows at once — the same sliding operation as before, except that the numbers
 inside are what training will choose. `stride=4` slides in steps of 4 instead of 1, which makes
 the signal four times shorter and lets the next layer's 7 samples cover four times as much time;
-`padding=3` keeps each layer's output the same length as its input, and `nn.Upsample` stretches
-the whole thing back out at the end, so the answer is one number per original sample.
+`padding=3` puts three zeros on each end, so a 7-sample detector still has something to line up
+against right at the edges. That is what makes the shortening exact rather than approximate: our
+two stride-4 layers take {M['n_samples']:,} samples to 512 and then to 128, a clean quarter each
+time instead of a few samples short, and a stride-1 layer with the same padding comes out exactly
+as long as it went in. `nn.Upsample` then stretches the whole thing back out at the end, so the
+answer is one number per original sample.
 
 In PyTorch a model is an `nn.Module` — a box that holds the numbers to be learned and knows how
 to run them. `nn.Sequential` is the simplest one there is: hand it layers, and it runs them in
-order.
+order. Building it is instant; the cell after that is the slow one — it trains the network from
+scratch and prints nothing while it works, so start it and let it run.
 """)
 
 code(f"""
@@ -1216,6 +1300,7 @@ code(f"""
 {SRC_TRAIN}
 
 
+print("training 25 epochs — the slow cell; nothing more prints until it has finished")
 picker, losses, scores = train_picker()
 print("trained for", len(losses), "epochs")
 """)
@@ -1279,7 +1364,9 @@ print("within 0.5 s:", round(net_accuracy, 3))
 print("median error:", round(np.median(np.abs(net_picks - p_test)) / SAMPLE_RATE, 3), "s")
 print("best epoch:  ", np.argmax(scores) + 1, "of", len(scores))
 """, f"""
-assert len(net_picks) == len(p_test), "one pick per held-out trace"
+assert abs(net_accuracy - scores[-1]) < 1e-9, \\
+    "the last point of the learning curve IS this number, measured the same way on the same " \\
+    "traces — if they differ, check what you scored the picks against"
 print("✓ the network —", round(100 * net_accuracy, 1), "% of held-out traces within 0.5 s,",
       "median error", round(np.median(np.abs(net_picks - p_test)) / SAMPLE_RATE, 3), "s")
 """)
@@ -1300,8 +1387,10 @@ with. Each row was divided by its own typical size before the cut, and a row tha
 a typical size of zero; dividing by that blows up, and the cut catches the result and parks the
 whole row on the bound. So ±10 here is the signature of a **dead channel**, not a saturated one,
 and there is no ground motion in the file to find. {M['n_flat']} of the {M['n_traces']:,}
-recordings are like this. An archive of real instruments contains records like that, and no picker
-can be blamed for them.
+recordings are like this, and you have met them before without knowing it: {M['never_dead_channel']}
+of the {M['n_never']} held-out recordings where STA/LTA never triggered at all are these same dead
+channels. Neither method failed on them. There was nothing there to find. An archive of real
+instruments contains records like that, and no picker can be blamed for them.
 """)
 
 code(f"""
@@ -1354,8 +1443,9 @@ open.
 
 Two of the three train a network from scratch, so start them and let them run. If you restarted
 the kernel since class, run the checkpoint cell first: it rebuilds everything class built — the
-held-out split, the classical picker, the network and the trained model — and prints nothing.
-Because it retrains, it is the slow cell rather than a free one.
+held-out split, the classical picker and `sta_lta_score` that scores it, the target, the network
+and the trained model itself — and prints nothing. Because it retrains, it is the slow cell rather
+than a free one.
 """)
 
 code(weekkit.CHECKPOINT.format(body=SRC_CHECKPOINT))
@@ -1444,9 +1534,10 @@ print("sigma 20 : within 0.5 s", round(scores[-1], 3),
 print("I chose sigma = 40, the wider target, because a bump 0.4 s across is something the "
       "network can find on almost every trace, and the peak of a wide bump is still one sample; "
       "the narrow target buys precision I cannot use, since the test allows half a second.")
-""", """
-assert my_sigma in (5, 40), "the question offers 5 or 40; pick one of them"
-assert len(my_scores) == len(scores), "same number of epochs, so only the label width changed"
+""", f"""
+assert abs(my_scores[-1] - scores[-1]) > {M['sigma_floor']}, \\
+    "this run scored what the class run at sigma=20 scored, so the label width never changed " \\
+    "— did you pass sigma=my_sigma to train_picker?"
 print("✓ the label width — sigma", my_sigma, "scores",
       round(my_scores[-1], 3), "against", round(scores[-1], 3), "at sigma 20")
 """)
@@ -1457,10 +1548,13 @@ ask(f"""
 In class the held-out score was still at its highest on the very last epoch, which leaves an
 obvious doubt: perhaps the picker was simply not trained for long enough.
 
-Settle it. Run `train_picker(epochs=60)` — this is the slow one — and print four numbers from
+Settle it. Run `train_picker(epochs=60)` — this is the slow one — and pull four numbers out of
 what it hands back: the training loss and the held-out score after epoch 25, and both again after
-epoch 60. Print the best held-out score of the whole run and the epoch it came at as well. (A
-list counts from 0, so epoch 25 is at position 24.)
+epoch 60. Print all four, and print the best held-out score of the whole run and the epoch it came
+at as well. (A list counts from 0, so epoch 25 is at position 24.)
+
+Training is seeded, so the first 25 epochs of this run are the very same run you did in class —
+which is what the self-check uses to tell you whether you read the right position.
 
 Then, in the **markdown** cell below the code cell, answer in two or three sentences **using your
 own four numbers**: over
@@ -1468,20 +1562,29 @@ those 35 extra epochs, what happened to the loss, what happened to the held-out 
 does the pair of answers say about where this picker's remaining error is coming from? Your answer
 has to name a number that would have to change before the picker could do better.
 
-**Use these names**, because the self-check looks for them: `long_losses` and `long_scores`.
+**Use these names**, because the self-check looks for them: `long_losses` and `long_scores` for
+what `train_picker` hands back, and `loss25`, `score25`, `loss60`, `score60` for the four numbers
+you take out of them.
 """)
 
 answer(f"""
 long_picker, long_losses, long_scores = train_picker(epochs=60)
 
-print("epoch 25: loss", round(long_losses[24], 5), " held-out", round(long_scores[24], 3))
-print("epoch 60: loss", round(long_losses[59], 5), " held-out", round(long_scores[59], 3))
+loss25 = long_losses[24]        # a list counts from 0, so epoch 25 is at position 24
+score25 = long_scores[24]
+loss60 = long_losses[59]
+score60 = long_scores[59]
+
+print("epoch 25: loss", round(loss25, 5), " held-out", round(score25, 3))
+print("epoch 60: loss", round(loss60, 5), " held-out", round(score60, 3))
 print("best held-out score:", round(max(long_scores), 3), "at epoch", np.argmax(long_scores) + 1)
 """, """
-assert len(long_scores) == 60, "60 epochs were asked for"
-print("✓ more training — the loss fell by a factor of",
-      round(long_losses[0] / long_losses[59], 1), "while the held-out score moved from",
-      round(long_scores[24], 3), "to", round(long_scores[59], 3))
+assert abs(score25 - scores[-1]) < 1e-9, \\
+    "the first 25 epochs of this run are the seeded run you already did in class, so score25 " \\
+    "must equal the class score — if it does not, you are reading the wrong position"
+print("✓ more training — the held-out score went from", round(score25, 3), "at epoch 25 to",
+      round(score60, 3), "at epoch 60, while the loss fell from", round(loss25, 5),
+      "to", round(loss60, 5))
 """)
 
 answer_prose(f"""
