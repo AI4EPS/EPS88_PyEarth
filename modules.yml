@@ -438,7 +438,7 @@ modules:
       - {name: "LogisticRegression()",   does: "draw the straight line that best separates two labelled groups"}
       - {name: "GaussianNB()",          does: "the naive-Bayes classifier — assumes each measurement speaks for itself"}
       - {name: "accuracy_score(y, pred)", does: "the fraction it got right — useless when one class is 98% of the data"}
-      - {name: "precision_score(y, pred)", does: "of the ones it called a blast, how many were"}
+      - {name: "precision_score(y, pred)", does: "of the ones it called a blast, how many really were"}
       - {name: "recall_score(y, pred)", does: "of the blasts there were, how many it found"}
       - {name: "f1_score(y, pred)",     does: "precision and recall in one number, so two models can be compared"}
       - {name: "pd.to_datetime(column)", does: "turn a column of date text into real dates"}
@@ -446,7 +446,8 @@ modules:
       - {name: "column.nunique()",      does: "how many different values a column holds", remember: false}
       - {name: "pd.concat([a, b])",     does: "stack two tables end to end", remember: false}
       - {name: "train_test_split(X, y, test_size=0.3, random_state=n, stratify=y)", does: "cut the rows into a training set and a held-out set, keeping the class balance"}
-      - {name: "model.fit(X, y) / model.score(X, y)", does: "learn from the training rows; score on the held-out ones"}
+      - {name: "model.fit(X, y) / model.predict(X)", does: "learn from the training rows, then label the held-out ones"}
+      - {name: "confusion_matrix(y, pred)", does: "the two kinds of mistake counted apart: misses in one corner, false alarms in the other"}
     requires: [ML2]
     harvest_gives: "harvest supplies the METHOD ONLY — the Earth-science content is new"
     minutes: 100

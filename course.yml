@@ -536,7 +536,21 @@ schedule:
 
     pinned:
       # The earthquake count GROWS DAILY. Re-measure and update the date rather than trusting it.
-      slice: "USGS FDSN M1.5+ 2015-01-01 onward, eventtype=earthquake vs eventtype=quarry blast"
+      # ENDTIME IS PINNED. "2015-01-01 onward" grows daily, so every student would print numbers
+      # the prose contradicts. The earthquake half cannot be a live query at all — 128,735 events
+      # against FDSN's 20,000 ceiling, and 2019 alone is 23,175 — so it travels as a gzipped CSV
+      # read directly; only the blast half runs live.
+      slice: "USGS FDSN M1.5+ 2015-01-01 to 2026-08-31, box lat 32-42 lon -125..-114,
+        eventtype=earthquake (repo asset) vs eventtype=quarry blast (live, with fallback)"
+      # THE FEATURE SET DECIDES WHETHER THE WEEK'S POINT SURVIVES. Measured:
+      #   depth+hour only          -> logistic 0.14, and the model looks sabotaged
+      #   lat,lon,depth,mag,hour   -> naive Bayes 0.785 BEATS the hand rule and the week collapses
+      #   the six below            -> hand 0.772 > logistic 0.770 > naive Bayes 0.761, as intended
+      # The principle, not the score, chooses it: every column the catalogue gives, plus the two
+      # clock columns derived from time. There is no defensible reason to take hour and drop
+      # weekday. Do not re-choose this.
+      features: [latitude, longitude, depth, mag, hour, weekday]
+      split: {test_size: 0.3, random_state: 42, stratify: true}
       expect:
         blasts: 2802
         earthquakes: 128736              # as of 2026-08-31; the audit's 128,717 is an older read

@@ -21,6 +21,7 @@ Needs torch, which the shared base environment does not carry; run it with an in
 has torch, numpy, matplotlib, sklearn, pyyaml and nbconvert.
 """
 import json
+import os
 import pathlib
 import shutil
 import subprocess
@@ -1279,10 +1280,23 @@ def main():
     run_dir = pathlib.Path(tempfile.mkdtemp(prefix="wk13-run-"))
     shutil.copy(LOCAL, run_dir / "phasenet_ncedc.npz")
 
+    # Execute with THIS interpreter, not with whatever the machine's `python3` kernelspec
+    # points at. Week 13 is the only week that needs torch, so it is the only week whose build
+    # interpreter is not the shared environment — and `-m jupyter nbconvert` dispatches to
+    # whichever `jupyter-nbconvert` is first on PATH, which silently ran the wrong Python and
+    # failed on `import torch`.
+    kernel = run_dir / "kernels" / "eps88"
+    kernel.mkdir(parents=True)
+    (kernel / "kernel.json").write_text(json.dumps(
+        {"argv": [sys.executable, "-m", "ipykernel_launcher", "-f", "{connection_file}"],
+         "display_name": "Python 3", "language": "python"}))
+
     print(f"executing {sol_path.name} in {run_dir} ...")
-    r = subprocess.run([sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook",
+    r = subprocess.run([sys.executable, "-m", "nbconvert", "--to", "notebook",
                         "--execute", "--inplace", "--ExecutePreprocessor.timeout=2400",
-                        str(sol_path)], capture_output=True, text=True, cwd=run_dir)
+                        "--ExecutePreprocessor.kernel_name=eps88", str(sol_path)],
+                       capture_output=True, text=True, cwd=run_dir,
+                       env={**os.environ, "JUPYTER_PATH": str(run_dir)})
     shutil.rmtree(run_dir, ignore_errors=True)
     if r.returncode:
         print(r.stderr[-6000:])

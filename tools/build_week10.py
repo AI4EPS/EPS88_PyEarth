@@ -489,6 +489,12 @@ plt.ylabel("share of events per km of depth")
 plt.title(f"depth of {len(quake_rows)} earthquakes and {len(blast_rows)} blasts")
 plt.legend()
 plt.show()
+
+print("median depth — blasts:", blast_rows["depth"].median(),
+      " earthquakes:", quake_rows["depth"].median())
+print("share deeper than the 25 km the axis reaches — blasts:",
+      round((blast_rows["depth"] > 25).mean(), 4),
+      " earthquakes:", round((quake_rows["depth"] > 25).mean(), 4))
 """)
 
 md(f"""
@@ -497,8 +503,8 @@ which sounds like nonsense until you remember that depth in this catalogue is me
 sea level and a quarry is a hole in a hillside several hundred metres up. The median blast sits at
 {M['blast_depth_median']} km, that is {abs(M['blast_depth_median']) * 1000:.0f} metres *above*
 sea level, against a median earthquake {M['quake_depth_median']} km below it. (The axis stops at
-25 km; {M['quake_deeper_25'] * 100:.1f}% of the earthquakes are deeper, and none of the blasts
-are.)
+25 km, which leaves {M['quake_deeper_25'] * 100:.1f}% of the earthquakes off the right-hand side
+and no blasts at all.)
 
 That looks like a gift. Look at the actual values before you accept it.
 """)
@@ -507,6 +513,12 @@ code("""
 print(blast_rows["depth"].value_counts().head(5))
 print("distinct depth values, blasts:     ", blast_rows["depth"].nunique())
 print("distinct depth values, earthquakes:", quake_rows["depth"].nunique())
+
+top_depth = blast_rows["depth"].value_counts().index[0]
+same_quarry = blast_rows[blast_rows["depth"] == top_depth]
+print("the", len(same_quarry), "blasts at", top_depth, "km span",
+      round(same_quarry["latitude"].max() - same_quarry["latitude"].min(), 2),
+      "degrees of latitude")
 """)
 
 md(f"""
@@ -533,6 +545,12 @@ plt.ylabel("share of events per hour")
 plt.title(f"time of day, {len(quake_rows)} earthquakes and {len(blast_rows)} blasts")
 plt.legend()
 plt.show()
+
+work = (blast_rows["hour"] >= 10) & (blast_rows["hour"] < 17)
+print("between 10 and 17 — blasts:", round(work.mean(), 3), " earthquakes:",
+      round(((quake_rows["hour"] >= 10) & (quake_rows["hour"] < 17)).mean(), 3))
+print("Monday to Friday  — blasts:", round((blast_rows["weekday"] <= 4).mean(), 3),
+      " earthquakes:", round((quake_rows["weekday"] <= 4).mean(), 3))
 """)
 
 md(f"""
@@ -675,6 +693,8 @@ plt.ylabel("depth (km; negative means above sea level)")
 plt.title(f"{len(blast_rows)} blasts and {len(few_quakes)} earthquakes, with the boundary")
 plt.legend()
 plt.show()
+
+print("at midday the boundary sits at", round(boundary[12], 2), "km")
 """)
 
 md(f"""
