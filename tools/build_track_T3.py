@@ -242,7 +242,7 @@ TRACK_IDEAS = [("S2", "Monte Carlo"), ("S4", "Bootstrap"), ("S4", "Confidence in
                ("D1", "Mask"), ("D2", "Table")]
 TRACK_FNS = [("D2", "table.sort_values(by)"), ("D2", "column.value_counts()"),
              ("D2", "table.groupby(column)"), ("D2", "column.isna()"),
-             ("S2", "np.random.default_rng(seed) / rng.shuffle(a)"),
+             ("S2", "np.random.default_rng(seed)"), ("S2", "rng.shuffle(a)"),
              ("S2", "rng.integers(low, high, size)"), ("S2", "np.percentile(values, 95)"),
              ("S4", "np.percentile(values, [2.5, 97.5])")]
 

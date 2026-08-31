@@ -75,8 +75,8 @@ day_edges = np.arange(n_days + 1)
 
 
 def random_world(rng):
-    """Scatter n_quakes earthquakes at random over n_days days and count each day."""
-    counts, edges = np.histogram(rng.integers(0, n_days, n_quakes), bins=day_edges)
+    """Scatter n_quakes events at random over n_days days and count each day."""
+    counts, _ = np.histogram(rng.integers(0, n_days, n_quakes), bins=day_edges)
     return counts
 
 
@@ -86,10 +86,13 @@ M["n_days"] = n_days
 M["lam"] = float(daily.mean())
 M["busiest"] = int(daily.max())
 M["busiest_day"] = str(daily.idxmax())[:10]
+# The catalogue is not all earthquakes: the USGS `type` column carries what the network
+# recorded, and two of these rows are not tectonic. Counted here so the prose can say so.
+M["types"] = {k: int(v) for k, v in quakes["type"].value_counts().items()}
+M["n_not_quake"] = int((quakes["type"] != "earthquake").sum())
 
 # one random world, the same seed the notebook uses
 M["one_busiest"] = int(random_world(np.random.default_rng(SEED)).max())
-M["one_quiet_frac"] = float((random_world(np.random.default_rng(SEED)) == 0).mean())
 M["q2_seeds"] = [1, 2, 3, 4]           # the four seeds the model answer to question 2 uses
 
 rng = np.random.default_rng(SEED)
@@ -98,10 +101,6 @@ M["sim_mean"] = float(worlds.mean())
 M["sim_p95"] = float(np.percentile(worlds, 95))
 M["sim_max"] = int(worlds.max())
 M["ratio"] = M["busiest"] / M["sim_mean"]
-# How often a WHOLE simulated world got past the 95th percentile. It is not one world in twenty:
-# the distribution is discrete and a tenth of the worlds land on the percentile itself, so the
-# prose has to quote the count that was measured rather than the name of the percentile.
-M["worlds_over_p95"] = int((worlds > M["sim_p95"]).sum())
 
 # the busiest day itself
 day = quakes[(quakes["time"] >= "2011-03-11") & (quakes["time"] < "2011-03-12")]
@@ -120,11 +119,43 @@ M["run_max_day"] = str(running.idxmax())[:10]
 
 by_year = daily.groupby(daily.index.year).max()
 M["n_years"] = int(len(by_year))
-M["years_over"] = int((by_year > M["sim_p95"]).sum())
 M["quietest_year_max"] = int(by_year.min())
+
+# The bar the per-year figure is measured against. The whole-world 95th percentile above came
+# from 26-year worlds while every dot in that figure is ONE year, so it is the wrong reference
+# class — a 26-year world has 26 chances to throw a big day and a single year has one. This is
+# the matching null: the same rate, one year at a time. Mirrors the notebook cell exactly.
+M["per_year"] = int(round(daily.sum() / M["n_years"]))
+year_edges = np.arange(366)
+rng = np.random.default_rng(SEED)
+in_year = np.array([np.histogram(rng.integers(0, 365, M["per_year"]),
+                                 bins=year_edges)[0].max() for _ in range(N_WORLDS)])
+M["year_bar"] = float(np.percentile(in_year, 95))
+M["year_over_bar"] = int((in_year > M["year_bar"]).sum())
+M["years_over"] = int((by_year > M["year_bar"]).sum())
+
+# Is the clustering in the other 25 years also aftershocks? The same five-degree test that was
+# run on 2011-03-11, applied to the busiest day of every year. Mirrors the notebook cell.
+by_day = quakes.set_index("time")
+shares, top_mags = [], []
+for year in sorted(set(daily.index.year)):
+    busiest = str(daily[daily.index.year == year].idxmax())[:10]
+    one_day = by_day.loc[busiest]
+    biggest = one_day.sort_values("mag", ascending=False).iloc[0]
+    close = ((abs(one_day["latitude"] - biggest["latitude"]) < 5)
+             & (abs(one_day["longitude"] - biggest["longitude"]) < 5))
+    shares.append(close.sum() / len(one_day))
+    top_mags.append(biggest["mag"])
+M["median_share"] = float(np.median(shares))
+M["big_headed"] = int((np.array(top_mags) >= 7.5).sum())
+M["worst_share"] = float(min(shares))
 
 # the Poisson section
 M["p_zero"] = float(np.exp(-M["lam"]))
+# "the formula and the simulation agree" needs a criterion. One world is one draw; twenty say
+# how much a single draw wobbles, and the test is whether the formula's answer sits inside that.
+quiet_by_world = [float((random_world(np.random.default_rng(s)) == 0).mean()) for s in range(20)]
+M["quiet_lo"], M["quiet_hi"] = min(quiet_by_world), max(quiet_by_world)
 M["expected_quiet"] = round(M["p_zero"] * n_days)
 M["real_quiet"] = int((daily == 0).sum())
 M["excess_quiet"] = M["real_quiet"] - M["expected_quiet"]
@@ -187,6 +218,21 @@ def answer_prose(model):
     CELLS.append(("markdown", model.strip("\n"),
                   "*(Double-click this cell and replace this line with your answer.)*"))
 
+
+# The state later sections rebuild. Written once here because a checkpoint is the one place
+# TEMPLATE §8 allows repetition — and because two hand-typed copies of `random_world` had drifted
+# apart, so a student comparing the section that defines it with the one that rebuilds it saw two
+# versions of a function that is meant to be the same.
+STATE = ('quakes["time"] = pd.to_datetime(quakes["time"])\n'
+         'daily = quakes.set_index("time")["mag"].resample("D").count()')
+CONSTS = ("n_days = len(daily)\n"
+          "n_quakes = len(quakes)\n"
+          "day_edges = np.arange(n_days + 1)")
+RANDOM_WORLD = '''def random_world(rng):
+    """Scatter n_quakes events at random over n_days days, and count each day."""
+    day_numbers = rng.integers(0, n_days, n_quakes)
+    counts, _ = np.histogram(day_numbers, bins=day_edges)
+    return counts'''
 
 datahub = (f"{PLATFORM['datahub']}/hub/user-redirect/git-pull"
            f"?repo={PLATFORM['repo'].replace(':', '%3A').replace('/', '%2F')}"
@@ -265,20 +311,26 @@ Once it does, `resample("D")` regroups the rows into fixed windows — `"D"` for
 `.count()` says how many fell in each.
 """)
 
-code("""
-quakes["time"] = pd.to_datetime(quakes["time"])
-daily = quakes.set_index("time")["mag"].resample("D").count()
+code(f"""
+{STATE}
 
 print(daily.head())
 print("days covered:      ", len(daily))
-print("earthquakes:       ", daily.sum())
+print("events:            ", daily.sum())
 print("average per day:   ", round(daily.mean(), 3))
+print(quakes["type"].value_counts())
 """)
 
 md(f"""
-{M['n_quakes']:,} earthquakes over {M['n_days']:,} days, so a bit over one a day on average. Every
+{M['n_quakes']:,} events over {M['n_days']:,} days, so a bit over one a day on average. Every
 day is in there, including the ones with nothing on them — that is what `resample` gives you and
 it is what we want, because a day with no earthquake is data too.
+
+*Events*, not earthquakes, and the last line is why: a seismic network records whatever shakes the
+ground, so the catalogue also holds one volcanic eruption (Hunga Tonga, 2022) and one nuclear
+explosion (North Korea, 2017). Those {M['n_not_quake']} rows out of {M['n_quakes']:,} change no
+number in this notebook, but the `type` column is there to be read, and a catalogue is not
+automatically a list of the thing you went looking for.
 
 Now draw it. One point per day, {M['n_days']:,} of them.
 """)
@@ -286,8 +338,8 @@ Now draw it. One point per day, {M['n_days']:,} of them.
 code(f"""
 plt.plot(daily.index, daily.values, lw=0.5)
 plt.xlabel("date")
-plt.ylabel("earthquakes M{G_MAG}+ per day")
-plt.title("{M['n_quakes']:,} earthquakes over {M['n_days']:,} days")
+plt.ylabel("events M{G_MAG}+ per day")
+plt.title("{M['n_quakes']:,} events over {M['n_days']:,} days")
 plt.show()
 """)
 
@@ -310,9 +362,9 @@ busiest_day = str(daily.idxmax())[:10]
 print("the busiest day held", busiest_count, "earthquakes")
 print("and it was", busiest_day)
 """, """
-assert "-" in busiest_day, \\
+assert isinstance(busiest_day, str) and "-" in busiest_day, \\
     "busiest_day should read like a date — .idxmax() gives the label, .argmax() gives a row number"
-print("✓ the busiest day —", busiest_day, "with", busiest_count, "earthquakes, against",
+print("✓ the busiest day —", busiest_day, "with", busiest_count, "events, against",
       round(daily.mean(), 3), "on an average day")
 """)
 
@@ -324,8 +376,8 @@ md(f"""
 temptation is to declare the catalogue clustered and stop. Resist it for one section, because you
 have nothing to compare against. Startling *compared with what?*
 
-So build the comparison. Take the same {M['n_quakes']:,} earthquakes and the same
-{M['n_days']:,} days, and throw each earthquake onto a day picked at random. That is a world with
+So build the comparison. Take the same {M['n_quakes']:,} events and the same
+{M['n_days']:,} days, and throw each one onto a day picked at random. That is a world with
 the same rate as ours and no clustering of any kind, because nothing in it knows about anything
 else. Then count its days the way you counted the real ones.
 
@@ -337,17 +389,13 @@ whole numbers between 0 and `n_days`, one day number per earthquake, and `np.his
 bin per day counts how many landed on each.
 """)
 
-code("""
-n_days = len(daily)
-n_quakes = len(quakes)
-day_edges = np.arange(n_days + 1)          # one bin per day
+code(weekkit.CHECKPOINT.format(body=STATE))
+
+code(f"""
+{CONSTS}          # one bin per day
 
 
-def random_world(rng):
-    \"\"\"Scatter n_quakes earthquakes at random over n_days days, and count each day.\"\"\"
-    day_numbers = rng.integers(0, n_days, n_quakes)
-    counts, edges = np.histogram(day_numbers, bins=day_edges)
-    return counts
+{RANDOM_WORLD}
 """)
 
 md(f"""
@@ -372,7 +420,7 @@ print("the random world's busiest day:", one_world.max())
 
 md(f"""
 {M['one_busiest']}, from a process with no clustering in it at all. If you guessed three or four
-you are in good company, and the reason is worth holding on to: {M['n_quakes']:,} things scattered
+you are in good company, and the reason is worth holding on to: {M['n_quakes']:,} events scattered
 over {M['n_days']:,} days do not lay themselves out one-per-day-and-a-bit. Some days get none, some
 get five, and across nine and a half thousand of them one is going to run away with it.
 
@@ -384,14 +432,14 @@ code(f"""
 plt.plot(daily.index[:200], daily.values[:200], lw=1)
 plt.ylim(0, 9)
 plt.xlabel("date")
-plt.ylabel("earthquakes M{G_MAG}+ per day")
+plt.ylabel("events M{G_MAG}+ per day")
 plt.title("the real catalogue, 200 days")
 plt.show()
 
 plt.plot(daily.index[:200], one_world[:200], lw=1)
 plt.ylim(0, 9)
 plt.xlabel("date")
-plt.ylabel("earthquakes M{G_MAG}+ per day")
+plt.ylabel("events M{G_MAG}+ per day")
 plt.title("a random world, the same 200 days")
 plt.show()
 """)
@@ -430,8 +478,9 @@ print("busiest day of each:", busiest_by_seed)
 """, """
 assert len(busiest_by_seed) == len(my_seeds), \\
     "one busiest day per seed, so the two lists should be the same length"
-assert max(busiest_by_seed) < daily.max(), \\
-    "a random world reached the real busiest day — check that you called random_world"
+assert 3 < min(busiest_by_seed) and max(busiest_by_seed) < 15, \\
+    "a random world's busiest day lands near 8 — a number far outside that means the list is "\\
+    "holding something other than .max() of what random_world(rng) returned"
 print("✓ four more random worlds — busiest days", busiest_by_seed,
       "against", daily.max(), "in the real catalogue")
 """)
@@ -448,6 +497,8 @@ thousand times, and see how often chance alone beats what you measured.
 You already have the machinery. Run `random_world` {N_WORLDS:,} times and keep only the number you
 care about each time — the busiest day.
 """)
+
+code(weekkit.CHECKPOINT.format(body=f"{STATE}\n{CONSTS}\n\n\n{RANDOM_WORLD}"))
 
 code(f"""
 rng = np.random.default_rng({SEED})
@@ -484,25 +535,27 @@ it array questions.
 Print five things: the mean of the {N_WORLDS:,} busiest days, their 95th percentile
 (`np.percentile(worlds, 95)` — the value 95% of them fall below), the largest of all {N_WORLDS:,},
 how many of them reached the real busiest day, and the real busiest day divided by the simulated
-mean.
+mean. Keep that last one in a name of its own, `ratio`, and print it.
 
-**Use these names**, because the self-check looks for them: `worlds`.
+**Use these names**, because the self-check looks for them: `worlds`, `ratio`.
 """)
 
 answer(f"""
 worlds = np.array(busiest_days)
+ratio = daily.max() / worlds.mean()
 
 print("mean busiest day of a random world:  ", round(worlds.mean(), 2))
 print("95th percentile:                     ", np.percentile(worlds, 95))
 print("largest of all {N_WORLDS:,}:                ", worlds.max())
 print("worlds that reached the real busiest:", (worlds >= daily.max()).sum())
-print("real divided by random:              ", round(daily.max() / worlds.mean(), 1))
+print("real divided by random:              ", round(ratio, 1))
 """, """
-assert worlds.max() < daily.max(), \\
-    "if a simulated world reached the real busiest day, something is wrong with the simulation"
+assert 10 < ratio < 25, \\
+    "the real busiest day is near 17 times a random world's average — a ratio far from that "\\
+    "means ratio is not daily.max() divided by worlds.mean()"
 print("✓ the comparison — the busiest day of a random world averages",
       round(worlds.mean(), 2), "and the real one is", daily.max(), "—",
-      round(daily.max() / worlds.mean(), 1), "times larger")
+      round(ratio, 1), "times larger")
 """)
 
 # --- section 4 -------------------------------------------------------------
@@ -514,18 +567,15 @@ so something other than chance is putting earthquakes on the same day as each ot
 can say what.
 """)
 
-code(weekkit.CHECKPOINT.format(body="""quakes["time"] = pd.to_datetime(quakes["time"])
-daily = quakes.set_index("time")["mag"].resample("D").count()"""))
+code(weekkit.CHECKPOINT.format(body=STATE))
 
 code(f"""
 day = quakes[(quakes["time"] >= "{M['busiest_day']}") & (quakes["time"] < "2011-03-12")]
 
-print(len(day), "earthquakes on {M['busiest_day']}")
+print(len(day), "events on {M['busiest_day']}")
 print(day.sort_values("mag", ascending=False).head(1)[["latitude", "longitude", "mag", "place"]])
-""")
 
-code(f"""
-# {M['top_lat']} north, {M['top_lon']} east is the epicentre printed above, rounded
+# {M['top_lat']} north, {M['top_lon']} east is that epicentre, rounded
 nearby = (abs(day["latitude"] - {M['top_lat']}) < 5) & (abs(day["longitude"] - {M['top_lon']}) < 5)
 
 print(nearby.sum(), "of the", len(day), "were within 5 degrees of it")
@@ -534,7 +584,7 @@ print(nearby.sum(), "of the", len(day), "were within 5 degrees of it")
 md(f"""
 The 2011 Great Tohoku Earthquake, magnitude {M['top_mag']}, off the Pacific coast of northern
 Japan — the largest earthquake in this catalogue. And {M['near_epicentre']} of that day's
-{M['busiest']} earthquakes happened within five degrees of it.
+{M['busiest']} events happened within five degrees of it.
 
 That is an **aftershock** sequence. A large earthquake does not release the stress in the crust
 tidily: it slips over a patch of fault hundreds of kilometres long, and in doing so it loads the
@@ -548,8 +598,8 @@ How long does it last? `daily.loc[a:b]` reads out a stretch of days between two 
 """)
 
 code(f"""
-print("earthquakes in the 30 days from {M['busiest_day']}:", daily.loc["{M['busiest_day']}":"2011-04-09"].sum())
-print("earthquakes in the 30 days before it:      ", daily.loc["2011-02-09":"2011-03-10"].sum())
+print("events in the 30 days from {M['busiest_day']}:", daily.loc["{M['busiest_day']}":"2011-04-09"].sum())
+print("events in the 30 days before it:      ", daily.loc["2011-02-09":"2011-03-10"].sum())
 """)
 
 md(f"""
@@ -567,7 +617,7 @@ running = daily.rolling(365).sum()
 
 plt.plot(running.index, running.values)
 plt.xlabel("date")
-plt.ylabel("earthquakes M{G_MAG}+ in the previous 365 days")
+plt.ylabel("events M{G_MAG}+ in the previous 365 days")
 plt.title("a running year, {M['n_days']:,} daily windows")
 plt.show()
 
@@ -578,29 +628,54 @@ print("median:              ", running.median())
 
 md(f"""
 The rate is not a constant: a running year holds anywhere from {M['run_min']} to {M['run_max']}
-earthquakes around a median of {M['run_median']}. But there is no steady climb across the record,
+events around a median of {M['run_median']}. But there is no steady climb across the record,
 which is what a detection network that kept getting better would produce, and the highest running
 year of all ends on {M['run_max_day']} — which is to say the biggest wobble in
 the rate is the same aftershock sequence, seen through a wider window. A flat rate is an
 approximation, and a fair one for this comparison, because the simulation was handed exactly the
-{M['n_quakes']:,} earthquakes the catalogue holds.
+{M['n_quakes']:,} events the catalogue holds.
 
 Which leaves the obvious worry: is this whole result one earthquake in Japan?
+
+You will answer it by cutting the record into its {M['n_years']} years and taking the busiest day
+of each. That changes what is being compared, so the bar has to change with it. The 95th
+percentile you printed above, {M['sim_p95']:.0f}, came from whole {M['n_years']}-year worlds, and a
+world that long has {M['n_years']} chances to throw a big day where a single year has one — so
+holding one year up against it compares two different things. Build the matching bar first: the
+same rate, one year at a time.
+""")
+
+code(f"""
+n_years = len(set(daily.index.year))
+per_year = round(daily.sum() / n_years)        # one year's worth of events, at the real rate
+year_edges = np.arange(366)                    # one bin per day of a 365-day year
+
+rng = np.random.default_rng({SEED})
+in_year = []
+
+for run in range({N_WORLDS}):
+    counts, _ = np.histogram(rng.integers(0, 365, per_year), bins=year_edges)
+    in_year.append(counts.max())
+
+in_year = np.array(in_year)
+year_bar = np.percentile(in_year, 95)
+
+print("a random year holds", per_year, "events; its busiest day averages", round(in_year.mean(), 1))
+print("95% of random years stay below:      ", year_bar)
+print("of {N_WORLDS:,}, this many got past it:", (in_year > year_bar).sum())
 """)
 
 ask(f"""
 ### ✏️ Your turn 4
 
-Answer it with the neighbouring windows. `daily.index.year` gives the year of every day in the
-series, so `daily.groupby(daily.index.year).max()` splits the {M['n_years']} years apart and gives
-you the busiest day of each.
+Now the real years. `daily.index.year` gives the year of every day in the series, so
+`daily.groupby(daily.index.year).max()` splits the {M['n_years']} years apart and gives you the
+busiest day of each.
 
-Build that, draw it with `plt.scatter`, and mark the 95th percentile you printed above with
-`plt.axhline({M['sim_p95']:.0f}, color="firebrick")`. Read that bar carefully, because it came
-from whole worlds and each dot below is a single year: {M['worlds_over_p95']} of the
-{N_WORLDS:,} worlds without clustering held a day above {M['sim_p95']:.0f} — and every one of them
-had all {M['n_years']} years to manage it in. Then print the series itself, and count how many
-years are above the line.
+Build that, draw it with `plt.scatter`, and mark the bar you just simulated with
+`plt.axhline(year_bar, color="firebrick")` — only {M['year_over_bar']} of the {N_WORLDS:,}
+simulated years got above it. Then print the series itself, and count how many of the real years
+are above the line.
 
 **Use these names**, because the self-check looks for them: `by_year`.
 """)
@@ -609,27 +684,64 @@ answer(f"""
 by_year = daily.groupby(daily.index.year).max()
 
 plt.scatter(by_year.index, by_year.values)
-plt.axhline({M['sim_p95']:.0f}, color="firebrick")
+plt.axhline(year_bar, color="firebrick")
 plt.xlabel("year")
-plt.ylabel("busiest single day (earthquakes M{G_MAG}+)")
+plt.ylabel("busiest single day (events M{G_MAG}+)")
 plt.title("the busiest day of each of {M['n_years']} years")
 plt.show()
 
 print(by_year)
-print("years whose busiest day is above {M['sim_p95']:.0f}:", (by_year > {M['sim_p95']:.0f}).sum())
-""", f"""
-assert len(by_year) == {M['n_years']}, "one number per year, so there should be {M['n_years']}"
-above = (by_year > {M['sim_p95']:.0f}).sum()
-print("✓ every year, not one —", above, "of {M['n_years']} years hold a day above {M['sim_p95']:.0f}, and",
-      above - 1, "of those are not 2011")
+print("years whose busiest day is above the bar:", (by_year > year_bar).sum())
+""", """
+assert by_year.max() == daily.max() and by_year.min() < 20, \\
+    "by_year should hold one busiest day per year — its largest is then the busiest day of the "\\
+    "whole record, and its smallest is some quiet year's busiest day"
+print("✓ every year on its own — the quietest year in the record still holds a day of",
+      by_year.min(), "against", round(daily.mean(), 3), "on an average day, and the bar is",
+      year_bar)
 """)
 
 md(f"""
-{M['years_over']} of the {M['n_years']} years clear, on their own, a bar that only
-{M['worlds_over_p95']} of {N_WORLDS:,} whole worlds without clustering ever reached, and even the
-quietest year in the record reaches {M['quietest_year_max']}. Take 2011 out entirely and
-{M['years_over'] - 1} years still do it. This is not one earthquake in Japan; it is what the record
-looks like everywhere you cut it.
+{M['years_over']} of the {M['n_years']} years clear that bar on their own, and even the quietest
+year in the record reaches {M['quietest_year_max']}. Take 2011 out entirely and
+{M['years_over'] - 1} years still do it, so the clumping is not one earthquake in Japan.
+
+That is as far as counting gets you, and it is not far enough: **a busy day is not yet an
+aftershock sequence.** The five-degree test is what separates them, and there is no reason to run
+it only on 2011. Take the busiest day of each year, find the largest earthquake on it, and count
+how much of that day sits within five degrees of it.
+""")
+
+code("""
+by_day = quakes.set_index("time")      # time as the row labels, so .loc can take a date
+shares, top_mags = [], []
+
+for year in sorted(set(daily.index.year)):
+    busiest = str(daily[daily.index.year == year].idxmax())[:10]
+    one_day = by_day.loc[busiest]                      # every row labelled with that date
+    biggest = one_day.sort_values("mag", ascending=False).iloc[0]
+    close = ((abs(one_day["latitude"] - biggest["latitude"]) < 5)
+             & (abs(one_day["longitude"] - biggest["longitude"]) < 5))
+    shares.append(close.sum() / len(one_day))
+    top_mags.append(biggest["mag"])
+    print(busiest, "largest M", biggest["mag"], "—", close.sum(), "of", len(one_day),
+          "within 5 degrees")
+
+print("median share within 5 degrees:            ", round(np.median(shares), 2))
+print("busiest days headed by an M7.5 or larger: ", (np.array(top_mags) >= 7.5).sum(),
+      "of", len(top_mags))
+""")
+
+md(f"""
+The same shape, year after year, in a different ocean each time. The median busiest day has
+{M['median_share'] * 100:.0f}% of its events within five degrees of its own largest earthquake, and
+{M['big_headed']} of those {M['n_years']} busiest days are headed by a magnitude 7.5 or larger —
+2004 Sumatra, 2010 Maule, 2013 Santa Cruz, 2025 Kamchatka among them. The weakest of them manages
+only {M['worst_share'] * 100:.0f}%, and that is worth keeping rather than hiding: a busy day is not
+*always* one sequence, and in a few years it is a handful of unrelated earthquakes that happened to
+land on the same date, which is exactly what chance does. But the mechanism behind the clumping is
+the same one {M['n_years']} times over, and that is what lets you say the excess is aftershocks
+rather than saying it about Japan in 2011.
 """)
 
 # --- section 5 -------------------------------------------------------------
@@ -647,36 +759,34 @@ routes to the same place: one *empirical*, got by counting what happened, and on
 got by evaluating an expression. If they disagree, one of them is wrong.
 """)
 
-code(weekkit.CHECKPOINT.format(body=f"""quakes["time"] = pd.to_datetime(quakes["time"])
-daily = quakes.set_index("time")["mag"].resample("D").count()
-n_days, n_quakes = len(daily), len(quakes)
-day_edges = np.arange(n_days + 1)
-
-
-def random_world(rng):
-    \"\"\"Scatter n_quakes earthquakes at random over n_days days, and count each day.\"\"\"
-    counts, edges = np.histogram(rng.integers(0, n_days, n_quakes), bins=day_edges)
-    return counts
-
-
-one_world = random_world(np.random.default_rng({SEED}))"""))
+code(weekkit.CHECKPOINT.format(body=f"{STATE}\n{CONSTS}\n\n\n{RANDOM_WORLD}"))
 
 code("""
 lam = daily.mean()
 
-print("rate, earthquakes per day:         ", round(lam, 3))
-print("fraction of quiet days, formula:   ", round(np.exp(-lam), 4))
-print("fraction of quiet days, simulation:", round((one_world == 0).mean(), 4))
+quiet_by_world = []
+for seed in range(20):
+    quiet_by_world.append((random_world(np.random.default_rng(seed)) == 0).mean())
+
+print("rate, events per day:              ", round(lam, 3))
+print("quiet days, the formula:           ", round(np.exp(-lam), 4))
+print("quiet days, 20 simulated worlds:   ", round(min(quiet_by_world), 4),
+      "to", round(max(quiet_by_world), 4))
 """)
 
 md(f"""
-{M['p_zero']:.4f} against {M['one_quiet_frac']:.4f}. The formula and the simulation agree, which is
-the point: the simulation was never doing anything magical, it was drawing from the world the
-formula describes.
+The formula says {M['p_zero']:.4f}; the twenty simulated worlds ran from {M['quiet_lo']:.4f} to
+{M['quiet_hi']:.4f}, and the formula's answer sits inside that. That is what "they agree" has to
+mean, and it is worth being strict about it in a week whose whole lesson is *startling compared
+with what?* Two numbers from a random process will never match digit for digit; one world is one
+draw, and quoting a single one would say nothing about how far the next one would move. The
+question you can actually answer is whether the formula's number is one the simulation routinely
+produces. It is — so the simulation was never doing anything magical, it was drawing from the world
+the formula describes.
 
 Two more things fall straight out of it. The chance of **at least one** event in an interval is
 whatever is left over, `1 - np.exp(-lam)`. And λ can be scaled to any interval you like: a day is
-{M['lam']:.3f} earthquakes, so an hour is λ divided by 24. Finally, `1 / lam` is the average wait
+{M['lam']:.3f} events, so an hour is λ divided by 24. Finally, `1 / lam` is the average wait
 between events — the **recurrence interval**.
 """)
 
@@ -727,12 +837,15 @@ md(f"""
 with no clustering at all, running at Earth's own rate, produces a busiest day of about
 {M['sim_mean']:.1f} and never once in {N_WORLDS:,} tries got past {M['sim_max']}; the real
 catalogue's busiest day holds {M['busiest']}, about {M['ratio']:.1f} times chance, and
-{M['years_over']} of the {M['n_years']} years separately hold a day above the 95th percentile of
-those worlds. The excess is aftershocks:
-{M['near_epicentre']} of the {M['busiest']} earthquakes on {M['busiest_day']} were within five
-degrees of a single magnitude-{M['top_mag']} rupture, and the month after it held {M['after30']}
-events against {M['before30']} in the month before. That is physics — stress transferred to
-neighbouring rock, which fails in its turn — not noise.
+{M['years_over']} of the {M['n_years']} years separately hold a day above the 95th percentile of a
+single simulated year. The excess is aftershocks, and that holds for the whole record and not just
+for its biggest day: {M['near_epicentre']} of the {M['busiest']} events on {M['busiest_day']} were
+within five degrees of a single magnitude-{M['top_mag']} rupture and the month after it held
+{M['after30']} events against {M['before30']} in the month before, while across all
+{M['n_years']} years the busiest day of the year has a median {M['median_share'] * 100:.0f}% of its
+events within five degrees of its own largest earthquake, and in {M['big_headed']} of those
+{M['n_years']} years that largest earthquake was magnitude 7.5 or greater. That is physics —
+stress transferred to neighbouring rock, which fails in its turn — not noise.
 
 What did the work was not a cleverer look at the data. It was building the world where the effect
 is absent and measuring how often chance alone beats what you measured.
@@ -751,8 +864,9 @@ while you are here.
 `bay` is already loaded: every earthquake of magnitude {B_MAG} and above that the USGS records within
 two degrees of Berkeley, from {B_START[:4]} to {B_END[:4]} — {M['n_bay']} of them over
 {BAY_YEARS} years. If you have restarted since class, run the setup cell at the top first. The
-oldest events in it predate modern instruments, and their magnitudes were reconstructed later from
-written accounts of the shaking, so treat them as approximate.
+oldest events in it come from before the modern network: their magnitudes were worked out decades
+afterwards, from the historical seismograms that survive and from written reports of the shaking,
+so treat them as less certain than the recent ones.
 """)
 
 ask(f"""
@@ -851,8 +965,10 @@ p2 = forecast(2.0, {B_START[:4]})
 p3 = forecast(1.0, {LATE_START})
 """, f"""
 assert p2 > p1, "the bigger box holds more earthquakes, so its four-year chance must be the larger"
-assert p3 != p1, \\
-    "p3 covers a different stretch of the record, so it cannot come out identical to p1"
+assert p3 < p1, \\
+    "the record from {LATE_START} on holds fewer of these earthquakes per year than the whole "\\
+    "record does, so p3 should come out below p1 — if they match, the start_year window is not "\\
+    "being applied"
 print(f"✓ the box — {{round(100 * p1)}}% within one degree of campus, "
       f"{{round(100 * p2)}}% within two")
 print(f"✓ the window — {{round(100 * p1)}}% from {B_START[:4]}, "
@@ -909,9 +1025,10 @@ the record: {M['early_n']} of my {M['small']['n']} fall between {M['early_first'
 {M['late']['n']} events in {M['late']['years']} years and gives {M['late']['p4'] * 100:.0f}% rather
 than {M['small']['p4'] * 100:.0f}% — nearly a factor of {M['window_ratio']:.0f}, out of a choice
 about the start date that nothing in the data makes for me. Neither window is obviously the right
-one, because the early events are also the ones whose magnitudes were reconstructed from written
-accounts. It is a single number with nothing attached to say how firm it is, and putting an
-interval around a number like this one is the next thing this course has to learn to do.
+one, because the early events are also the ones whose magnitudes were assigned decades later from
+historical seismograms and felt reports, so they carry the most uncertainty. It is a single number
+with nothing attached to say how firm it is, and putting an interval around a number like this one
+is the next thing this course has to learn to do.
 """)
 
 

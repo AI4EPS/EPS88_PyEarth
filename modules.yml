@@ -315,11 +315,19 @@ modules:
       - {name: "series.mean()",         does: "the average value"}
       - {name: "column.diff()",         does: "the gap between each row and the one before it"}
       - {name: "column.dt.days",        does: "turn a gap between two dates into a whole number of days"}
-      - {name: "np.random.default_rng(seed) / rng.shuffle(a)", does: "a random-number generator you can reproduce, and a repeatable shuffle"}
+      - {name: "np.random.default_rng(seed)", does: "a random-number generator you can reproduce — the same seed gives the same draws"}
       - {name: "rng.integers(low, high, size)", does: "that many whole numbers drawn at random"}
       - {name: "np.percentile(values, 95)", does: "the value that 95 per cent of the numbers fall below"}
       - {name: "np.exp(x)",             does: "e to the power of x — the whole of the Poisson formula"}
-      - {name: "rng.poisson(rate, size=n)", does: "draw n counts of rare events at that average rate"}
+      # remember: false — the S2 notebook does NOT use these two, so its summary must not tell a
+      # student to remember them; a reviewer found both advertised in a table for a week where
+      # they appear nowhere else. They stay DECLARED under S2 because they are drawn from the same
+      # generator this module introduces and later weeks reach for them (rng.poisson in the
+      # Gutenberg-Richter week, rng.shuffle in the neural-network week and in track T3), so
+      # check_prior_knowledge must go on counting them as taught. The week that first WRITES one
+      # introduces it in its own prose.
+      - {name: "rng.shuffle(a)", does: "put an array in a random order, in place — repeatable from the same seed", remember: false}
+      - {name: "rng.poisson(rate, size=n)", does: "draw n counts of rare events at that average rate", remember: false}
       - {name: "series.loc[a:b]",       does: "every row between two labels", remember: false}
       - {name: "series.index.year",     does: "the year of every row label", remember: false}
       - {name: "plt.axhline(y)",        does: "a horizontal line at y, to mark a threshold", remember: false}
