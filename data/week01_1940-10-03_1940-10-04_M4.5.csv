@@ -1,0 +1,2 @@
+time,latitude,longitude,depth,mag,magType,nst,gap,dmin,rms,net,id,updated,place,type,horizontalError,depthError,magError,magNst,status,locationSource,magSource
+1940-10-03T01:03:31.880Z,19.323,120.844,25,5.58,mw,,,,,iscgem,iscgem901625,2022-04-26T19:38:01.830Z,"83 km NNW of Claveria, Philippines",earthquake,,10.8,0.63,,reviewed,iscgem,iscgem

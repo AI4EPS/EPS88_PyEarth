@@ -1,0 +1,2 @@
+time,latitude,longitude,depth,mag,magType,nst,gap,dmin,rms,net,id,updated,place,type,horizontalError,depthError,magError,magNst,status,locationSource,magSource
+1983-03-18T09:05:50.000Z,-4.883,153.581,88.8,7.6,ms,,,,1.3,us,usp0001tr1,2022-04-28T00:10:18.946Z,"157 km ESE of Kokopo, Papua New Guinea",earthquake,,3,,9,reviewed,us,us

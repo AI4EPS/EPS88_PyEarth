@@ -1,0 +1,21 @@
+time,latitude,longitude,depth,mag,magType,nst,gap,dmin,rms,net,id,updated,place,type,horizontalError,depthError,magError,magNst,status,locationSource,magSource
+1980-07-08T23:19:19.800Z,-12.41,166.381,33.0,7.5,ms,,,,,us,usp00018r3,2025-12-19T21:57:03.789Z,"196 km SSE of Lata, Solomon Islands",earthquake,,,,,reviewed,us,us
+1980-07-17T19:42:23.200Z,-12.525,165.916,33.0,7.9,ms,,,,,us,usp00018y0,2025-12-19T21:43:49.412Z,"199 km S of Lata, Solomon Islands",earthquake,,,,,reviewed,us,us
+1981-05-25T05:25:14.460Z,-48.786,164.357,33.0,7.6,ms,,,,1.2,us,usp0001dv1,2025-12-19T21:51:32.072Z,off the west coast of the South Island of New Zealand,earthquake,,,,10.0,reviewed,us,us
+1981-09-01T09:29:31.540Z,-14.96,-173.085,25.0,7.7,ms,,,,1.2,us,usp0001fkx,2025-12-19T21:48:20.414Z,"133 km NE of Hihifo, Tonga",earthquake,,,,13.0,reviewed,us,us
+1983-03-18T09:05:50.000Z,-4.883,153.581,88.8,7.6,ms,,,,1.3,us,usp0001tr1,2022-04-28T00:10:18.946Z,"157 km ESE of Kokopo, Papua New Guinea",earthquake,,3.0,,9.0,reviewed,us,us
+1984-02-07T21:33:21.490Z,-10.012,160.469,18.1,7.6,mw,,,,1.4,us,usp00021u7,2022-04-27T23:34:22.015Z,"85 km SE of Honiara, Solomon Islands",earthquake,,,,,reviewed,us,hrv
+1984-11-20T08:15:16.230Z,5.167,125.124,202.2,7.5,mw,,,,1.3,us,usp000297p,2022-04-27T23:08:14.899Z,"45 km SW of Sarangani, Philippines",earthquake,,2.6,,,reviewed,us,hrv
+1985-03-03T22:47:07.280Z,-33.135,-71.871,33.0,8.0,mw,,,,1.0,us,usp0002ccz,2022-04-27T22:51:17.618Z,"25 km WSW of Valparaíso, Chile",earthquake,,,,,reviewed,us,hrv
+1985-09-19T13:17:47.350Z,18.19,-102.533,27.9,8.0,mw,,,,1.3,us,usp0002jwe,2025-07-24T15:01:26.363Z,"1985 Michoacan, Mexico Earthquake",earthquake,,3.8,,,reviewed,us,hrv
+1985-09-21T01:37:13.470Z,17.802,-101.647,30.8,7.6,mw,,,,1.2,us,usp0002jyp,2022-04-27T22:38:14.578Z,"7 km N of Pantla, Mexico",earthquake,,4.9,,,reviewed,us,hrv
+1986-05-07T22:47:10.870Z,51.52,-174.776,33.0,8.0,mw,,,,1.1,us,usp0002tmu,2025-11-20T19:54:32.145Z,"1986 Atka, Alaska Earthquake",earthquake,,,,,reviewed,us,hrv
+1986-08-14T19:39:13.670Z,1.795,126.519,33.0,7.5,mw,,,,1.4,us,usp0002x57,2022-04-27T22:07:11.244Z,"146 km NW of Ternate, Indonesia",earthquake,,,,,reviewed,us,hrv
+1986-10-20T06:46:09.980Z,-28.117,-176.367,29.1,7.7,mw,,,,1.2,us,usp0002z3j,2022-04-27T22:02:20.845Z,Kermadec Islands region,earthquake,,,,,reviewed,us,hrv
+1987-03-05T09:17:05.280Z,-24.388,-70.161,62.3,7.6,mw,,,,1.2,us,usp0003304,2022-04-27T21:48:40.167Z,"84 km SSE of Antofagasta, Chile",earthquake,,,,,reviewed,us,hrv
+1987-11-30T19:23:19.590Z,58.679,-142.786,10.0,7.9,mw,,,,,us,usp0003aq8,2022-04-27T21:31:15.684Z,"200 km WSW of Yakutat, Alaska",earthquake,,,,,reviewed,spe,hrv
+1988-03-06T22:35:38.140Z,56.953,-143.032,10.0,7.8,mw,,,,,us,usp0003dnb,2022-04-28T20:51:18.629Z,Gulf of Alaska,earthquake,,,,,reviewed,ags,hrv
+1988-08-10T04:38:26.170Z,-10.366,160.819,34.0,7.6,mw,,,,1.5,us,usp0003jtm,2022-04-28T17:27:12.624Z,"121 km W of Kirakira, Solomon Islands",earthquake,,,,,reviewed,us,hrv
+1988-11-06T13:03:19.340Z,22.789,99.611,17.8,7.7,mw,,,,1.6,us,usp0003nks,2022-04-28T20:30:19.904Z,"145 km NW of Jinghong, China",earthquake,,,,,reviewed,us,nc
+1989-05-23T10:54:46.320Z,-52.341,160.568,10.0,8.02,mwc,,,,,official,official19890523105446320_10,2025-11-26T16:50:04.977Z,1989 Macquarie Ridge Earthquake,earthquake,,,,,reviewed,us,gcmt
+1989-12-15T18:43:45.030Z,8.337,126.729,24.4,7.6,mw,,,,1.4,us,usp000433j,2022-04-28T20:04:19.072Z,"37 km ENE of Barcelona, Philippines",earthquake,,,,,reviewed,us,hrv

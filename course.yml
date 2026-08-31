@@ -1,0 +1,739 @@
+# EPS 88 PyEarth — Fall 2026 offering
+#
+# This file is THIS TERM'S selection from modules.yml, plus dates and policy.
+# Re-planning a semester edits this file; it never edits a notebook.
+# docs/README.md, docs/syllabus.md and the mkdocs nav are all generated from here.
+
+term: Fall 2026
+instructor: Weiqiang Zhu <zhuwq@berkeley.edu>
+meeting: "Mondays 12:00–2:00 pm, McCone 265"
+units: 2
+enrollment_cap: 46
+catalog_line: >
+  One question a week, answered with data and code you write yourself. Where do earthquakes and
+  volcanoes happen, and why there? Which worlds besides Earth could hold liquid water? Is carbon
+  dioxide rising faster than it used to? Can a machine learn to hear an earthquake?
+
+
+  Nothing here is a teaching example. You work with the USGS earthquake catalogue, NASA's
+  Exoplanet Archive, the Smithsonian's record of volcanic eruptions, and the seismic recordings
+  used to train published deep-learning models. Python starts from zero in the first week and the
+  first hour ends with a plot on your screen; by the last week you are training a neural network.
+  In between you learn to fit a model to data, to say how far it can be trusted, and to tell a
+  real result from a coincidence. Thirteen notebooks, then a project of your own.
+prerequisites: >
+  None. No programming experience is assumed — we build Python from zero. EPS 88 is a Data 8
+  connector; students who have taken Data 8 will recognise some statistics and move faster,
+  but nothing here requires it.
+
+platform:
+  primary: DataHub          # nbgitpuller; students work in personal copies
+  datahub: "https://datahub.berkeley.edu"
+  repo: "https://github.com/AI4EPS/EPS88_PyEarth"
+  branch: main
+  notebook_dir: docs/notebooks
+  cache_base: "https://raw.githubusercontent.com/AI4EPS/EPS88_PyEarth/main/data"
+  cache_note: >
+    Every live-data cell needs a cached fallback, and this is where it lives: a CSV committed to
+    data/ on main, read from cache_base. NOT a release asset — that needs a release step nobody
+    will remember. The cache is written by the week's build script and MUST BE PUSHED BEFORE THE
+    NOTEBOOK IS RELEASED; until then the fallback path 404s and is untested. The reason for the
+    fallback is campus-side network failure with no graceful degradation, not a server limit.
+  gpu_fallback: Colab
+  # THE ONLY LIBRARIES STUDENTS EVER IMPORT
+  libraries: [python, numpy, pandas, matplotlib, scikit-learn, pytorch]
+  dropped:
+    cartopy: "Replaced by two pre-converted lon/lat CSVs read with pandas — data/coastlines.csv on every map, plus plate boundaries where a week needs them. Was the only package missing from the DataHub image."
+    scipy:   "curve_fit replaced by linearising and fitting with sklearn; scipy.stats replaced by np.random and counting."
+  packages_needed_not_in_image: [torch]   # week 13, and tracks T1 and T8 (T7 is trees, no torch)
+  gpu_note: >
+    The taught week-13 exercise does NOT need a GPU — the picking U-Net trains at 1.2 s/epoch on
+    DataHub CPU, about 31 s for 25 epochs, so nobody is blocked and no class time is lost waiting.
+    Colab stays as the fallback for going FURTHER: a bigger network, more epochs, and the project
+    tracks that train repeatedly rather than once (T8's window sweep alone is several runs).
+    Plan the session for CPU; point students at Colab if they take a project further.
+
+calendar:
+  instruction: [2026-08-26, 2026-12-04]
+  no_class: [{date: 2026-09-07, reason: Labor Day}]
+  rrr: [2026-12-07, 2026-12-11]
+  finals: [2026-12-14, 2026-12-18]
+
+# ------------------------------------------------------------------ schedule
+# THE HOMEWORK REUSES THE WEEK'S DATA AND TOOLS, BUT ASKS A QUESTION CLASS DID NOT ANSWER.
+# A fresh dataset would make a beginner fight loading and cleaning before practising anything;
+# a repeat of the class task with one string changed teaches typing. So: same data, new question.
+# And the code must never be reused — the student notebook is derived from the SOLUTION by
+# deleting answers, never from the class notebook by copying it. (Measured Fall 2024 defect:
+# exercises were 41-86% byte-identical to their lectures, with no markers showing which cells were
+# the student's.) There is no "lecture": the class cells are the student's graded work too.
+# Earth-science breadth comes from the weekly questions themselves.
+#
+# Each Monday runs one session of ~100 teaching minutes: a module's CORE (~70 min)
+# plus its EXTENSION (~30 min) if the pace allows. A slow week converts that
+# module's extension into assigned reading — it is written and published either way.
+schedule:
+  - n: 1
+    date: 2026-08-31
+    slug: 01_birthquake
+    evidence: [notes/dataset-audit/usgs-fdsn.md]
+    modules: [P1]
+    field: seismology
+    question: "What was your birthquake?"
+
+    # PINNED — do not re-choose these, and do not go measuring years to pick a better one.
+    # The class runs on ONE shared birthday so every printed number is the same on 46 screens;
+    # the student's OWN birthday is the homework. See note_dates below for why these three.
+    pinned:
+      demo_person: "Aaron Rodgers, Cal quarterback"
+      demo_day: 1983-12-02      # 14 events at M4.5+; birthquake is M7.0 S of Champerico, Guatemala
+      demo_year: 1983           # 4124 events. CUMULATIVE ratios 9.1 (4124/451) and 8.5 (451/53) —
+                                # that is the pair to teach: three counts and two divisions, which is
+                                # all a week-1 student can build. Do NOT quote incremental bin ratios:
+                                # FDSN maxmagnitude is INCLUSIVE, so minmag=4.5&maxmag=5.5 next to
+                                # minmag=5.5&maxmag=6.5 counts every M5.5 twice. An earlier version of
+                                # this line said 9.2 and 7.8; both came from that double count.
+      completeness_day: 1940-10-03   # Walter Alvarez's birthday — ONE earthquake in the catalogue
+      completeness_year: 1940        # 236 events all year (against 4124 in 1983 — 17.5x, not
+                                     # "forty", which an earlier draft of note_dates claimed), and
+                                     # INVERTED: the catalogue lists more mid-sized than small
+      # The homework says "your own birthday", so the SOLUTION has to work one concrete case.
+      # Use a plausible student birthday: a Fall-2026 freshman is 18, born Sep 2007 - Aug 2008.
+      # Never the demo day, and never a date the class already loaded.
+      homework_example_day: 2008-03-12   # 15 at M4.5+, 301 with no floor, smallest M-0.5,
+                                         # birthquake M6.4 52 km S of Lakatoro, Vanuatu
+    note_dates: >
+      The demo person must be born after ~1973. Measured: every year from 1942 to 1970 lists MORE
+      large earthquakes than small (1964 ratio 0.3), because only large ones were detectable
+      globally; 1975 onward is normal (7.7 and up). That rules out every famous Berkeley name —
+      Alvarez 1940, Oppenheimer 1904, Lawrence 1901, and every Berkeley Nobel laureate, all born
+      in the inverted zone. It is also why 1983's ratios are 9.2 and 7.8 rather than a suspiciously
+      textbook ten: the year was chosen for whose birthday it is, NOT for its ratios. Teach the
+      measured numbers against the rule of thumb; do not hunt for a year that agrees better.
+
+      Walter Alvarez is in the notebook anyway, as the completeness moment rather than the demo:
+      the Berkeley professor who showed an asteroid killed the dinosaurs was born on a day the
+      catalogue says had ONE earthquake, in a year it says had 236 — against 4124 in 1983. Ask
+      whether the planet got seventeen times busier or we got better at listening. One cell, and it
+      carries takeaway 2 further than any amount of prose.
+
+    exercise: >
+      Three parts, on the student's OWN birthday, each serving a different takeaway.
+      (1) FIRST, ANSWER THE WEEK'S TITLE QUESTION FOR YOURSELF: load your own birthday and print
+      your own birthquake — its magnitude, where it was, how deep — with the same max() and
+      .index() move class used on the demo day. The week is called "What was your birthquake?" and
+      a student must not finish it knowing only somebody else's. Then: how many earthquakes
+      happened that day, all of them, with the magnitude floor removed entirely, against a guess
+      committed before looking. Serves takeaway 2 and catalogue completeness.
+      (2) The fork: extrapolate the ten-to-one rule down from M4.5 to predict that total, and
+      report how far off it is. Serves takeaway 2.
+      (3) How many days of data do you need before the plate boundaries appear? Map your birthday,
+      your birth week and your birth month, and say which is the first span where the lines show
+      rather than scattered dots — with the earthquake count that took. No single right answer;
+      a defensible one with a number attached. Serves takeaways 3 and 1, which class raises and
+      nothing else at home tests.
+
+    takeaways:
+      - "Earthquakes trace narrow lines, and those lines are the edges of the tectonic plates."
+      - "Small earthquakes outnumber large ones by roughly ten to one per magnitude step — check it yourself, and say where the count gets too small to trust the ratio."
+      - "How much data you need is a scientific question: one day showed nothing, a year drew the planet."
+  - n: 2
+    date: 2026-09-14
+    slug: 02_liquid_water
+    modules: [P3, P4]
+    field: planetary science
+    question: "Which of these worlds could have liquid water — and why does your test reject Earth?"
+    exercise: "Run your function on every planet that has the numbers to support it. Then change the albedo to Venus's and widen the window, and report how many worlds move in and out. Then name one planet your test calls habitable that you do not believe, and say what the test is missing."
+    note: >
+      THE TEST NEVER GETS IT RIGHT, AND THAT IS THE WEEK. Equilibrium temperature ignores
+      atmospheres, and the failure is not one-sided — run it twice and it is wrong both times.
+      With albedo 0 it ACCEPTS both Venus (327.3 K) and Earth (278.3 K). With each planet's
+      measured Bond albedo it REJECTS both: Venus 226.6 K, Earth 254.0 K, nineteen degrees below
+      freezing. Reality is Earth 288 K and habitable, Venus 737 K and not.
+      Do not state it as "Earth fails while Venus passes" — that sentence is only true by mixing
+      Earth's measured albedo with Venus at zero, and it was in this file for a while. Run both
+      passes in sequence; the reveal is stronger honest.
+      The gaps are the greenhouse effect, measured: Earth +34.0 K at 1.014 bar, Venus +510.4 K at
+      92 bar, Mars +0.2 K at 0.006 bar. Same physics, three thicknesses of air. It also rejects the famous habitable-zone candidates — TRAPPIST-1 e,
+      f and g, Proxima Cen b, TOI-700 d, Kepler-186 f, Kepler-442 b — and accepts TRAPPIST-1 c,
+      a 340 K Venus analogue, and K2-18 b, a sub-Neptune.
+      Build toward that reveal: they write the test, trust it, then run it on Earth. The 33 K
+      Earth gets from its atmosphere and the ~500 K Venus gets from its own is the greenhouse
+      effect arriving as a measured discrepancy rather than a definition, and it is the cleanest
+      possible setup for the CO2 weeks later in the term.
+      The fork is real and not knife-edge: rocky candidates move 6 -> 27 across defensible albedo
+      and window choices, with a stable core of 9 surviving at least 6 of 8 variations.
+      USE ALBEDO 0.306 FOR EARTH, the cited NASA Bond value, which is what gives the 254.0 K above.
+      An earlier version of this note paired 254.0 K with "6 -> 26"; those need DIFFERENT albedos —
+      0.300 (the audit's grid row) gives Earth 254.6 K and 26 worlds, 0.306 gives 254.0 K and 27.
+      Verified this session. Quote one albedo throughout a week, and check every number that hangs
+      off it moves with it.
+      DATA: `select ... from ps where default_flag=1` gives 6,354 rows, 3,101 of which carry
+      st_teff, st_rad and pl_orbsmax so T_eq can be DERIVED rather than read from a column.
+      Against the archive's own pl_eqt the median difference is 2.56 K but the mean is 40.4 K and
+      only 62% agree within 10 K — quote the median. SHIP A CACHED CSV: the TAP service failed 4
+      of 16 test requests — a 25% single-attempt failure rate, with stalls of 25, 36 and 60 s —
+      and pd.read_csv has NO timeout, so a stall hangs a student's kernel silently, with no error
+      and no way to tell it apart from slowness.
+    evidence: [notes/dataset-audit/exoplanet.md]
+    takeaways:
+      - "Equilibrium temperature ignores atmospheres: run the test one way and it accepts Venus alongside Earth, run it the other and it rejects both. It never gets the answer right."
+      - "The greenhouse effect arrives as a measured discrepancy, not a definition."
+      - "A function is a question you can ask many times without retyping it."
+  - n: 3
+    date: 2026-09-21
+    slug: 03_two_peaks
+    evidence: [notes/dataset-audit/elevation-grids.md]
+    modules: [D1, D2]
+    field: planetary science / oceanography
+    question: "Earth's elevation has two peaks. So does Mars's. Same reason?"
+    exercise: "How FEW bins before the two peaks merge into one? Find that number for Earth and for Mars, and say which planet holds its two peaks longer. Then weight every cell by cos(latitude) and re-run: the fraction of Earth below sea level moves by about five points. Say which number is the honest one, and what the lon-lat grid was doing to the poles. Then switch containers and group the earthquake catalogue by year."
+    note: >
+      RESTORED. This question was lost when arrays and tables were merged, leaving the week with a
+      statement about data structures rather than a science question.
+      VERIFIED 2026-08-29 against both grids. Earth peaks at -4545 m and ~0 to +413 m; 66.1% of the
+      surface lies below sea level, and 34.8% sits between -5000 and -3000 m. Those two humps are
+      oceanic crust and continental crust — which is to say, THE DEEP PEAK IS THE OCEAN FLOOR, and
+      the question is really why Earth has ocean basins at all.
+      Mars peaks at -4235/-3870 m and +1240/+1605 m — also bimodal, but from the hemispheric
+      dichotomy, whose origin is still debated. Same pattern, different cause, and the Mars half is
+      an open research question. MOLA MEGDR 4 px/deg is 720x1440 and 2.07 MB.
+      AUDITED 2026-08-30, and two defects were fixed. (1) THE BIN QUESTION WAS BACKWARDS. Both
+      grids hold ~0.6-1.0 million cells, so Poisson noise never erases a mode: Earth stays bimodal
+      from 6 bins to ~1000, and MARS STAYS BIMODAL PAST 20,000 BINS with no upper limit at all.
+      The peaks merge only when bins are too FEW — Earth at 5, Mars at 8. Asked the old way,
+      students hunt upward forever and conclude the exercise is broken.
+      (2) "66% OF EARTH IS BELOW SEA LEVEL" IS A PROJECTION ARTIFACT. A lon-lat grid over-samples
+      the poles, stretching Antarctica across many cells. Weighted by cos(latitude) the figure is
+      71.1%, which IS the textbook ocean fraction; unweighted it is 66.1%, about five points wrong
+      in the direction of a memorable round number. Peak POSITIONS are unaffected (-4450/+150 m
+      either way), so the bimodality science survives — only the percentage lies. The weighting is
+      one new idea (a weights argument to plt.hist) and turns the trap into the best moment of the
+      week: the map lied and the cosine fixed it.
+      READ RECIPE, verified: ETOPO20 is plain ASCII, np.loadtxt gives (540, 1081) — column 1080
+      duplicates column 0, so trim it. MOLA MEGDR needs dtype ">i2" (BIG-endian int16); the
+      native-endian read returns -32768..32767 and an unmistakably garbage map, which is the good
+      kind of failure. Both load in under 0.05 s with numpy alone.
+      Quote a modal position only with its bin width: the Earth deep peak moves -4297 m at 50 bins
+      to -5022 m at 200. At 20 arc-min the grid is averaged, so its extremes are NOT Earth's
+      (-9027 m against Challenger Deep -10,900 m).
+      NOTE ON A FAILED ALTERNATIVE: seafloor depth against sqrt(age) was tested as an ocean
+      question and rejected. Binned means show the classic shape (-3063 m at 2.5 Ma to -4348 m at
+      47 Ma, then flattening), but on raw points the transformation barely helps — r moves only
+      from -0.468 to -0.494, and the fit gives -206*sqrt(age) against a textbook -350. Too much
+      scatter from seamounts and sediment.
+    takeaways:
+      - "Earth's surface has two levels — ocean floor and continent. Mars has two as well, for a different reason nobody has settled."
+      - "A histogram's bin count can hide the science: too few bins merge real peaks."
+      - "A longitude-latitude grid over-counts the poles, so area-weight before quoting any percentage."
+  - n: 4
+    date: 2026-09-28
+    slug: 04_where_and_why
+    evidence: [notes/dataset-audit/usgs-fdsn.md, notes/dataset-audit/gvp-volcanoes.md, notes/dataset-audit/plate-boundaries.md]
+    modules: [D4, D5]
+    field: seismology / volcanology
+    question: "Where do earthquakes and volcanoes happen — and why there?"
+    exercise: "Colour the earthquakes by depth, then overlay the trenches. Say where the deep events are and why they sit where they do — you are looking at subducting slabs."
+    note: >
+      VEI is logarithmic like magnitude: Tambora is VEI 7, St Helens VEI 5 — a hundredfold in
+      erupted volume. Needs a function (P4) to convert an index to a physical quantity, and log
+      axes (D4) or the plot is unreadable. VERIFIED against Smithsonian GVP: 11,089 dated Holocene
+      eruptions, VEI 0-7. The extension does the same for earthquake energy
+      (log10 E = 1.5M + 4.8; an M9 releases ~32,000x an M6).
+
+    takeaways:
+      - "Earthquakes and volcanoes sit on plate boundaries; the deep earthquakes sit behind the trenches, on subducting slabs."
+      - "A map is a scatter plot of longitude against latitude — no map library required."
+      - "Magnitude and VEI are both logarithmic, so plot them on log axes or the figure lies."
+  - n: 5
+    date: 2026-10-05
+    slug: 05_clustered_or_random
+    evidence: [notes/dataset-audit/usgs-fdsn.md]
+    modules: [S2]
+    field: seismology
+    question: "Do earthquakes cluster — or is that just what randomness looks like?"
+    exercise: "Now the forecast: count M6+ near Berkeley, get a rate, and use Poisson for the chance of one during your four years here. Report a single number — week 8 will make you regret that."
+    note: >
+      REPLACES a forecast question that could not be answered yet: a rate for rare magnitudes
+      needs Gutenberg-Richter (week 7) and an interval needs the bootstrap (week 8), so week 5
+      could only fudge it by counting. This question needs probability ALONE.
+      RE-AUDITED 2026-08-30 and CORRECTED — the earlier figure of 81 was wrong and could not be
+      reproduced under any timezone or magnitude cut. Global M5.5+ 2000-2026 (12,849 events over 26
+      years, endtime=2026-01-01): the busiest real day holds 128 events, on 2011-03-11 — Tohoku.
+      Simulating random times at the same rate gives a busiest day of 7.64 on average (95th
+      percentile 9). TWO lessons in one figure — randomness is ALREADY clumpy, so "it looks
+      clustered" proves nothing; and real seismicity exceeds chance by 16.7x, which is aftershocks,
+      i.e. physics. The busiest day being a date students may recognise is a bonus, not a problem.
+      Sets up three later things: Omori in week 7, DBSCAN in week 12, and project track T1, whose
+      entire punchline is that aftershocks violate the independence a chi-squared test assumes.
+    takeaways:
+      - 'Randomness is already clumpy, so "it looks clustered" proves nothing on its own.'
+      - "Real seismicity still exceeds chance by a wide margin, and that excess is aftershocks — physics, not noise."
+      - "To test whether a pattern is real, simulate the world where it is absent and compare."
+  - n: 6
+    date: 2026-10-12
+    slug: 06_age_of_the_universe
+    evidence: [notes/dataset-audit/regression-archive.md]
+    modules: [ML1]
+    field: astronomy
+    question: "How old is the universe?"
+    exercise: "Now the seafloor. Fit distance against age for the Pacific-Antarctic Ridge — a free fit puts the ridge 181 km away from itself at age zero. Force it through the origin, and say why physics required that."
+    note: >
+      Two straight lines whose SLOPE is an age. 36 supernovae give H0 = 70.7 km/s/Mpc and
+      1/H0 = 13.84 Gyr; then the identical three lines run on noisy sea level.
+      UNVERIFIED — the radiometric-isochron half still needs a dataset located and checked
+      before it is built. Do not teach it until then.
+
+    flagship:
+      - question: "How old is the universe?"
+        data: "Freedman 2000 — 36 Type-Ia supernovae, 1.1 KB"
+        the_fork: "Force the line through the origin, or not?"
+        what_happens: >
+          A free fit gives slope 67.5 with intercept 711.8 km/s — but zero distance must mean zero recession, so the intercept has to be zero. Forced through the origin: H0 = 70.7 km/s/Mpc, 1/H0 = 13.84 Gyr, against the accepted 13.8.
+        check: "the published age of the universe"
+      - question: "How fast does the seafloor spread?"
+        data: "MAR 235 points, PAR 140 points — both in the archive, both tiny"
+        the_fork: "The same one: through the origin, or not?"
+        what_happens: >
+          Pacific-Antarctic free fit gives 6.11 cm/yr with an intercept of +181 km — physically impossible, since distance from the ridge is zero at age zero. Forced through the origin: 6.77 cm/yr against a published ~7. The Atlantic gives 1.74 cm/yr. Two ridges, a fourfold difference, and that difference IS the science.
+        check: "published half-spreading rates"
+    takeaways:
+      - "A slope can be an age."
+      - "Physics can force a fit through the origin; the free fit was not wrong, it was unconstrained."
+      - "Two ocean ridges spread at rates differing fourfold, and that difference is the science."
+  - n: 7
+    date: 2026-10-19
+    slug: 07_how_often_tambora
+    evidence: [notes/dataset-audit/gvp-volcanoes.md, notes/dataset-audit/usgs-fdsn.md]
+    modules: [S3]
+    field: volcanology
+    question: "How often does a Tambora happen?"
+    exercise: "Fit Gutenberg-Richter on M3.5-5.0 in California, predict how many M7+ to expect in 36 years, then count the real ones. Write down whether you think your model failed — you cannot settle it yet."
+    cliffhanger: >
+      VERIFIED: fitting M3.5-5.0 predicts 1.18 M7+ events in 36 years, M4.0-5.5 predicts 1.64,
+      M4.5-6.0 predicts 1.54. FIVE occurred. The week ends without resolving whether that is a
+      broken model or bad luck — which is exactly what next week's tool decides.
+    note: >
+      Regression must come FIRST: fitting log10 N against magnitude is least squares on
+      transformed data, so it cannot precede the week that teaches least squares.
+      Week 5 got its rate by counting events directly; this week extends the rate to magnitudes
+      too rare to have been observed at all. Omori is the same power law again, in time
+      instead of magnitude.
+
+    flagship:
+      - question: "How many big earthquakes should California expect?"
+        data: "USGS catalogue, M3.5-6.9, California 1990-2026 — 6,282 events, live"
+        the_fork: "Which magnitude range do you fit Gutenberg-Richter on?"
+        what_happens: >
+          Fitting M3.5-5.0 predicts 1.18 M7+ events in 36 years; M4.0-5.5 predicts 1.64; M4.5-6.0 predicts 1.54. OBSERVED: 5. Every defensible choice under-predicts by about three. The student made a forecast from small earthquakes, checked it against large ones, and it failed — which is the real open question, not a broken exercise. Is 36 years too short? Is sqrt(5) ~ 2.2 of Poisson scatter enough? Or does California make more large earthquakes than G-R predicts?
+        check: "SELF-VALIDATING — the student checks their own extrapolation against the observed count"
+        note: "The student predicts, verifies, and is WRONG for reasons worth arguing about."
+        pairs_with: "the Tambora problem below, where the identical method succeeds"
+      - question: "How often does a Tambora happen?"
+        data: "Smithsonian GVP, VEI-rated eruptions since 1800, live"
+        the_fork: "Which VEI range do you fit?"
+        what_happens: >
+          AUDITED 2026-08-30 and RESTATED — the old wording overclaimed. Fitting VEI 2-4 predicts 0.982 VEI-7 eruptions since 1800; VEI 2-5 predicts 0.760; VEI 3-5 predicts 0.684. OBSERVED: 1. Those figures hold ONLY in the cumulative (N >= VEI) form; the incremental form gives 0.875 / 0.594 / 0.516, so the notebook must not plot one and quote the other. GVP dates Tambora's onset to 1812, not 1815.
+        check: "n = 1. State the Poisson interval; do not call this validation."
+        note: >
+          Still the partner to the California earthquake problem, and STRONGER told honestly. The old story was "identical maths succeeds for volcanoes and fails for earthquakes". The true story is better: the volcano case only looks successful because one event cannot falsify anything, and on the longer catalogue it fails the same way. What students learn is that a prediction landing near an observation is worthless when the observation is a single count — which is a lesson about evidence, not about volcanoes.
+    takeaways:
+      - "Small earthquakes vastly outnumber large ones, and the ratio is a law rather than an accident."
+      - "A straight line on log axes lets you predict events too rare to have been observed at all."
+      - "A prediction that matches a single observation is not evidence — one count cannot falsify anything."
+  - n: 8
+    date: 2026-10-26
+    slug: 08_wrong_or_unlucky
+    evidence: [notes/dataset-audit/noaa-climate.md, notes/dataset-audit/usgs-fdsn.md]
+    modules: [S4]
+    field: seismology / oceanography
+    question: "Was our earthquake forecast wrong — or were we just unlucky?"
+    exercise: "Then go back to your week-5 answer. You counted events to get a rate, then computed a probability. Bootstrap the rate, and report that probability as an interval instead of a number."
+    note: >
+      Placed immediately after regression so there is a SLOPE to put an interval on, and well
+      before the project proposal. SF sea level, 1,503 monthly means 1900-2025: slope 1.965 mm/yr,
+      95% CI [1.877, 2.050] — which is 19.7 cm PER CENTURY, and 14.7 cm from now to 2100. Those are
+      different numbers and the notebook must not swap them.
+      The IID bootstrap CI is too tight because monthly sea level is autocorrelated; resampling
+      whole YEARS roughly doubles it to [1.80, 2.14]. Teach the IID version, then show the block
+      version as the extension — the interval getting WIDER when you respect the data's structure
+      is the honest lesson.
+      Also verified: the California M7 forecast gives a CI of [1.01, 2.50] against 5 observed,
+      which turns an ambiguous "maybe unlucky" into a model that is demonstrably failing.
+    takeaways:
+      - "A single number is not an answer. Report an interval."
+      - "Resampling your own data tells you how much your estimate would have wobbled."
+      - "An interval that excludes the observation means the model is failing, not that you were unlucky."
+  - n: 9
+    date: 2026-11-02
+    slug: 09_rising_faster
+    evidence: [notes/dataset-audit/noaa-climate.md, notes/dataset-audit/regression-archive.md]
+    modules: [ML2]
+    field: climate
+    question: "Is CO2 rising faster than it used to?"
+    exercise: "Fit degrees 1 to 9, plot train and test error against degree, and pick a degree with a reason."
+    note: >
+      The same failure twice: the Hubble line breaks at high z, which is the accelerating
+      universe, and the CO2 line breaks, which is the acceleration. One statistical move,
+      two discoveries.
+
+    flagship:
+      - question: "When will CO2 reach 500 ppm?"
+        data: "NOAA Mauna Loa monthly, 1958-03 to 2026-07, live, a few KB"
+        the_fork: "How flexible a model? Linear, quadratic or cubic?"
+        what_happens: >
+          HOLD OUT 26 YEARS. Fit only 1958-2000, then predict 2026 and check. linear -> 400.8 ppm (error -29.5) · quadratic -> 426.6 (error -3.7) · cubic -> 388.3 (error -42.0), WORSE THAN LINEAR. Observed 430.3. Too simple misses the acceleration; too flexible extrapolates catastrophically. This is bias-variance made physical rather than described, and the stake is real: on the 1958-2000 holdout fit, linear reaches 500 ppm in 2100 and quadratic in 2051 — a half-century decided by a modelling choice. (Fitting the FULL record instead moves the linear crossing to 2075; say which fit a number came from, every time.)
+        check: "SELF-VALIDATING — 26 years of held-out data the student compares against"
+        note: >
+          The best demonstration of week 9 available: overfitting punished in EXTRAPOLATION, not just test error.
+    takeaways:
+      - "Too simple misses the pattern; too flexible memorises the noise."
+      - "Hold out data you already have, then check — it is the cheapest honest test there is."
+      - "The CO2 curve is bending, and which model you choose decides the decade by which it crosses 500 ppm."
+  - n: 10
+    date: 2026-11-09
+    slug: 10_earthquake_or_explosion
+    evidence: [notes/dataset-audit/usgs-fdsn.md]
+    modules: [ML3]
+    field: seismology / policy
+    question: "Earthquake or explosion — how does the world verify a nuclear test ban?"
+    exercise: "Retrain without depth. Explain why the score fell and why the second model is the honest one."
+    note: >
+      2,802 blasts against 128,707 earthquakes, so "always say earthquake" scores 97.87% and is
+      useless — precision and recall become a discovery. VERIFIED.
+      LEAKAGE, CORRECTED 2026-08-30: blast depth is NOT "pinned to 0" as this file used to say —
+      exactly one blast has depth 0. It is NEGATIVE: median -0.519 km, 93.8% below zero, because
+      quarry benches sit above sea level, and the top 20 repeated values cover 53% of blasts, i.e.
+      pinned to each QUARRY's elevation. Real leakage, different mechanism, and a better story.
+    critical_the_model_must_earn_its_place: >
+      MEASURED: the hand rule "depth <= 0 AND 10:00 <= local hour < 17:00" scores F1 0.765, which
+      BEATS logistic regression (0.760) and Naive Bayes (0.755). As written the taught classifier
+      is decorative — the exact failure the project spec forbids.
+      FIX: make the two-if-statement hand rule the baseline students must BEAT, not an afterthought.
+      They write it first, it wins, and the week becomes "why did my clever model lose to two ifs?"
+      Random forest reaches F1 0.975, so the answer arrives in week 11 — which turns a dead end into
+      the strongest bridge between the two ML weeks in the course.
+
+    takeaways:
+      - "Accuracy lies when one class is rare: precision and recall are what you report."
+      - "If a column already knows the answer, you have leakage rather than a result."
+      - "Beat the simplest rule you can write by hand before believing any model."
+  - n: 11
+    date: 2026-11-16
+    slug: 11_where_magma
+    modules: [ML4]
+    field: volcanology / petrology
+    question: "Where does a volcano get its magma?"
+    exercise: "Train a forest on the ten major oxides, then on all 51 columns. More columns wins — 96.1% against 90.9% — so the sparse trace elements are carrying real signal, not noise. Now delete the imputer and use dropna() instead: the ten oxides leave you 271 rows, and all 51 leave you exactly 1. Say which of your three numbers you would report to a geochemist, and what you would have concluded if dropna() were the only tool you knew."
+    note: >
+      The old version of this exercise asked students to explain "why more data made it worse".
+      It does not: all 51 columns beat the ten major oxides by 5.2 points (96.06 against 90.89,
+      50 fits, p = 8e-23), and the 19 columns that are over half empty reach 79.8% ON THEIR OWN.
+      No column in the file is complete — Sr, the best, is 6.5% missing — so the honest version of
+      "more columns destroyed it" is about DELETION, not dimensionality: dropna() on all 51 leaves
+      a single row. That keeps the intended lesson, makes it dramatic, and teaches imputation,
+      which is the skill the week actually needs.
+      By now each new classifier is three lines behind the same sklearn API, not a new idea —
+      which is what buys the room to spend this week on missingness instead of on syntax.
+    evidence: [notes/dataset-audit/vermeesch-basalts.md]
+    takeaways:
+      - "A rock's chemistry carries the tectonic setting it formed in."
+      - "Missing data is not useless data — half-empty columns can carry more signal than complete ones."
+      - "Deleting rows to avoid missing values can destroy a dataset entirely."
+  - n: 12
+    date: 2026-11-23
+    slug: 12_hidden_fault
+    evidence: [notes/dataset-audit/usgs-fdsn.md]
+    modules: [ML5]
+    field: seismology / tectonics
+    question: "Can you find a fault that nobody mapped?"
+    exercise: "Re-run DBSCAN with eps halved and then doubled. Report how many clusters each gives, pick the value you would defend, and then name one cluster you think is a real fault and one you think the algorithm invented. You cannot prove either — say what evidence would settle it."
+    note: >
+      CLUSTERING, promoted to a real week (it had none). k-means, PCA and DBSCAN together, because
+      the contrast is the lesson. VERIFIED on Ridgecrest (M2+, Jul 1 - Dec 31 2019, box
+      lat 35.0-36.5, lon -118.5..-117.0, 6,646 events).
+      THE RECIPE IS NOT REPRODUCIBLE WITHOUT THREE PARAMETERS THIS FILE PREVIOUSLY OMITTED:
+      StandardScaler applied to lon/lat/DEPTH (three features, not two), eps=0.15, and
+      min_samples=12. Only then does DBSCAN give 11 clusters with 18.4% NOISE, the largest holding
+      4,670 events along the M7.1 rupture trend. sklearn's DEFAULT min_samples=5 gives 22 clusters
+      and 9.6% noise; raw unscaled lon/lat gives 4. k-means (k=3) returns 2361/2223/2062 — three
+      equal blobs, because it must assign every event and cannot say "this one belongs to nothing".
+      NB clustering needs none of the supervised machinery, so arriving after regression costs it
+      nothing — it borrows only the scaling from S3.
+    calendar_warning: >
+      THANKSGIVING MONDAY (Thanksgiving is Thu 26 Nov 2026; campus break is Wed-Fri). Attendance
+      will be thin, and this is the week that can least afford it: "is this cluster real?" is the
+      hardest epistemic question in the course. It cannot be moved — ML5 requires ML4 (labels to
+      hide) and S3 (scaling), so it is pinned after week 11. Mitigations: keep the core to 70
+      minutes, make the extension generous, and record this session in particular.
+    takeaways:
+      - "Clustering finds structure with the labels hidden."
+      - 'DBSCAN may say "this one belongs to nothing"; k-means must assign every point.'
+      - "The parameters decide the answer, so report them alongside it."
+  - n: 13
+    date: 2026-11-30
+    slug: 13_machine_hears
+    evidence: [notes/dataset-audit/ncedc-phasenet.md]
+    modules: [ML6]
+    field: seismology
+    question: "Can a machine hear an earthquake?"
+    exercise: "Final project."
+    takeaways:
+      - "A network learns waveform shape once amplitude is taken away from it."
+      - "Beat the classical method first, or the network is decoration."
+      - "Labels have a ceiling, and a model already at that ceiling cannot be improved by more training."
+  - n: 14
+    date: 2026-12-07
+    slug: 14_project
+    modules: []
+    field: student's choice
+    question: "OPEN — the final project"
+    project: "lightning talks"
+    mode: contingent
+    note: >
+      RRR Monday. No new DS/ML topic: Berkeley permits presentations and review during RRR, not
+      required new instruction, and every method is already taught by week 13. The hour goes to
+      lightning talks plus whatever the class needs — a project clinic for teams still stuck, or
+      overflow if any of weeks 1-13 ran long. Weeks 1-13 fill every teaching Monday exactly, so
+      this is the schedule's only slack between modules.
+    exercise: "None. The final project is the assessment."
+
+    takeaways:
+      - "Your project is a claim with an interval attached, and an honest account of what failed."
+not_scheduled:
+  flexible:                  # taught only if the pace runs ahead; published regardless
+    - {id: A2,  why: "Ground motion. Now the basis of project track T1, which reaches from a straight line to a neural network — so this stays a swap-in for ML1/ML2 rather than a session of its own."}
+  reference:
+    - {id: P5,  why: "Errors and debugging — a card students return to, plus live commentary whenever an error appears on screen."}
+    - {id: R1,  why: "Function catalogue, appended by every module. Restores Appendix A of the Fall 2020 Jupyter Book."}
+    - {id: R2,  why: "Earth-science glossary."}
+  deferred:
+    - {id: ML2b, why: "Cross-validation. Never taught in eleven offerings; one held-out set is enough for freshmen (Weiqiang, 2026-08-28)."}
+
+# ------------------------------------------------------------------ assessment
+grading:
+  # The weekly notebook carries the course. It is where every method is learned and every
+  # Earth-science question is answered, so it holds the weight; the project and the room are
+  # each a tenth.
+  participation: 10         # observed in the room, NOT a separate upload
+  weekly_notebook: 75       # one notebook per week, class work and homework in one file,
+                            # submitted once. The lowest is dropped (policy.drop_lowest).
+  project: 15               # presentation 5 + notebook 10; there is no proposal gate
+
+policy:
+  exercise_due: "Sunday 23:59"
+  drop_lowest: 1            # lowest weekly notebook dropped; docs/ read this, never hardcode it
+  solution_release: "the following Wednesday"
+  solution_rationale: >
+    A two-day accommodation extension ends Tuesday, so a Wednesday release never collides with it,
+    and the reader window is a fixed Wednesday–Sunday.
+  late: "10% per day; nothing accepted once solutions post"
+  # No separate day cap: solutions post the Wednesday after the Sunday due date, so the
+  # release IS the cutoff. A second number here could only drift out of step with it.
+  # AI use is NOT published in docs/. Two drafts of a student-facing policy were written and both
+  # over-claimed — they described controls the course does not actually have. There is no honest
+  # short version yet, so the syllabus says nothing rather than something untrue; write the real
+  # policy when you have decided what it is. What holds for building notebooks either way:
+  #   * a weekly notebook carries NO AI-disclosure cell (tried, removed — nobody read it)
+  #   * the FINAL PROJECT does: project.required_of_every_project.ai_disclosure
+
+project:
+  question_shape: "From this data, make a quantified claim with stated uncertainty, and say how much to trust it."
+
+  required_of_every_project:
+    - baseline_first: >
+        State a TRIVIAL baseline before any model: predict the majority class, or the mean.
+        Every model is reported against it. One line of code, and it is what stops a student
+        being impressed by 98% accuracy — which is exactly what "always say earthquake" scores
+        on the week-10 data. (Design idea from GeoSMART MLGeo, MIT.)
+    - split_by_structure: >
+        Do NOT split a time series at random. Earth data are correlated in space and time, so a
+        random split puts tomorrow in the training set and yesterday in the test set, and the
+        score is a lie. Split by time, or by region, and say which you chose and why. This is the
+        single most common beginner error in Earth-science ML. (Also from MLGeo.)
+    - one_sentence_answer: "The claim and its uncertainty, in one sentence, at the top."
+    - what_i_got_wrong: "A section on what failed. Honest failure is graded; a faked success is not."
+    - ai_disclosure: "Tool, prompt, what you changed, and how you verified it."
+
+  track_notebooks: >
+    A track ships as a NOTEBOOK, authored to TEMPLATE.md like any week. It differs from a weekly
+    notebook on exactly two axes: LESS HELP, and IT DOES NOT CLOSE.
+
+    LESS HELP — the scaffolding starts where a weekly notebook ends.
+      * NO "WATCH" cells. By week 10 nobody needs to be shown a cell being typed.
+      * The notebook gives them the data LOADED and the known result REPRODUCED — that far and no
+        further. That part exists only so they trust the pipeline before they change it.
+      * Everything after that is "YOUR TURN": a prompt in words, an empty cell, no worked template
+        to pattern-match against. A weekly notebook runs worked -> guided -> solo; a track notebook
+        starts at solo.
+      * Asserts ONLY on the data-loading step (row counts, shapes). Downstream there is no single
+        right answer, so a self-check would be a lie about how research works. This is the one
+        place the course deliberately withdraws the safety net, and students should be told that.
+
+    IT DOES NOT CLOSE — a weekly notebook ends with the answer in one sentence. A track notebook
+    ends with a named OPEN QUESTION the course does not know the answer to. The verified half is
+    scaffolding; the open half IS the project. If a track has no genuine open question it is not
+    ready to ship, and the checker enforces that every track carries one.
+
+    The five required_of_every_project items appear as EMPTY headed sections in the notebook, so
+    the structure of a good answer is visible even though none of the content is.
+
+  # Design notes for the flagship weeks now live ON their week in `schedule:`, under
+  # `flagship:` — a week's builder reads that week's entry and nothing else, so anything filed
+  # anywhere else is invisible to the person who needs it.
+  # What makes a flagship problem: a famous or gripping question; tiny clean data; ONE genuine
+  # modelling fork where defensible choices give different answers; and a way to CHECK the answer.
+  #
+  # Dataset shapes, spans, read recipes and traps are NOT recorded here — they live in
+  # notes/dataset-audit/, which is measured rather than remembered, and each week cites its own
+  # through `evidence:`. A `vetted_datasets:` list used to sit here and had drifted out of date.
+
+  tracks:
+    # Each is a notebook. Verified numbers and read recipes live in the evidence file; keep the
+    # entry here to the shape of the project — what it asks, the one real choice, what is unknown.
+    - id: T1
+      field: seismology / engineering
+      title: "How hard will the ground shake at distance R from a magnitude M earthquake?"
+      data: >
+        ESM (Engineering Strong Motion) flatfile service, https://esm-db.eu/esmws/flatfile/1/query
+        — no login, no token, and pd.read_csv(url, sep=";") is the whole read recipe.
+        54,179 records, 4,869 events, 3,165 stations, 65 countries, M 2.6-8.4, R 0-736 km,
+        PGA to 1.226 g. Vs30 on 70% of rows, EC8 site class on 96%.
+        (PEER NGA-West2 is the canonical database and is unusable here: it returns 403
+        unauthenticated and no open mirror exists.)
+      fork: >
+        How do you split train from test? Random, by event, by station, or by region. The four
+        give different answers and only one of them is honest — many records share an earthquake,
+        and many share a station.
+      open_question: >
+        Does a neural network actually beat a well-designed parametric GMPE, or does it only look
+        that way under a random split? Measured on this data, a random forest beats the classic
+        three-parameter form by +0.061 R2 on a random 5-fold, +0.056 split by event, LOSES by
+        0.012 split by station, and loses by 0.054 trained outside Italy and tested in Italy.
+        The advantage reverses sign, because the forest was memorising site terms rather than
+        learning physics. Whether ML genuinely improves ground-motion prediction under honest
+        validation is unresolved in the literature and decidable with this dataset — and sigma
+        (0.448 log10, decomposing to tau = 0.371 and phi = 0.337) is the quantity seismic hazard
+        actually consumes, so reducing it is a real goal rather than a leaderboard.
+      uses: [ML1, S3, S4, ML2, ML4, ML6]
+      evidence: notes/dataset-audit/ground-motion.md
+
+    - id: T2
+      field: climate
+      title: "Is the CO2 seasonal cycle getting stronger?"
+      data: "NOAA Mauna Loa monthly 1958-2026, plus Barrow at 71N for the comparison"
+      fork: "What is 'amplitude' — peak-to-trough, detrended residual, or a Fourier term? They disagree."
+      open_question: >
+        Mauna Loa gives +12.9% and Barrow gives +24.7%: the seasonal breath is growing faster at
+        high latitude. How far north does that scale, and what does it say about which ecosystems
+        are doing the breathing?
+      uses: [ML1, S4, ML2]
+      evidence: notes/dataset-audit/noaa-climate.md
+
+    - id: T3
+      field: volcanology / data provenance
+      title: "July has 400 eruptions and March has 250. Is that the Earth, or the catalogue?"
+      data: "Smithsonian GVP, 2,977 eruptions since 1950 carrying a month, live"
+      fork: >
+        Which records do you trust? When only the year is known GVP writes a real-looking 2 July
+        and flags it in a column nobody reads. That placeholder is most of the excess.
+      open_question: >
+        Cleaned of placeholders, chi2 = 20.9 against a 19.7 critical value — but the 2,480
+        eruptions come from only 364 volcanoes, and a volcano-block bootstrap spreads the statistic
+        across 14.0 to 59.0. Could a real seasonal signal ever be detected in a catalogue like this?
+      uses: [S2, S4, D2]
+      evidence: notes/dataset-audit/gvp-volcanoes.md
+
+    - id: T4
+      field: planetary science
+      title: "Are we finding more Earth-like planets, or just better telescopes?"
+      data: >
+        NASA Exoplanet Archive, the `ps` table with default_flag=1. NOT `pscomppars` — both return
+        6,354 rows, which is how they get confused, but only `ps` carries measured values.
+      fork: >
+        Which planets can you honestly compare? Radial velocity measures a minimum MASS, and only
+        31 RV planets have a measured radius; the rest are inferred through a mass-radius relation.
+        Comparing those to transit radii compares a model's output to data.
+      open_question: >
+        Every instrument has shown us a different galaxy — Kepler small and far, TESS bright and
+        near. What does the REAL population look like? Transit probability goes as 1/a and is
+        computable from the columns present, so a defensible bias correction is within reach.
+      uses: [D2, ML1, ML2, ML5]
+      evidence: notes/dataset-audit/exoplanet.md
+
+    - id: T5
+      field: oceanography / hydrology
+      title: "Does El Nino really bring rain to California?"
+      data: "NOAA Nino 3.4 1948-2026 plus USGS discharge; 234 natural CA gauges have 50+ years"
+      fork: "Which river — and which water year? The contrast survives Oct-Sep but collapses under a calendar year."
+      open_question: >
+        The signal is strong in the south (r = +0.36) and absent in the north (+0.087); the paired
+        bootstrap on the difference gives +0.222, CI [+0.039, +0.398]. WHERE does it switch off,
+        and is the boundary sharp or gradual? Every student takes a different gauge, so the class
+        assembles a map no single project could produce.
+      uses: [ML1, S4, ML3]
+      evidence: notes/dataset-audit/noaa-climate.md
+
+    - id: T7
+      field: petrology / machine learning
+      title: "Can you tell where a basalt erupted from its chemistry alone?"
+      data: "Vermeesch 2006, 756 samples, OIB 259 / IAB 256 / MORB 241"
+      fork: "Which chemistry — the classic three-element diagram, the ten major oxides, or all 51 columns?"
+      open_question: >
+        The forest leans hard on Sr and K2O, which the published discrimination diagrams
+        deliberately avoid as alteration-mobile; adding Sr to the classic trio jumps accuracy from
+        81.2 to 89.7. Are the classic diagrams trading discrimination for robustness, and is that
+        the right trade for a rock that has sat on the seafloor for 50 million years?
+      uses: [ML4, ML2, ML5]
+      evidence: notes/dataset-audit/vermeesch-basalts.md
+
+    - id: T8
+      field: seismology / machine learning
+      title: "Which way did the ground first move — and can a machine tell?"
+      data: "data/phasenet_ncedc.npz — 2,500 traces, polarity labels 1,233 U / 1,115 D"
+      fork: "How much waveform around the pick do you give the model?"
+      open_question: >
+        A one-line physics rule — the sign of the first sample after the pick, relative to the
+        pre-pick mean — already scores 0.828, and the CNN reaches only 0.843. So the project is not
+        "can a network do this" but "why does the network barely beat one line, and what would it
+        take to do better?" The window sweep is the evidence: 0.1 s gives 0.846 and 10 s gives
+        0.777, a monotone decline, because polarity lives entirely in the first swing and
+        everything after it is noise. Roughly 10% of the labels are irreducibly wrong (the sign of
+        the first swing disagrees with the analyst 17.5% of the time, plateauing near 0.89 even on
+        the clearest arrivals), so every model lands at 0.81-0.85 — AT THE CEILING. Is the
+        remaining gap model capacity, or is it the labels? Deciding that is the project.
+      uses: [ML3, ML6]
+      evidence: notes/dataset-audit/ncedc-phasenet.md
+
+    - id: T6
+      field: student's choice
+      title: "Your own question"
+      open_question: "EXEMPT — the student supplies the open question; that is what T6 is."
+
+  teams: "1–3"
+  requires: {modules_used: 2, visualisation_types: 3}
+  coverage_rule: >
+    Do not assume the tracks split into "statistics" and "machine learning" — they do not, and an
+    earlier version of this rule said so wrongly. Read each track's `uses:`. T3 is the only purely
+    statistical one; T1 reaches furthest, from a straight line to a neural network, and T4, T5 and
+    T7 all end in a classifier or a clustering step.
+    Whatever a project uses, it must name the METHOD FAMILY and say why the question needs it. The rubric's 25 points for method choice reward fit, not sophistication:
+    a justified chi-squared beats an unjustified neural network.
+  choose: >
+    Pick one of the prepared track notebooks, or bring your own question. There is nothing to
+    propose and no spec to wait for — the track notebooks ARE the spec, and they are published
+    from the start of the term so a student can read ahead. A student bringing their own question
+    shows the instructor data already loaded AND PLOTTED before committing to it; that is the only
+    gate, and it exists because a question with no working data is not a project.
+  talks: 2026-12-07          # RRR Monday, lightning talks
+  due: "2026-12-16 23:59"
+  rubric:
+    question_and_motivation: 15
+    data_handling: 20
+    method_choice_and_correctness: 25
+    visualisation: 15
+    interpretation_and_uncertainty: 15
+    reproducibility_disclosure_and_what_i_got_wrong: 10
+  note: >
+    The rubric rewards appropriate method choice, not fancy: a neural network on 50 points loses
+    marks that a justified straight line earns.

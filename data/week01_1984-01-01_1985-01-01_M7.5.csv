@@ -1,0 +1,3 @@
+time,latitude,longitude,depth,mag,magType,nst,gap,dmin,rms,net,id,updated,place,type,horizontalError,depthError,magError,magNst,status,locationSource,magSource
+1984-02-07T21:33:21.490Z,-10.012,160.469,18.1,7.6,mw,,,,1.4,us,usp00021u7,2022-04-27T23:34:22.015Z,"85 km SE of Honiara, Solomon Islands",earthquake,,,,,reviewed,us,hrv
+1984-11-20T08:15:16.230Z,5.167,125.124,202.2,7.5,mw,,,,1.3,us,usp000297p,2022-04-27T23:08:14.899Z,"45 km SW of Sarangani, Philippines",earthquake,,2.6,,,reviewed,us,hrv

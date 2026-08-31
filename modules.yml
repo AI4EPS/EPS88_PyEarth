@@ -1,0 +1,576 @@
+# EPS 88 PyEarth — module catalogue
+#
+# The catalogue is sized by the MATERIAL, not by the calendar. A given offering
+# selects from it (see course.yml); everything not selected is still built and
+# published, marked self-study. Modules are stable across years; course.yml is not.
+#
+# mode:
+#   live        must be taught with a person in the room
+#   flexible    works either way; a candidate for self-study when the term is tight
+#   self-study  reads fine from the book alone
+#   distributed not a session; short segments appended to other modules
+#   reference   never a session; a page students return to
+#   deferred    specified but not built this year
+#
+# RULE THE CHECKER ENFORCES: a module marked self-study may not be a prerequisite
+# of a module taught live. Beginners skip self-study material first, and they are
+# exactly the students the Fall 2024 evaluations show were lost.
+
+meta:
+  course: EPS 88 — PyEarth
+  session_minutes: 100        # of a 120-minute Monday, after setup and transitions
+  audience: freshmen, no programming assumed
+
+  # SLACK LIVES INSIDE MODULES, NOT BETWEEN THEM.
+  # The 13 live modules fill all 13 Mondays exactly, so there is no spare session to
+  # absorb a week that runs long — and P3 (loops) will run long for true beginners.
+  # Every module is therefore budgeted in two parts:
+  #   core       must be taught; later modules may depend only on this
+  #   extension  taught if time allows
+  # THESE ARE INSTRUCTOR BUDGETS, NOT SECTIONS. Do not label an "EXTENSION" block in the
+  # student notebook: it reads as a third category beside class work and homework, and a
+  # student cannot tell whether it is theirs to do — it is, everything in the file is graded.
+  # The last section simply carries "we may not get to this in class; finish it at home if
+  # not". See TEMPLATE.md section 1, item 5.
+  # Nothing later may depend on an extension. The checker does NOT verify this: `requires` is
+  # a flat module-level list with no per-section granularity, so it is on you when you build.
+  # The 70/30 below is the per-SESSION target. Individual modules are smaller and vary
+  # (P1 is 50/25, D1 40/20, D2 30/10) because several Mondays run two modules.
+  session_core_minutes: 70
+  session_extension_minutes: 30
+
+modules:
+
+  # ---------------------------------------------------------------- Python
+  - id: P1
+    title: "Notebooks, values, lists — and your first plot"
+    topic: "Notebooks, lists"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    teaches: [jupyter cells, kernel, restart-and-run-all, print, int/float/str/bool, variables,
+              arithmetic, f-strings, lists, indexing, slicing, read a CSV into lists,
+              plt.scatter and plt.hist — SOMETHING ON SCREEN IN HOUR ONE]
+    note: >
+      Day one also carries DataHub setup for 46 students. Dicts, JSON and the live API were moved
+      OUT of this session: they were the two hardest ideas of the fortnight sitting in the first
+      hour. What was bought with the space is a PLOT — a beginner with no visual output has no way
+      to tell whether anything worked, and weeks 1-2 previously gave them none.
+    requires: []
+    harvest_gives: "harvest supplies BOTH the method and the Earth-science content"
+    minutes: 75
+    note_day_one: "75 min of content; the other 25 of the session is DataHub setup for 46 students."
+    core: 50
+    extension: 25
+    mode: live
+    problem: "What was your birthquake?"
+    data: [usgs_fdsn_live]
+    functions:
+      - {name: "print(x)",                 does: "show a value"}
+      - {name: "type(x)",                  does: "what kind of value is this"}
+      - {name: "len(list)",                does: "how many items"}
+      - {name: "list[i]",                  does: "one item, counting from 0; list[-1] is the last"}
+      - {name: "list[a:b]",                does: "a slice — items a up to but not including b"}
+      - {name: "max(list) / min(list)",    does: "largest / smallest value"}
+      - {name: "list.index(v)",            does: "the POSITION of value v, so you can read the same position out of another list"}
+      - {name: "plt.plot(x, y)",           does: "join points with a line — here, the coastline"}
+      - {name: "plt.hist(x, bins=n)",      does: "how one list of numbers is spread out"}
+      - {name: "plt.scatter(x, y)",        does: "a dot per pair of values"}
+      - {name: "plt.xlabel / ylabel / title / show", does: "label it, then draw it"}
+      - {name: "round(x, 1)",              does: "trim a long decimal — 9.1 rather than sixteen digits"}
+      - {name: "plt.xlim(a, b) / plt.ylim(a, b)", does: "fix how far the map reaches, so the world is always the whole world"}
+      - {name: 'plt.gca().set_aspect("equal")', does: "one degree across = one degree up, so the map is not stretched"}
+      - {name: 'plt.locator_params(axis="y", integer=True)', does: "whole numbers on a count axis — half an earthquake is not a thing"}
+    harvest: "offerings/2023-spring_swansonhysell/Week01_Birthquake_intro/W1_inclass_finding_birthquakes.ipynb"
+    harvest_changes: >
+      The 2023 notebook is 39 cells, imports pandas ONLY, and draws NO FIGURES AT ALL. What was
+      kept: the birthquake question itself, the live USGS query, and the day-one tour of what a
+      cell and a kernel are. What changed, and why:
+      (1) ADDED PLOTS. The harvest ends with a printed table, so a beginner finishes hour one with
+      no way to see whether anything worked. Two histograms and two maps now carry the week.
+      (2) ADDED A YEAR OF DATA. The harvest only ever loads one day. A day is a dozen or two events
+      and shows nothing; a year is several thousand and draws the plate boundaries outright. The
+      contrast is now the closing lesson — same code, more data, a planetary pattern appears.
+      THE DEMO DAY IS PINNED in the term's course.yml, chosen for whose birthday it is. Do not
+      re-choose it. Before writing the lists section, CHECK WHERE THE MAXIMUM FALLS and build the
+      section around the answer: an earlier version of this note demanded the maximum sit at
+      neither end, which the pinned day violates — its largest event is also its first, and the
+      three that follow are its aftershocks. That turned out to be better material than the rule
+      was protecting.
+      (3) LISTS INSTEAD OF DATAFRAMES. The harvest indexes a DataFrame from the first minute.
+      Here pandas loads the file in a WATCH cell and hands back six plain lists, because P1
+      teaches lists and pandas properly belongs to D2.
+      (4) ONE WORKED PASS, NOT TWO. The harvest finds the instructor's birthquake and then the
+      student's, in full, twice. The second pass is now the homework, which halves class time and
+      turns repetition into practice.
+      (5) ADDED THE MAGNITUDE-CUTOFF FORK. Not in any prior offering: the same date returns an
+      order of magnitude more earthquakes with the floor removed (measured factors of 15-19 on the
+      dates tried), which is where catalogue completeness enters the course. Compute the factor for
+      whichever date you use; do not quote one from here.
+      (6) ADDED SELF-CHECKS after each homework part.
+
+  - id: P2
+    title: "Dictionaries"
+    topic: "Dictionaries"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    teaches: [dicts, keys and values, lookup]
+    requires: [P1]
+    minutes: 0
+    mode: reference
+    note: >
+      CUT from P1 and demoted to a reference page. Five concepts on day one, alongside
+      DataHub setup for 46 students — and the dependency graph shows NOTHING in the course
+      requires them. In a course where pandas does the work, value_counts() covers the counting
+      exercise dicts were introduced for. Available to any student who wants them.
+
+  - id: P3
+    title: "Loops and conditionals"
+    topic: "Loops"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    teaches: [for, range, accumulator pattern, if/elif/else, comparison operators]
+    functions:
+      - {name: "for x in things:",    does: "do the same thing once for each item"}
+      - {name: "range(n)",            does: "the numbers 0 to n-1, to count with"}
+      - {name: "list.append(x)",      does: "add one item to the end of a list"}
+      - {name: "if / elif / else",    does: "choose what to do, based on a comparison"}
+      - {name: "and / or / not",      does: "combine two conditions into one"}
+      - {name: "abs(x)",              does: "the size of a number, ignoring its sign"}
+      - {name: "x in things",         does: "true when that value is somewhere in the list"}
+      - {name: "None",                does: 'Python''s word for "nothing here" — you cannot compare it with a number'}
+      - {name: "plt.axvline(x)",      does: "a vertical line at x, to mark a boundary on a plot"}
+      - {name: 'plt.text(x, y, "Venus")', does: "write a word at a point on the axes"}
+    requires: [P1]
+    harvest_gives: "harvest supplies the METHOD ONLY — the Earth-science content is new"
+    minutes: 60
+    core: 40
+    extension: 20
+    mode: live
+    note: "Highest failure rate for true beginners. In Generation A this was not a topic until Week 5."
+    problem: "How big, how deep, how often?"
+    data: [nasa_exoplanet_archive]
+    harvest: "offerings/2020-fall_jupyterbook/folder_05/W5_loops.ipynb"
+
+  - id: P4
+    title: "Functions"
+    topic: "Functions"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    teaches: [def, arguments, return, docstring, reuse, a function as a named idea]
+    requires: [P3]
+    harvest_gives: "harvest supplies the METHOD ONLY — the Earth-science content is new"
+    minutes: 40
+    core: 30
+    extension: 10
+    mode: live
+    problem: "Magnitude to energy; distance between two points"
+    functions:
+      - {name: "def name(a, b):",     does: "write the recipe once and give it a name; the names in brackets are what it needs"}
+      - {name: "return value",        does: "hand one value back to whoever called the function"}
+      - {name: "a docstring",         does: "triple-quoted text as the first thing inside a function, saying what it does"}
+      - {name: "return a, b",         does: "hand back two values at once; catch them with a, b = f(...)"}
+      - {name: "help(f)",             does: "print a function's docstring, which is why writing one pays"}
+    harvest: "offerings/2020-fall_swansonhysell/week_05/W5_inclass_loma_prieta.ipynb  # haversine written as a function"
+
+  - id: P5
+    title: "Errors and debugging"
+    topic: "Debugging"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    teaches: [reading a traceback, NameError, TypeError, KeyError, IndexError, ValueError]
+    requires: [P1, P4]
+    minutes: 30
+    mode: live
+    note: "Paired with functions: writing your own function is how a beginner first creates their own errors."
+    harvest_external: "The Carpentries (CC BY 4.0) — the only beginner-tested error pedagogy surveyed"
+
+  # ------------------------------------------------------------ data stack
+  - id: D1
+    title: "Arrays — when your data is a grid"
+    topic: "Arrays"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    teaches: [arrays vs lists, shape, reshape, boolean masks, nan, elementwise arithmetic]
+    note_distributed: >
+      MEASURED across 68 archived notebooks: NumPy is called 741 times but only 26% of that is
+      array THINKING (array, arange, linspace, reshape, meshgrid). The other 74% is maths on
+      sequences — np.random 118, np.polyfit 40, np.log 28, np.mean 25 — which needs one line at
+      the moment of use, not a lesson three weeks early. So np.random is taught in S2
+      (Monte Carlo), the sklearn fitting API in ML1 (regression), np.log10 in D4 (log axes).
+    requires: [P3]
+    harvest_gives: "harvest supplies the method and PART of the content"
+    minutes: 40
+    core: 30
+    extension: 10
+    mode: live
+    problem: "Why is Earth's elevation bimodal?"   # the distribution lesson and the array lesson are the same lesson
+    data: [etopo20, mars_mola_megdr]
+    harvest: "offerings/2023-spring_swansonhysell/Week02_Global_Elevation/W2_inclass_Earth_elevation.ipynb"
+
+  - id: D2
+    title: "Tables — when your data has named columns"
+    topic: "Tables"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    opening: "First DataFrame is a table of the eight planets — columns a freshman already understands, and it is planetary science. (Idea from Abernathey, unlicensed: framing and NASA public data only.)"
+    teaches: [read_csv from a URL, head/info/describe, loc/iloc, boolean filtering, sort_values,
+              groupby, value_counts, isna/dropna/fillna, sentinel values]
+    note_moved: "to_datetime, set_index, resample and rolling moved to S2, the first module that needs event times."
+    requires: [D1]
+    harvest_gives: "harvest supplies BOTH the method and the Earth-science content"
+    minutes: 60
+    core: 40
+    extension: 20
+    mode: live
+    problem: "What does a global earthquake catalogue contain?"
+    data: [usgs_fdsn_live]
+    harvest: "offerings/2020-fall_jupyterbook/folder_04/W4_dataframes.ipynb"
+
+  - id: D4
+    title: "Plotting"
+    topic: "Plotting"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    title_note: "Basic plotting moved to P1; this session is figure CRAFT and LOG SCALES"
+    teaches: [figure and axes anatomy, log and log-log axes, choosing the right chart,
+              labels, legend, colorbar, subplots, savefig]
+    requires: [P1, D2]
+    harvest_gives: "harvest supplies BOTH the method and the Earth-science content"
+    minutes: 50
+    core: 35
+    extension: 15
+    mode: live
+    problem: "What does a magnitude distribution look like?"
+    harvest: "offerings/2020-fall_jupyterbook/folder_03/W3_visualize.ipynb"
+
+  - id: D5
+    title: "Mapping without a map library"
+    topic: "Maps"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    teaches: [lon/lat as an ordinary scatter, plotting boundary lines from a CSV,
+              why the data draws its own coastline, what a projection distorts and why]
+    requires: [D4]
+    harvest_gives: "no harvest — written from scratch"
+    minutes: 50
+    core: 35
+    extension: 15
+    mode: live
+    note: >
+      CARTOPY DROPPED. It was the only package missing from the DataHub image, which would have
+      meant 46 students running %pip install in the mapping session. It is not needed: a plain
+      plt.scatter(lon, lat) of 100k epicentres already draws the plate boundaries — the data IS
+      the map. VERIFIED: the USGS plate-boundary shapefiles convert to a plain lon/lat CSV using
+      the PYTHON STANDARD LIBRARY ALONE (360 segments, 9,853 vertices, 277 KB (ridges 164 / transform 104 / trench 92)), done once by the
+      instructor and shipped as a release asset; students plot it with plt.plot().
+      What is lost is real projections. What is gained: no install risk, one fewer library, and a
+      better lesson — you do not need a map library, the earthquakes draw the coastline for you.
+      Projections are still DISCUSSED (why Greenland looks enormous), using the Spring 2023
+      projection figures from the archive as images.
+    problem: "Where do earthquakes and volcanoes happen — and why there?"
+    data: [usgs_fdsn_live, gvp_live, plate_boundaries_csv]
+
+  - id: S2
+    title: "Probability and Monte Carlo"
+    topic: "Probability, Monte Carlo"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    teaches: [to_datetime, set_index, resample, rolling, binomial, Poisson, exponential,
+              empirical vs theoretical, Monte Carlo simulation FROM AN ASSUMED DISTRIBUTION,
+              random seeds, recurrence, 30-year probability]
+    note_no_scipy: >
+      Distributions are handled with np.random plus counting — which IS the Monte Carlo method
+      this week teaches — rather than scipy.stats. One fewer API surface, no content lost.
+    not_this_week: >
+      Stating uncertainty belongs to S4. S2 reasons FORWARD — assume a model, predict the world.
+      S4 reasons BACKWARD — take the data, ask how much the estimate would wobble. S2 ends
+      with a point answer (lambda = 0.03/yr, so P ~ 11%); S4 asks where lambda came from,
+      bootstraps it, and turns that point into a range.
+    requires: [D1]
+    harvest_gives: "harvest supplies the METHOD ONLY — the Earth-science content is new"
+    minutes: 100
+    core: 70
+    extension: 30
+    mode: live
+    problem: "Do earthquakes cluster — or is that just what randomness looks like?"
+    note: "Ends on the probabilistic forecast the course catalogue promises. 'Overdue' is subtle under a memoryless model — the limits are the lesson."
+    data: [usgs_fdsn_live]
+    harvest: "offerings/2023-spring_swansonhysell/Week06_Probabilities_Geomagnetic_Field/W6_inclass_probability.ipynb"
+
+  - id: S3
+    title: "Transformations and feature engineering"
+    topic: "Feature engineering"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    teaches: [why transform before modelling, skewed and heavy-tailed data, why the mean misleads,
+              log and log-log axes, linearising a relationship, fitting a line to transformed data,
+              building a feature from raw columns, scaling, completeness of a dataset]
+    note_standard: >
+      Standard DS topic in the same slot: Data 100 lecture 11 is "Constant Model, Loss,
+      Transformations", immediately after simple linear regression, and lecture 15 is
+      "Feature Engineering". Feature engineering has never been taught in any EPS 88 offering.
+      Gutenberg-Richter and Omori are the APPLICATIONS here, not the topic.
+    requires: [S2, P4, ML1]
+    harvest_gives: "harvest supplies the METHOD ONLY — the Earth-science content is new"
+    minutes: 100
+    core: 70
+    extension: 30
+    mode: live
+    problem: "How many M6 earthquakes per decade?  How do aftershocks die away?"
+    data: [gvp_live, usgs_fdsn_live]
+    harvest: "offerings/2020-fall_swansonhysell/week_05/W5_assignement_richter.ipynb"
+
+  - id: S4
+    title: "Uncertainty — bootstrap and confidence intervals"
+    topic: "Confidence intervals"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    teaches: [resampling with replacement, the bootstrap distribution, percentile confidence
+              intervals, error bars on a fitted slope, "is this difference real or is it scatter",
+              reporting a number with an interval rather than a point]
+    requires: [S2, ML1]
+    harvest_gives: "harvest supplies the METHOD ONLY — the Earth-science content is new"
+    minutes: 100
+    core: 70
+    extension: 30
+    mode: live
+    note: >
+      THE HOLE THIS FILLS: the project's stated thesis is "a quantified claim with STATED
+      UNCERTAINTY" and 15% of its rubric is interpretation_and_uncertainty — yet no session
+      taught how to compute one. Data 8 bootstraps means and proportions; this bootstraps a
+      FITTED SLOPE, which Data 8 does not reach.
+      VERIFIED 2026-08-30. San Francisco sea level, 1,503 monthly means 1900-2025:
+      slope 1.96 mm/yr, bootstrap 95% CI [1.87, 2.05] — zero far outside, 20 cm by 2100
+      (CI 19-21). Then the same method on S3's earthquake forecast: predicted 1.66 M7+ events
+      in 36 years, CI [1.01, 2.50], OBSERVED 5 — outside the interval, so Gutenberg-Richter
+      extrapolation is genuinely failing rather than merely unlucky. Every flagship problem in
+      this course has a punchline that needs an interval.
+    problem: "How fast is San Francisco Bay rising — and could the answer be zero?"
+    contrast_with_S2: >
+      Same np.random, same histogram, OPPOSITE DIRECTION. Monte Carlo (S2) draws from a
+      distribution you assumed: np.random.poisson(lam). The bootstrap (S4) draws from the
+      data you have, assuming nothing: data.sample(n, replace=True). Separating them, then returning
+      to the same earthquake question, is what makes the difference visible.
+    data: [noaa_sealevel_sf, usgs_fdsn_live]
+    harvest: "offerings/2020-fall_jupyterbook/folder_08/W8_bootstrapping.ipynb"
+    harvest_external: "geo-smart/mlgeo-book book/Chapter2-DataManipulation/2.6_resampling.ipynb (MIT)"
+
+  - id: ML1
+    title: "Linear regression"
+    topic: "Linear regression"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    teaches: [least squares, slope and intercept meaning, R squared, residuals,
+              sklearn fit/predict/score, forcing a fit through the origin when physics demands it,
+              the same modelling decision on a second dataset]
+    one_fitting_api: >
+      SKLEARN IS THE ONLY ROUTE TO A FIT IN THIS COURSE. Not np.polyfit, even though numpy is
+      allowed and polyfit is one line — because fit/predict/score is learned once here and then
+      reused unchanged in ML2, ML3, ML4, ML5 and ML6. That is what makes the later weeks read as
+      "three more lines" rather than a new idea each time, and it is worth a slightly heavier
+      first fit to buy it.
+      Forcing through the origin is LinearRegression(fit_intercept=False) — readable, and far
+      better than the polyfit trick of appending a fake point at the origin with weight 1e6,
+      which a freshman cannot reason about.
+      ML2's degree sweep uses PolynomialFeatures(degree=d) with LinearRegression. That is not
+      extra machinery: building new columns from old ones IS the feature engineering S3 teaches,
+      so the sweep reinforces the earlier week instead of introducing a second fitting idiom.
+      np.log10, np.random and np.mean stay in use — the rule is about MODEL FITTING, not numpy.
+    requires: [D1, D2, D4]
+    harvest_gives: "harvest supplies BOTH the method and the Earth-science content"
+    minutes: 100
+    core: 70
+    extension: 30
+    mode: live
+    problem: "How old is the universe?  →  How fast does the seafloor spread?"
+    note_second_example: >
+      VERIFIED. Hubble: a free fit gives slope 67.5 with intercept 711.8 km/s, but zero distance
+      must mean zero recession; forced through the origin, H0 = 70.7 and 1/H0 = 13.84 Gyr.
+      Then the SAME decision on the Pacific-Antarctic Ridge: a free fit gives 6.11 cm/yr with an
+      intercept of +181 km, which is physically impossible since distance from the ridge is zero
+      at age zero; forced through the origin, 6.77 cm/yr against a published ~7. The Atlantic
+      gives 1.74. Two datasets, one modelling decision, and the fourfold difference between
+      ridges IS the science.
+    data: [freedman2000_sn1a, mar_par_age_distance, noaa_sealevel_sf]
+    harvest: "offerings/2023-spring_swansonhysell/Week08_Age_of_the_Universe/W8_inclass_age_of_universe.ipynb"
+
+  - id: ML2
+    title: "Bias, variance and model selection"
+    topic: "Model selection"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    teaches: [polynomial degree, underfitting, overfitting, train/test split, held-out evaluation, leakage, feature selection]
+    requires: [ML1, S4]
+    harvest_gives: "harvest supplies the method and PART of the content"
+    minutes: 100
+    core: 70
+    extension: 30
+    mode: live
+    note: "The spine of the second half — every later ML module depends on it. Leakage is taught on quarry-blast depth, which the analyst sets BECAUSE they know it is a blast."
+    problem: "When the straight line fails: the accelerating universe, then CO2, then Omori"
+    data: [betoule2014_muz, noaa_co2_mlo, usgs_fdsn_live]
+    harvest: "offerings/2024-fall_zhu/docs/lectures/04_regression.ipynb"
+
+  - id: ML2b
+    title: "Cross-validation"
+    topic: "Cross-validation"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    teaches: [KFold, cross_val_score, averaged scores, why one split can mislead]
+    requires: [ML2]
+    minutes: 50
+    mode: deferred
+    note: "DEFERRED to a later offering (Weiqiang, 2026-08-28). Never taught in eleven EPS 88 offerings; one held-out set is enough for freshmen. Specified here so it is not forgotten."
+
+  - id: ML3
+    title: "Drawing the line — logistic regression and Naive Bayes"
+    topic: "Logistic regression"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    teaches: [logistic regression, Naive Bayes, decision boundary, confusion matrix, precision, recall, F1, class imbalance, stratify]
+    requires: [ML2]
+    harvest_gives: "harvest supplies the METHOD ONLY — the Earth-science content is new"
+    minutes: 100
+    core: 70
+    extension: 30
+    mode: live
+    note: "Two probabilistic classifiers on one problem. 2,802 blasts vs 128,707 earthquakes makes precision/recall a discovery: 'always say earthquake' scores 98% and is useless. Precision/recall have NEVER been taught here, though Fall 2024 used confusion matrices in 19 notebooks."
+    problem: "Earthquake or quarry blast?"
+    data: [usgs_fdsn_live]
+    harvest: "offerings/2024-fall_zhu/docs/lectures/05_classification.ipynb"
+
+  - id: ML4
+    title: "Beyond a straight line — trees, forests and SVM"
+    topic: "SVM, Decision Trees"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    teaches: [decision tree, random forest, SVM (widest gap), feature importance, comparing models behind one API]
+    requires: [ML3]
+    harvest_gives: "harvest supplies BOTH the method and the Earth-science content"
+    minutes: 100
+    core: 70
+    extension: 30
+    mode: live
+    problem: "Where did this rock come from?"
+    data: [vermeesch2006]
+    harvest: "offerings/2024-fall_zhu/docs/lectures/06_classification.ipynb"
+
+
+  - id: ML5
+    title: "Clustering — k-means, DBSCAN and PCA"
+    topic: "Clustering"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    teaches: [k-means, inertia, choosing k, DBSCAN, eps and min_samples, clusters of arbitrary
+              shape, the NOISE label, why k-means cannot say "this belongs to nothing",
+              PCA, explained variance]
+    requires: [D2, S3, ML4, S4]
+    harvest_gives: "harvest supplies the METHOD ONLY — the Earth-science content is new"
+    minutes: 100
+    core: 65
+    extension: 35
+    mode: live
+    note: "Hides the labels students used in ML4 and asks k-means to find them again, so clustering is checkable rather than decorative. Retires the synthetic rock_samples.csv."
+    problem: "Which earthquakes belong to the same structure?  Can we sort rocks with the labels hidden?"
+    data: [usgs_fdsn_live, vermeesch2006]
+    harvest: "offerings/2026-spring_gleeson/Week 10 - Clustering.ipynb"
+
+  - id: ML6
+    title: "Neural networks"
+    topic: "Neural networks"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    teaches: [perceptron, stacking, activation, loss, gradient descent, epochs, learning curves, 1-D convolution, PyTorch nn.Module]
+    requires: [ML3]
+    harvest_gives: "harvest supplies the METHOD ONLY — the Earth-science content is new"
+    minutes: 100
+    core: 70
+    extension: 30
+    mode: live
+    note: "Closes with a ten-minute demo of the group's generative and foundation-model work — which is CS229's newest Part. Real waveforms, not MNIST."
+    problem: "Can a machine hear an earthquake?"
+    data: [phasenet_ncedc]
+    paper: >
+      Zhu & Beroza (2019), "PhaseNet: a deep-neural-network-based seismic arrival-time picking
+      method", Geophysical Journal International 216, 261-273. The week reproduces the paper's task
+      at classroom scale: same 100 Hz three-component input, same manual P and S labels, smaller net.
+    data_status: >
+      RESOLVED 2026-08-30, and the earlier obspy scraper is RETIRED. Source is
+      gs://quakeflow_dataset/NCEDC/waveform_parquet — already curated, already labelled, no
+      station-by-station downloading. tools/make_phasenet_subset.py runs ONCE instructor-side and
+      writes data/phasenet_ncedc.npz (~40 MB, ships as a release asset); students load it with
+      numpy alone, so the six-library limit holds.
+      MEASURED on the built subset: 2,000+ traces, 3 components, 2,048 samples at 100 Hz, all
+      finite, 226 stations, 666 events. P index spread 307-921 within the window (a RANDOM offset,
+      so the network cannot learn a fixed position). S-P 0.07-11.92 s. First-motion polarity is
+      near-perfectly balanced, 951 U / 947 D.
+    the_task_is_PICKING, not detection: >
+      MEASURED, and it settles which task the week runs on.
+      PICKING — the network is NECESSARY. STA/LTA, the classical picker, lands within 0.5 s on
+      47-59% of traces depending on its two parameters (median error 0.14-0.70 s; 29% never
+      trigger at textbook settings). A small U-Net on the same data reaches 90.8%. That gap is
+      real, it is large, and students watch the classical method fail before the network appears.
+      DETECTION — decorative, and the week must say so rather than pretend. On raw windows a
+      one-line amplitude threshold scores 84.8% and BEATS the CNN on normalised windows (83.9%).
+      The "threshold collapses to 50% once normalised" figure is a TAUTOLOGY, not a result: after
+      unit-peak scaling the peak feature is identically 1 for every window. Use detection as the
+      five-minute warm-up that motivates picking; do not stage it as the network's victory.
+      Median post-P/pre-P amplitude ratio is 7.1x (5.9x at 0.5 s, 8.8x full-window) — nothing like
+      the 6,587x of the retired scrape, which is why detection is merely easy rather than trivial.
+    runs_on_cpu: >
+      The picking U-Net trains at 1.2 s/epoch on CPU; 25 epochs is about 31 seconds, and np.load
+      of the 46 MB file takes 0.21 s. DataHub CPU is sufficient and Colab is NOT needed for this
+      week — only torch has to be in the image.
+    data_trap: >
+      CLIP THE WAVEFORMS. A handful of traces carry instrument glitches reaching 1e7 std after
+      per-component normalisation. They raise nothing: the loss falls, the P channel collapses,
+      argmax pins to the window edge, and the net converges to 0.0% within 0.5 s with no error.
+      np.clip(w, -10, 10) takes the same network to 90.8%. The builder now clips at write time,
+      so a freshly built file is safe; any older copy is not.
+    harvest: "offerings/2024-fall_zhu/docs/lectures/09_neural_networks1.ipynb"
+
+  # ---------------------------------------------------------- applications
+
+  - id: A2
+    title: "Ground motion — how hard will it shake? (alternative problem for ML1/ML2)"
+    topic: "Ground-motion regression"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    teaches: [log-log regression, power-law model, physics-based model with source depth, model criticism]
+    requires: [ML1]
+    minutes: 100
+    mode: flexible
+    note: "Not a session of its own — a swap-in problem for ML1 or ML2, or self-study. Dreger's otter-graded module, 2021-2023. Tiny data, real physics, and it explicitly asks 'what is wrong with this function?'"
+    problem: "How hard will the ground shake at distance R?"
+    data: [napa_parkfield_pga]
+    harvest: "offerings/2022-fall/week09_datahubfiles/W09_NonLinear_Regression_InClass.ipynb"
+
+
+  - id: A4
+    title: "Project scaffolding"
+    topic: "Project scaffolding"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    teaches: [scoping a question, choosing an appropriate method, stating an answer with uncertainty]
+    requires: [ML2]
+    minutes: 60
+    mode: distributed
+    note: >
+      Not a session of its own. Three 20-minute segments appended to ML2, ML3 and ML4:
+      spec released, proposal due (data loaded and PLOTTED, not a paragraph), progress check.
+      Better project management than one late workshop, and it frees a Monday.
+    problem: "Your own"
+
+  # ------------------------------------------------------------- reference
+  - id: R1
+    title: "Function catalogue"
+    topic: "Function catalogue"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    teaches: [every function used in the course, in plain English, by module]
+    requires: []
+    minutes: 0
+    mode: reference
+    note: "Restores Appendix A of the Fall 2020 Jupyter Book. Each module appends its own entries. This is the 'written material for students who need to review at their own pace' the teaching statement promises."
+    harvest: "offerings/2020-fall_jupyterbook/append_A.md"
+
+  - id: R2
+    title: "Earth-science glossary"
+    topic: "Glossary"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
+    requires: []
+    minutes: 0
+    mode: reference
+    harvest: "offerings/2020-fall_jupyterbook/append_B.md"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PLAIN WORDS — every DS/ML idea in one sentence, no formal name, no mathematics.
+# The plain-words rule made into data: the notebook's closing summary is generated from it,
+# and the sentence a student meets in the notebook must be THIS sentence.
+plain_words:
+  - {idea: "Catalogue completeness", module: P1, words: "A catalogue lists what somebody's instruments recorded, not what happened. Where there are no seismometers there are no earthquakes in the file."}
+  - {idea: "Accumulator pattern", module: P3, words: "Set a counter to 0 before the loop starts and add to it inside; same idea for a list — start it empty and append inside."}
+  - {idea: "Equilibrium temperature", module: P4, words: "The temperature a planet would sit at if starlight were the only thing heating it and it had no air."}
+  - {idea: "Albedo",               module: P4, words: "The fraction of the starlight falling on a world that it reflects straight back into space; only the rest is absorbed and turned into heat."}
+  - {idea: "The greenhouse effect", module: P4, words: "The difference between the temperature a world would have with no air and the temperature it actually has."}
+  - {idea: "Monte Carlo",          module: S2,  words: "Make up a world where the effect is absent, a thousand times, and see how often chance alone beats what you measured."}
+  - {idea: "Linear regression",    module: ML1, words: "Draw the best straight line. Best means the smallest total miss."}
+  - {idea: "Fit through the origin", module: ML1, words: "Sometimes physics already knows one point on the line. Make the line go through it."}
+  - {idea: "Log axes",             module: S3,  words: "When the values span factors of a thousand, plot the exponents instead and a curve becomes a line."}
+  - {idea: "Power law",            module: S3,  words: "Every step up in size divides the count by the same factor — which lets you predict the sizes you have never seen."}
+  - {idea: "Bootstrap",            module: S4,  words: "Ask the data the same question a thousand times, using a different random slice of itself each time."}
+  - {idea: "Confidence interval",  module: S4,  words: "Not one number but the range your number would have wandered over, had the world rolled differently."}
+  - {idea: "Overfitting",          module: ML2, words: "A curve that memorises the data you gave it fails on the data you did not."}
+  - {idea: "Train/test split",     module: ML2, words: "Hide some data from yourself, then check."}
+  - {idea: "Bias-variance",        module: ML2, words: "Too simple and you miss the pattern; too flexible and you memorise the noise."}
+  - {idea: "Learning curve",       module: ML2, words: "Watch two lines. When training keeps falling and test turns up, stop."}
+  - {idea: "Logistic regression",  module: ML3, words: "The same straight line — but now it outputs a probability between 0 and 1."}
+  - {idea: "Naive Bayes",          module: ML3, words: "What does a quarry blast usually look like? Shallow, weekday, mid-afternoon. Score each clue and multiply. Pretending the clues are independent is obviously wrong, and it works anyway."}
+  - {idea: "Precision / recall",   module: ML3, words: "Of the ones you flagged, how many were right? Of the real ones, how many did you catch?"}
+  - {idea: "Leakage",              module: ML3, words: "You got 99 percent. Be suspicious. Did one of your columns already know the answer?"}
+  - {idea: "Baseline",             module: ML3, words: "Write the dumbest rule you can, first. Any model that cannot beat it is decoration."}
+  - {idea: "Decision tree",        module: ML4, words: "A flowchart of yes/no questions, learned from the data instead of written by hand."}
+  - {idea: "Random forest",        module: ML4, words: "Ask a hundred slightly different trees and take a vote."}
+  - {idea: "SVM",                  module: ML4, words: "Of all the lines separating the two groups, take the one leaving the widest gap."}
+  - {idea: "Imputation",           module: ML4, words: "A blank is not a zero. Fill it with something defensible and say what you filled it with."}
+  - {idea: "PCA",                  module: ML5, words: "If two measurements say nearly the same thing, replace them with one."}
+  - {idea: "k-means",              module: ML5, words: "Put k pins on the map, give each point to its nearest pin, move the pins, repeat."}
+  - {idea: "DBSCAN",               module: ML5, words: "The same idea, but it is allowed to say: this one belongs to nothing."}
+  - {idea: "Neural network",       module: ML6, words: "A stack of the logistic regressions you already know."}
+  - {idea: "Gradient descent",     module: ML6, words: "Roll downhill on the error surface."}
+  - {idea: "1-D CNN",              module: ML6, words: "Slide a small pattern-detector along the signal."}

@@ -1,0 +1,15 @@
+time,latitude,longitude,depth,mag,magType,nst,gap,dmin,rms,net,id,updated,place,type,horizontalError,depthError,magError,magNst,status,locationSource,magSource
+1983-12-02T03:09:05.660Z,14.066,-91.924,67.1,7.0,mw,,,,1.1,us,usp000207b,2025-12-19T21:25:50.831Z,"25 km S of Champerico, Guatemala",earthquake,,2.0,,,reviewed,us,nc
+1983-12-02T06:31:31.680Z,76.632,6.761,10.0,5.0,mb,,,,1.0,us,usp000207c,2014-11-07T00:34:12.812Z,"279 km SW of Longyearbyen, Svalbard and Jan Mayen",earthquake,,,,36.0,reviewed,us,us
+1983-12-02T08:54:02.500Z,14.134,-91.793,33.0,4.5,mb,,,,0.9,us,usp000207d,2014-11-07T00:34:12.851Z,"21 km SE of Champerico, Guatemala",earthquake,,,,4.0,reviewed,us,us
+1983-12-02T10:45:08.470Z,27.915,56.655,33.0,4.8,mb,,,,0.8,us,usp000207e,2014-11-07T00:34:12.856Z,"88 km NNE of Bandar Abbas, Iran",earthquake,,,,21.0,reviewed,us,us
+1983-12-02T11:55:23.800Z,14.138,-91.924,59.4,5.2,mb,,,,1.0,us,usp000207f,2025-12-19T21:25:51.722Z,"17 km S of Champerico, Guatemala",earthquake,,4.3,,43.0,reviewed,us,us
+1983-12-02T12:29:08.020Z,-6.675,71.67,10.0,4.5,mb,,,,0.8,us,usp000207g,2014-11-07T00:34:12.907Z,Chagos Archipelago region,earthquake,,,,5.0,reviewed,us,us
+1983-12-02T13:45:04.660Z,14.327,-91.781,35.4,4.8,mb,,,,1.1,us,usp000207j,2014-11-07T00:34:12.920Z,"14 km ENE of Champerico, Guatemala",earthquake,,15.2,,5.0,reviewed,us,us
+1983-12-02T14:50:01.490Z,-20.387,-173.669,33.0,4.7,mb,,,,1.1,us,usp000207m,2014-11-07T00:34:12.935Z,"95 km SE of Pangai, Tonga",earthquake,,,,2.0,reviewed,us,us
+1983-12-02T15:25:23.510Z,-6.657,71.795,10.0,5.0,mb,,,,1.1,us,usp000207n,2025-12-19T21:25:52.415Z,Chagos Archipelago region,earthquake,,,,5.0,reviewed,us,us
+1983-12-02T19:36:29.740Z,-6.787,71.949,10.0,4.9,mb,,,,1.2,us,usp000207t,2014-11-07T00:34:12.972Z,Chagos Archipelago region,earthquake,,,,6.0,reviewed,us,us
+1983-12-02T20:26:54.550Z,0.236,123.648,211.9,5.0,mb,,,,1.4,us,usp000207w,2014-11-07T00:34:12.987Z,"73 km ESE of Gorontalo, Indonesia",earthquake,,8.3,,2.0,reviewed,us,us
+1983-12-02T20:38:16.070Z,-6.577,71.091,10.0,5.3,mb,,,,1.1,us,usp000207x,2025-12-19T21:25:53.110Z,Chagos Archipelago region,earthquake,,,,38.0,reviewed,us,us
+1983-12-02T20:59:06.850Z,-6.84,72.203,10.0,4.9,mb,,,,1.0,us,usp000207y,2014-11-07T00:34:13.032Z,Chagos Archipelago region,earthquake,,,,16.0,reviewed,us,us
+1983-12-02T23:08:39.490Z,7.03,38.599,10.0,5.1,mb,,,,1.0,us,usp0002080,2022-04-27T23:40:13.224Z,"14 km ESE of Hawassa, Ethiopia",earthquake,,,,29.0,reviewed,us,us

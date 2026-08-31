@@ -1,0 +1,452 @@
+time,latitude,longitude,depth,mag,magType,nst,gap,dmin,rms,net,id,updated,place,type,horizontalError,depthError,magError,magNst,status,locationSource,magSource
+1983-01-01T05:31:56.130Z,-16.943,-69.114,172.0,6.3,mw,,,,1.0,us,usp0001rxv,2022-04-28T00:14:41.564Z,"42 km S of Desaguadero, Peru",earthquake,,,,,reviewed,us,nc
+1983-01-03T03:39:47.170Z,-4.846,103.153,59.0,5.5,mb,,,,1.0,us,usp0001ryz,2026-01-07T19:42:32.897Z,"91 km S of Pagar Alam, Indonesia",earthquake,,,,29.0,reviewed,us,us
+1983-01-03T06:04:02.040Z,-59.495,-26.262,45.0,5.5,mb,,,,1.0,us,usp0001rz1,2022-04-28T00:15:05.795Z,South Sandwich Islands region,earthquake,,,,8.0,reviewed,us,us
+1983-01-04T03:09:02.930Z,-3.151,101.227,54.1,5.5,mb,,,,1.0,us,usp0001rze,2025-12-19T21:33:49.586Z,"122 km S of Sungai Penuh, Indonesia",earthquake,,4.3,,34.0,reviewed,us,us
+1983-01-05T02:01:03.230Z,54.744,162.829,33.0,5.6,ms,,,,1.1,us,usp0001s02,2025-12-19T21:33:52.125Z,"166 km S of Ust’-Kamchatsk Staryy, Russia",earthquake,,,,13.0,reviewed,us,us
+1983-01-05T04:28:10.330Z,9.665,122.182,33.0,5.6,ms,,,,1.0,us,usp0001s06,2025-12-19T21:33:53.338Z,"26 km WSW of Sipalay, Philippines",earthquake,,,,8.0,reviewed,us,us
+1983-01-07T06:23:11.860Z,-15.296,-177.9,48.0,5.8,ms,,,,1.1,us,usp0001s1h,2025-12-19T21:33:56.811Z,"111 km SSE of Alo, Wallis and Futuna",earthquake,,,,10.0,reviewed,us,us
+1983-01-08T11:21:29.540Z,-15.394,-173.33,33.0,6.4,mw,,,,1.1,us,usp0001s30,2025-12-19T21:34:00.357Z,Tonga,earthquake,,,,,reviewed,us,nc
+1983-01-08T15:04:56.210Z,-3.161,148.195,14.3,6.1,ms,,,,1.0,us,usp0001s33,2025-12-19T21:34:02.285Z,"161 km SE of Lorengau, Papua New Guinea",earthquake,,3.6,,10.0,reviewed,us,us
+1983-01-09T21:03:54.230Z,55.179,163.244,33.0,6.1,ms,,,,1.0,us,usp0001s40,2025-12-19T21:34:04.785Z,"126 km SSE of Ust’-Kamchatsk Staryy, Russia",earthquake,,,,12.0,reviewed,us,us
+1983-01-10T01:57:55.760Z,-1.928,133.696,33.0,5.7,ms,,,,1.2,us,usp0001s44,2025-12-19T21:34:05.989Z,"124 km SSW of Manokwari, Indonesia",earthquake,,,,4.0,reviewed,us,us
+1983-01-10T09:17:34.710Z,-22.006,-68.47,121.0,5.6,mb,,,,1.3,us,usp0001s4c,2022-04-28T00:15:35.899Z,"68 km NE of Calama, Chile",earthquake,,,,64.0,reviewed,us,us
+1983-01-10T12:32:21.610Z,-27.237,-63.301,558.1,5.7,mb,,,,0.9,us,usp0001s4e,2022-04-28T00:15:37.618Z,"24 km SSW of El Hoyo, Argentina",earthquake,,1.1,,63.0,reviewed,us,us
+1983-01-13T09:23:47.990Z,-35.813,-102.631,10.0,5.6,mb,,,,1.3,us,usp0001s6j,2025-12-19T21:34:09.835Z,southeast of Easter Island,earthquake,,,,16.0,reviewed,us,us
+1983-01-14T18:20:52.670Z,55.911,-154.154,33.0,5.8,ms,,,,1.1,us,usp0001s7f,2025-12-19T21:34:15.560Z,"115 km S of Akhiok, Alaska",earthquake,,,,20.0,reviewed,us,us
+1983-01-15T00:16:52.180Z,7.405,124.575,42.1,5.6,mb,,,,0.9,us,usp0001s7t,2025-12-19T21:34:16.763Z,"7 km N of Alamada, Philippines",earthquake,,4.2,,30.0,reviewed,us,us
+1983-01-15T00:39:34.260Z,33.268,136.04,434.8,5.5,mb,,,,1.0,us,usp0001s7v,2022-04-28T00:16:06.956Z,"51 km S of Shing?, Japan",earthquake,,0.9,,53.0,reviewed,us,us
+1983-01-15T00:49:53.690Z,52.844,160.076,30.0,5.6,mb,,,,0.9,us,usp0001s7w,2025-12-19T21:34:17.984Z,"98 km ESE of Petropavlovsk-Kamchatsky, Russia",earthquake,,,,79.0,reviewed,us,us
+1983-01-16T13:10:45.490Z,-16.782,-177.155,33.0,5.7,mb,,,,1.3,us,usp0001s98,2025-12-19T21:34:21.558Z,"292 km SSE of Alo, Wallis and Futuna",earthquake,,,,23.0,reviewed,us,us
+1983-01-16T22:10:12.230Z,-5.458,147.046,234.9,6.7,mw,,,,0.9,us,usp0001s9g,2022-04-28T00:16:22.105Z,"140 km N of Lae, Papua New Guinea",earthquake,,1.4,,,reviewed,us,nc
+1983-01-17T12:41:29.700Z,38.026,20.228,14.3,7.0,mw,,,,1.3,us,usp0001sa1,2025-12-19T21:34:22.730Z,"26 km SW of Lixoúri, Greece",earthquake,,1.9,,,reviewed,us,nc
+1983-01-18T08:43:19.040Z,-6.489,147.446,47.0,5.5,mb,,,,0.9,us,usp0001sbv,2020-08-26T22:23:53.929Z,"44 km W of Finschhafen, Papua New Guinea",earthquake,,,,1.0,reviewed,us,us
+1983-01-18T15:23:36.850Z,-57.966,-24.311,56.0,6.5,ms,,,,1.2,us,usp0001sc6,2025-12-19T21:34:27.342Z,South Sandwich Islands region,earthquake,,,,14.0,reviewed,us,us
+1983-01-19T00:02:13.690Z,38.173,20.225,18.5,5.6,ms,,,,1.2,us,usp0001scn,2025-12-19T21:34:28.458Z,"18 km W of Lixoúri, Greece",earthquake,,4.1,,6.0,reviewed,us,us
+1983-01-21T14:20:08.530Z,-3.464,141.31,34.0,5.5,mb,,,,1.1,us,usp0001sfc,2025-12-19T21:34:31.955Z,"86 km S of Vanimo, Papua New Guinea",earthquake,,,,21.0,reviewed,us,us
+1983-01-22T01:24:34.650Z,-6.667,102.985,41.0,5.5,ms,,,,0.9,us,usp0001sfq,2025-12-19T21:34:34.310Z,"286 km WSW of Bandar Lampung, Indonesia",earthquake,,,,6.0,reviewed,us,us
+1983-01-22T01:27:44.160Z,-6.672,103.027,40.0,6.0,ms,,,,1.1,us,usp0001sfr,2025-12-19T21:34:35.431Z,"282 km WSW of Bandar Lampung, Indonesia",earthquake,,,,1.0,reviewed,us,us
+1983-01-22T06:44:36.440Z,-6.713,102.976,29.0,6.1,ms,,,,1.1,us,usp0001sfu,2025-12-19T21:34:36.511Z,"290 km WSW of Bandar Lampung, Indonesia",earthquake,,,,14.0,reviewed,us,us
+1983-01-22T12:41:55.160Z,45.223,7.164,10.0,5.5,mb,,,,0.8,us,usp0001sg7,2020-08-26T22:24:25.738Z,"4 km WSW of Usseglio, Italy",earthquake,,,,1.0,reviewed,us,us
+1983-01-23T16:36:39.290Z,-37.219,-95.179,10.0,5.5,mb,,,,1.1,us,usp0001sh9,2025-12-19T21:34:41.275Z,southeast of Easter Island,earthquake,,,,6.0,reviewed,us,us
+1983-01-24T08:17:39.610Z,16.147,-95.232,56.8,6.3,mb,,,,1.2,us,usp0001shv,2025-12-19T21:34:44.885Z,"5 km SW of Salina Cruz, Mexico",earthquake,,2.7,,78.0,reviewed,us,us
+1983-01-24T08:43:03.300Z,4.209,122.641,607.4,5.5,mb,,,,0.9,us,usp0001shx,2022-04-28T00:17:06.146Z,"217 km SSE of Tabiauan, Philippines",earthquake,,2.5,,25.0,reviewed,us,us
+1983-01-24T13:02:37.240Z,51.381,176.251,33.0,5.7,ms,,,,1.2,us,usp0001sj8,2025-12-19T21:34:46.136Z,"265 km SE of Attu Station, Alaska",earthquake,,,,10.0,reviewed,us,us
+1983-01-24T13:04:15.230Z,16.214,-95.215,65.5,5.5,mb,,,,1.0,us,usp0001sj9,2022-04-28T00:17:12.828Z,"4 km S of La Noria, Mexico",earthquake,,2.9,,40.0,reviewed,us,us
+1983-01-24T16:34:08.470Z,39.74,-14.484,33.0,5.8,mb,,,,1.3,us,usp0001sjj,2025-12-19T21:34:48.519Z,North Atlantic Ocean,earthquake,,,,69.0,reviewed,us,us
+1983-01-24T23:09:21.430Z,12.942,93.582,78.0,6.8,mw,,,,1.3,us,usp0001sjv,2022-04-28T00:17:15.235Z,"166 km NE of Bamboo Flat, India",earthquake,,,,,reviewed,us,nc
+1983-01-25T06:08:07.180Z,-3.601,140.193,18.4,5.8,ms,,,,1.2,us,usp0001sk5,2025-12-19T21:34:50.826Z,"121 km SSW of Abepura, Indonesia",earthquake,,3.1,,4.0,reviewed,us,us
+1983-01-26T04:43:20.580Z,-49.556,-114.079,10.0,6.4,mw,,,,1.4,us,usp0001sm6,2025-12-19T21:34:57.940Z,southern East Pacific Rise,earthquake,,,,,reviewed,us,nc
+1983-01-26T16:02:21.350Z,-30.383,-179.339,238.0,7.0,mw,,,,1.2,us,usp0001smj,2022-04-28T00:17:18.777Z,Kermadec Islands region,earthquake,,,,,reviewed,us,nc
+1983-01-27T19:01:35.300Z,-24.105,-66.96,188.0,5.6,mb,,,,1.1,us,usp0001snh,2022-04-28T00:17:21.112Z,"Salta, Argentina",earthquake,,,,27.0,reviewed,us,us
+1983-01-28T03:15:09.330Z,2.602,124.075,354.0,5.6,mb,,,,1.2,us,usp0001snx,2022-04-28T00:17:22.321Z,"150 km NW of Manado, Indonesia",earthquake,,,,49.0,reviewed,us,us
+1983-01-28T14:23:03.020Z,-10.887,165.924,64.0,5.6,mb,,,,1.0,us,usp0001sp9,2025-12-19T21:35:02.681Z,"22 km SE of Lata, Solomon Islands",earthquake,,,,30.0,reviewed,us,us
+1983-01-28T23:11:05.860Z,-36.226,-100.974,10.0,5.5,ms,,,,1.1,us,usp0001spj,2025-12-19T21:35:03.990Z,southeast of Easter Island,earthquake,,,,1.0,reviewed,us,us
+1983-01-29T15:29:17.930Z,-58.151,-24.206,42.0,5.5,ms,,,,1.3,us,usp0001sq7,2025-12-19T21:35:05.191Z,South Sandwich Islands region,earthquake,,,,2.0,reviewed,us,us
+1983-01-30T22:45:41.560Z,33.407,140.812,63.1,5.7,mb,,,,0.9,us,usp0001src,2025-12-19T21:35:08.898Z,"195 km SSE of Tateyama, Japan",earthquake,,1.9,,66.0,reviewed,us,us
+1983-01-31T21:17:31.510Z,-3.48,177.709,31.0,5.6,mw,,,,1.0,us,usp0001ss8,2025-12-19T21:35:13.706Z,"293 km N of Kulia Village, Tuvalu",earthquake,,,,,reviewed,us,nc
+1983-02-04T06:31:15.830Z,1.493,127.294,144.0,5.5,mb,,,,0.9,us,usp0001su3,2025-12-19T21:33:04.167Z,"78 km N of Ternate, Indonesia",earthquake,,,,35.0,reviewed,us,us
+1983-02-04T19:05:59.440Z,-10.228,124.4,33.0,5.5,mb,,,,1.3,us,usp0001sug,2025-12-19T21:33:05.654Z,"42 km SSE of Soe, Indonesia",earthquake,,,,22.0,reviewed,us,us
+1983-02-05T23:41:03.610Z,16.063,-95.093,33.0,5.5,mb,,,,0.9,us,usp0001sv6,2025-12-19T21:33:06.502Z,"16 km SE of Salina Cruz, Mexico",earthquake,,,,11.0,reviewed,us,us
+1983-02-05T23:51:45.800Z,-3.514,177.768,33.0,5.8,mb,,,,0.8,us,usp0001sv7,2025-12-19T21:33:07.451Z,"290 km N of Kulia Village, Tuvalu",earthquake,,,,31.0,reviewed,us,us
+1983-02-07T11:07:23.700Z,-26.689,-177.643,151.6,5.5,mb,,,,1.2,us,usp0001sw2,2025-12-19T21:33:08.375Z,south of the Fiji Islands,earthquake,,3.8,,19.0,reviewed,us,us
+1983-02-07T11:54:48.640Z,16.872,-98.365,50.7,5.5,mb,,,,0.8,us,usp0001sw3,2022-04-28T00:11:54.242Z,"6 km NE of San Cristóbal, Mexico",earthquake,,3.4,,44.0,reviewed,us,us
+1983-02-07T15:06:27.550Z,26.838,57.562,33.0,5.7,ms,,,,0.9,us,usp0001sw4,2025-12-19T21:33:09.197Z,"57 km SE of M?n?b, Iran",earthquake,,,,14.0,reviewed,us,us
+1983-02-07T18:23:16.640Z,-29.707,-177.837,52.0,6.0,mb,,,,1.0,us,usp0001sw9,2025-12-19T21:33:09.966Z,"Kermadec Islands, New Zealand",earthquake,,,,41.0,reviewed,us,us
+1983-02-08T06:58:43.250Z,51.754,159.618,33.0,5.7,ms,,,,1.2,us,usp0001swp,2025-12-19T21:33:11.443Z,"154 km SSE of Vilyuchinsk, Russia",earthquake,,,,8.0,reviewed,us,us
+1983-02-09T07:02:32.610Z,-7.574,156.04,43.2,5.7,ms,,,,1.1,us,usp0001sxk,2025-12-19T21:33:13.746Z,"106 km WNW of Gizo, Solomon Islands",earthquake,,2.6,,10.0,reviewed,us,us
+1983-02-12T08:47:12.740Z,5.669,126.297,51.0,6.3,mw,,,,1.2,us,usp0001sz9,2025-12-19T20:59:13.686Z,"77 km ESE of Mangili, Philippines",earthquake,,,,,reviewed,us,nc
+1983-02-13T01:40:10.980Z,39.945,75.135,16.1,6.2,ms,,,,1.3,us,usp0001t06,2025-12-19T21:33:16.805Z,"90 km NW of Kashgar, China",earthquake,,3.8,,12.0,reviewed,us,us
+1983-02-13T06:35:30.000Z,13.837,144.935,105.0,5.7,mb,,,,1.2,us,usp0001t0h,2022-04-28T00:12:33.968Z,"33 km N of Yigo Village, Guam",earthquake,,,,61.0,reviewed,us,us
+1983-02-14T00:23:19.420Z,10.504,140.924,39.0,6.2,mw,,,,1.2,us,usp0001t12,2025-12-19T21:33:17.706Z,"92 km NNE of Fais, Micronesia",earthquake,,,,,reviewed,us,nc
+1983-02-14T03:20:04.470Z,54.931,-159.189,47.0,6.5,mw,,,,1.3,us,usp0001t1b,2025-12-19T21:33:19.222Z,"94 km ESE of Sand Point, Alaska",earthquake,,,,,reviewed,us,nc
+1983-02-14T08:10:03.610Z,54.969,-159.236,33.0,5.9,mw,,,,1.1,us,usp0001t1g,2025-12-19T21:33:19.987Z,"90 km ESE of Sand Point, Alaska",earthquake,,,,,reviewed,us,nc
+1983-02-17T16:10:39.130Z,-21.592,-174.179,32.0,5.8,mb,,,,1.2,us,usp0001t48,2025-12-19T21:33:22.384Z,"84 km ESE of ‘Ohonua, Tonga",earthquake,,,,17.0,reviewed,us,us
+1983-02-19T20:14:22.880Z,8.735,124.039,568.0,5.8,mb,,,,1.0,us,usp0001t65,2022-04-28T00:13:33.131Z,"36 km ENE of Lopez Jaena, Philippines",earthquake,,1.1,,78.0,reviewed,us,us
+1983-02-20T10:49:54.110Z,5.546,126.246,60.5,6.4,mw,,,,1.2,us,usp0001t6s,2025-12-19T21:33:25.111Z,"78 km ESE of Caburan, Philippines",earthquake,,2.0,,,reviewed,us,nc
+1983-02-20T12:42:31.400Z,37.898,21.08,36.8,5.5,ms,,,,1.4,us,usp0001t6v,2025-12-19T21:33:26.382Z,southern Greece,earthquake,,3.5,,1.0,reviewed,us,us
+1983-02-22T09:36:46.890Z,16.356,-95.011,37.0,5.7,mb,,,,0.9,us,usp0001t8b,2025-12-19T21:33:30.359Z,"1 km SE of Santa María Xadani, Mexico",earthquake,,,,47.0,reviewed,us,us
+1983-02-25T22:03:56.300Z,-5.401,146.878,235.0,5.9,mw,,,,1.4,us,usp0001taw,2022-04-28T00:13:52.724Z,"122 km E of Madang, Papua New Guinea",earthquake,,,,,reviewed,us,nc
+1983-02-25T22:49:54.730Z,-18.268,-69.438,146.0,6.9,mw,,,,1.1,us,usp0001tax,2022-04-28T00:13:58.483Z,"77 km SE of Palca, Peru",earthquake,,,,,reviewed,us,nc
+1983-02-26T07:10:59.160Z,49.243,155.601,56.0,6.4,mw,,,,0.9,us,usp0001tb9,2025-12-19T21:33:33.940Z,"163 km SSW of Severo-Kuril’sk, Russia",earthquake,,4.3,,,reviewed,us,nc
+1983-02-27T05:05:17.460Z,-13.453,-76.793,25.0,5.5,mb,,,,1.1,us,usp0001tbx,2022-04-28T00:14:11.252Z,"60 km SW of San Vicente de Cañete, Peru",earthquake,,,,25.0,reviewed,us,us
+1983-02-27T12:14:20.770Z,35.869,139.916,78.3,5.9,mw,,,,0.9,us,usp0001tc5,2022-04-28T00:14:16.597Z,"1 km NE of Nagareyama, Japan",earthquake,,1.6,,,reviewed,us,nc
+1983-02-28T05:44:24.450Z,44.161,148.058,42.0,6.1,mw,,,,1.0,us,usp0001tce,2025-12-19T21:33:41.311Z,"114 km ENE of Shikotan, Russia",earthquake,,,,,reviewed,us,nc
+1983-02-28T22:44:19.540Z,-43.977,-79.062,10.0,5.5,ms,,,,1.4,us,usp0001tcz,2025-12-19T21:33:42.409Z,"Off the coast of Los Lagos, Chile",earthquake,,,,2.0,reviewed,us,us
+1983-03-02T07:07:41.010Z,-11.535,-77.8,57.6,5.6,mb,,,,0.9,us,usp0001tds,2025-12-19T21:32:19.293Z,"51 km SSW of Huacho, Peru",earthquake,,3.4,,36.0,reviewed,us,us
+1983-03-03T02:30:29.690Z,-6.212,100.7,23.4,5.5,mb,,,,1.0,us,usp0001teb,2025-12-19T21:32:21.588Z,"southwest of Sumatra, Indonesia",earthquake,,3.2,,26.0,reviewed,us,us
+1983-03-04T14:11:35.590Z,39.497,143.234,33.0,5.7,ms,,,,1.1,us,usp0001tf6,2025-12-19T21:32:24.043Z,"110 km E of Yamada, Japan",earthquake,,,,7.0,reviewed,us,us
+1983-03-08T13:21:46.960Z,-3.471,177.628,33.0,5.8,mb,,,,0.9,us,usp0001tgk,2025-12-19T21:32:27.771Z,"293 km N of Kulia Village, Tuvalu",earthquake,,,,28.0,reviewed,us,us
+1983-03-08T17:06:36.520Z,11.007,-62.364,82.4,5.9,mb,,,,0.9,us,usp0001tgr,2022-04-28T00:09:08.995Z,"48 km N of Güiria, Venezuela",earthquake,,1.7,,73.0,reviewed,us,us
+1983-03-10T00:27:48.360Z,43.813,147.397,33.0,6.2,mb,,,,1.0,us,usp0001thd,2025-12-19T21:32:29.524Z,"54 km E of Shikotan, Russia",earthquake,,,,80.0,reviewed,us,us
+1983-03-10T11:58:21.750Z,5.397,126.649,48.2,5.6,ms,,,,1.2,us,usp0001thp,2025-12-19T21:32:30.463Z,"118 km SSE of Pondaguitan, Philippines",earthquake,,3.8,,13.0,reviewed,us,us
+1983-03-11T03:10:41.570Z,-6.972,147.389,61.7,5.7,mw,,,,0.9,us,usp0001tj3,2025-12-19T21:32:31.159Z,"51 km ESE of Lae, Papua New Guinea",earthquake,,1.6,,,reviewed,us,nc
+1983-03-12T00:53:40.180Z,-4.036,127.893,33.0,6.0,ms,,,,1.1,us,usp0001tk0,2025-12-19T21:32:32.814Z,"49 km SW of Ambon, Indonesia",earthquake,,,,5.0,reviewed,us,us
+1983-03-12T01:36:35.810Z,-4.056,127.924,16.9,6.7,mw,,,,1.1,us,usp0001tk3,2025-12-19T21:32:33.671Z,"49 km SW of Ambon, Indonesia",earthquake,,1.6,,,reviewed,us,nc
+1983-03-12T08:49:46.350Z,-18.116,168.073,35.9,5.8,ms,,,,1.2,us,usp0001tke,2025-12-19T20:59:11.205Z,"49 km SSW of Port-Vila, Vanuatu",earthquake,,4.8,,11.0,reviewed,us,us
+1983-03-14T19:02:06.210Z,-4.192,127.784,29.0,5.5,mb,,,,1.2,us,usp0001tna,2022-04-28T00:09:47.095Z,"70 km SW of Ambon, Indonesia",earthquake,,,,23.0,reviewed,us,us
+1983-03-15T11:27:42.620Z,-8.172,-79.997,33.0,5.5,mb,,,,1.0,us,usp0001tns,2025-12-19T21:32:38.414Z,"86 km WSW of Santiago de Cao, Peru",earthquake,,,,39.0,reviewed,us,us
+1983-03-15T16:56:15.760Z,-54.997,-1.022,10.0,5.5,mb,,,,0.7,us,usp0001tp2,2022-04-28T00:09:52.860Z,Bouvet Island region,earthquake,,,,4.0,reviewed,us,us
+1983-03-15T19:58:30.450Z,5.346,126.566,41.0,6.7,mw,,,,1.3,us,usp0001tp6,2025-12-19T21:32:40.183Z,"120 km SSE of Pondaguitan, Philippines",earthquake,,,,,reviewed,us,nc
+1983-03-17T02:53:10.620Z,12.298,143.974,52.0,5.6,mb,,,,1.2,us,usp0001tq4,2025-12-19T21:32:41.731Z,"130 km SW of Merizo Village, Guam",earthquake,,,,53.0,reviewed,us,us
+1983-03-17T07:11:30.550Z,51.596,142.452,42.0,5.6,mb,,,,0.9,us,usp0001tqb,2025-12-19T21:32:42.520Z,"52 km WSW of Nogliki, Russia",earthquake,,,,74.0,reviewed,us,us
+1983-03-17T18:10:47.180Z,12.91,122.94,33.0,5.7,ms,,,,1.2,us,usp0001tqg,2025-12-19T21:32:43.208Z,"20 km S of San Rafael, Philippines",earthquake,,,,13.0,reviewed,us,us
+1983-03-18T09:05:50.000Z,-4.883,153.581,88.8,7.6,ms,,,,1.3,us,usp0001tr1,2022-04-28T00:10:18.946Z,"157 km ESE of Kokopo, Papua New Guinea",earthquake,,3.0,,9.0,reviewed,us,us
+1983-03-18T23:46:20.040Z,-4.597,153.572,100.0,5.5,mb,,,,1.2,us,usp0001trg,2014-11-07T00:32:49.928Z,"147 km E of Kokopo, Papua New Guinea",earthquake,,7.9,,1.0,reviewed,us,us
+1983-03-19T21:41:42.880Z,35.081,25.35,65.0,5.7,mb,,,,1.0,us,usp0001ts5,2025-12-19T21:32:45.531Z,"10 km SE of Arkalochóri, Greece",earthquake,,,,64.0,reviewed,us,us
+1983-03-20T11:24:46.840Z,2.326,126.7,41.6,5.5,mb,,,,1.0,us,usp0001tsj,2025-12-19T21:32:46.353Z,"159 km WNW of Tobelo, Indonesia",earthquake,,3.5,,25.0,reviewed,us,us
+1983-03-20T13:45:49.060Z,-4.694,153.161,80.1,6.4,mw,,,,1.0,us,usp0001tsn,2022-04-28T00:10:36.522Z,"106 km ESE of Kokopo, Papua New Guinea",earthquake,,2.9,,,reviewed,us,nc
+1983-03-21T04:06:25.740Z,-5.036,153.647,84.8,5.6,mb,,,,1.0,us,usp0001ttb,2022-04-28T00:10:38.276Z,"171 km ESE of Kokopo, Papua New Guinea",earthquake,,3.0,,42.0,reviewed,us,us
+1983-03-21T07:44:17.790Z,-21.466,-175.451,68.0,6.7,mw,,,,1.0,us,usp0001tte,2025-12-19T21:32:47.833Z,"41 km SW of Vaini, Tonga",earthquake,,,,,reviewed,us,nc
+1983-03-21T07:57:19.350Z,-7.275,128.912,151.3,5.6,mb,,,,1.0,us,usp0001ttf,2022-04-28T00:10:41.592Z,"252 km ENE of Lospalos, Timor Leste",earthquake,,2.6,,20.0,reviewed,us,us
+1983-03-21T15:49:52.010Z,-21.508,-175.253,63.0,5.5,mb,,,,0.9,us,usp0001ttm,2022-05-09T19:15:27.705Z,"35 km SSW of Vaini, Tonga",earthquake,,,,16.0,reviewed,us,us
+1983-03-23T06:09:28.870Z,-6.514,154.603,35.0,6.4,mw,,,,1.3,us,usp0001tv0,2025-12-19T21:32:48.630Z,"99 km WSW of Panguna, Papua New Guinea",earthquake,,3.6,,,reviewed,us,nc
+1983-03-23T08:26:54.590Z,-6.586,154.6,29.6,6.0,ms,,,,1.0,us,usp0001tv8,2025-12-19T21:32:50.381Z,"102 km WSW of Panguna, Papua New Guinea",earthquake,,3.6,,3.0,reviewed,us,us
+1983-03-23T23:51:06.510Z,38.294,20.262,19.1,6.4,mw,,,,1.3,us,usp0001twa,2025-12-19T21:32:53.203Z,"18 km NW of Lixoúri, Greece",earthquake,,2.5,,,reviewed,us,nc
+1983-03-24T11:01:49.540Z,-49.484,125.976,10.0,5.6,ms,,,,1.3,us,usp0001txb,2022-04-28T00:11:04.226Z,western Indian-Antarctic Ridge,earthquake,,,,1.0,reviewed,us,us
+1983-03-25T07:43:58.640Z,-6.52,129.96,132.8,5.5,mb,,,,1.0,us,usp0001ty6,2022-04-28T00:11:12.078Z,Banda Sea,earthquake,,2.4,,37.0,reviewed,us,us
+1983-03-30T00:49:08.100Z,1.682,122.55,22.8,5.5,mb,,,,1.3,us,usp0001u26,2025-12-19T21:32:59.554Z,"138 km NNW of Gorontalo, Indonesia",earthquake,,4.9,,22.0,reviewed,us,us
+1983-03-31T13:12:52.640Z,2.461,-76.686,22.2,5.5,mb,,,,1.2,us,usp0001u34,2022-04-28T00:11:32.999Z,"8 km WNW of Popayán, Colombia",earthquake,,4.1,,62.0,reviewed,us,us
+1983-04-02T05:58:35.000Z,-28.529,-66.6,39.0,5.5,mb,,,,1.1,us,usp0001u45,2022-04-28T00:04:14.410Z,"19 km ENE of Arauco, Argentina",earthquake,,,,24.0,reviewed,us,us
+1983-04-03T02:50:01.180Z,8.717,-83.123,37.0,7.1,mw,,,,1.0,us,usp0001u4p,2025-12-19T21:31:13.405Z,"12 km N of Golfito, Costa Rica",earthquake,,,,,reviewed,us,nc
+1983-04-03T03:04:13.910Z,8.655,-83.327,33.0,5.5,mb,,,,0.9,us,usp0001u4r,2022-04-28T00:04:18.985Z,Costa Rica,earthquake,,,,23.0,reviewed,us,us
+1983-04-03T03:13:38.030Z,8.576,-83.232,15.0,5.62,mw,,,,,iscgem,iscgem577797,2022-04-28T00:04:20.163Z,"13 km WSW of Golfito, Costa Rica",earthquake,,3.5,0.48,,reviewed,iscgem,iscgem
+1983-04-03T19:14:05.070Z,51.976,179.259,116.1,5.6,mb,,,,0.9,us,usp0001u5e,2022-04-28T00:04:30.068Z,"Rat Islands, Aleutian Islands, Alaska",earthquake,,3.8,,88.0,reviewed,us,us
+1983-04-04T02:51:34.360Z,5.723,94.722,78.5,6.9,mw,,,,1.0,us,usp0001u5s,2022-04-28T00:04:31.749Z,"68 km WSW of Sabang, Indonesia",earthquake,,2.8,,,reviewed,us,nc
+1983-04-04T03:03:34.540Z,5.791,94.746,69.5,5.9,mb,,,,1.0,us,usp0001u5t,2022-04-28T00:04:33.771Z,"64 km W of Sabang, Indonesia",earthquake,,5.8,,10.0,reviewed,us,us
+1983-04-04T03:15:35.310Z,-14.343,171.481,33.0,5.6,mb,,,,1.2,us,usp0001u5u,2014-11-07T00:32:55.657Z,Vanuatu region,earthquake,,,,4.0,reviewed,us,us
+1983-04-04T19:04:20.640Z,52.931,159.858,38.0,5.9,mw,,,,0.9,us,usp0001u6a,2025-12-19T21:31:15.639Z,"82 km E of Petropavlovsk-Kamchatsky, Russia",earthquake,,,,,reviewed,us,nc
+1983-04-04T23:12:47.190Z,49.408,155.602,51.0,6.5,mw,,,,0.9,us,usp0001u6e,2025-12-19T21:31:16.321Z,"145 km SSW of Severo-Kuril’sk, Russia",earthquake,,,,,reviewed,us,nc
+1983-04-04T23:58:59.010Z,-15.038,167.289,123.0,6.2,mb,,,,1.0,us,usp0001u6g,2022-04-28T00:05:06.199Z,"23 km E of Port-Olry, Vanuatu",earthquake,,,,36.0,reviewed,us,us
+1983-04-05T06:50:33.480Z,40.025,75.26,33.0,5.6,ms,,,,1.0,us,usp0001u6q,2025-12-19T21:31:17.319Z,"87 km NW of Kashgar, China",earthquake,,,,8.0,reviewed,us,us
+1983-04-07T15:38:36.060Z,-22.532,-175.115,33.0,5.5,mb,,,,1.2,us,usp0001u8d,2025-12-19T21:31:20.236Z,"133 km S of ‘Ohonua, Tonga",earthquake,,,,17.0,reviewed,us,us
+1983-04-07T19:29:14.930Z,7.985,-82.695,34.7,5.5,mb,,,,1.0,us,usp0001u8h,2025-12-19T21:31:20.951Z,"19 km ESE of Punta de Burica, Panama",earthquake,,3.7,,74.0,reviewed,us,us
+1983-04-08T02:28:25.580Z,11.429,57.52,10.0,6.7,mw,,,,1.1,us,usp0001u8x,2025-12-19T21:31:22.573Z,Owen Fracture Zone region,earthquake,,,,,reviewed,us,nc
+1983-04-10T02:20:39.940Z,-17.846,-174.503,33.0,5.8,mb,,,,0.6,us,usp0001uam,2025-12-19T21:31:28.614Z,"104 km NNW of Neiafu, Tonga",earthquake,,,,7.0,reviewed,us,us
+1983-04-11T08:18:10.120Z,10.419,-62.764,40.0,6.1,mw,,,,1.1,us,usp0001ubj,2025-12-19T21:31:31.167Z,"53 km WSW of Güiria, Venezuela",earthquake,,2.4,,,reviewed,us,nc
+1983-04-11T17:03:41.730Z,-35.55,-179.252,49.6,5.7,mb,,,,1.3,us,usp0001uc0,2025-12-19T21:31:33.661Z,east of the North Island of New Zealand,earthquake,,2.8,,16.0,reviewed,us,us
+1983-04-11T17:16:30.330Z,5.25,61.619,10.0,5.7,mb,,,,1.2,us,usp0001uc1,2025-12-19T21:31:34.863Z,Carlsberg Ridge,earthquake,,,,17.0,reviewed,us,us
+1983-04-12T12:07:54.520Z,-4.843,-78.103,104.2,7.0,mw,,,,1.2,us,usp0001uct,2022-04-28T00:06:31.555Z,"92 km NNE of La Peca, Peru",earthquake,,3.2,,,reviewed,us,nc
+1983-04-13T00:35:44.480Z,-39.723,-74.531,33.0,5.9,ms,,,,1.0,us,usp0001ude,2014-11-07T00:32:58.738Z,"95 km WNW of Corral, Chile",earthquake,,,,1.0,reviewed,us,us
+1983-04-14T19:05:00.120Z,37.073,-116.046,0.0,5.7,mb,,,,,us,usp0001ufa,2016-02-02T20:10:21.200Z,"65 km NNW of Indian Springs, Nevada",nuclear explosion,,,,73.0,reviewed,doe,us
+1983-04-15T00:09:33.380Z,-19.221,-175.469,226.7,5.9,mw,,,,1.0,us,usp0001ufk,2022-04-28T00:06:46.415Z,"134 km WNW of Pangai, Tonga",earthquake,,2.9,,,reviewed,us,nc
+1983-04-15T04:44:01.440Z,-6.487,154.938,38.4,5.8,mw,,,,1.0,us,usp0001uft,2025-12-19T21:31:42.150Z,"63 km WSW of Panguna, Papua New Guinea",earthquake,,1.5,,,reviewed,us,nc
+1983-04-15T10:08:20.540Z,-5.979,-75.663,118.0,5.6,mb,,,,0.9,us,usp0001ufz,2025-12-19T21:31:43.349Z,"40 km NNE of Navarro, Peru",earthquake,,3.3,,74.0,reviewed,us,us
+1983-04-15T14:51:59.110Z,53.386,160.311,65.0,5.8,mb,,,,1.0,us,usp0001ug7,2025-12-19T21:31:45.704Z,"117 km ENE of Petropavlovsk-Kamchatsky, Russia",earthquake,,,,91.0,reviewed,us,us
+1983-04-16T12:57:49.980Z,-10.161,110.89,57.1,5.7,mw,,,,1.1,us,usp0001ugu,2025-12-19T21:31:46.950Z,"247 km SSW of Trenggalek, Indonesia",earthquake,,1.2,,,reviewed,us,nc
+1983-04-17T14:06:56.610Z,-20.725,169.232,26.1,6.2,ms,,,,1.3,us,usp0001uhj,2025-12-19T21:31:49.407Z,"131 km S of Isangel, Vanuatu",earthquake,,2.6,,14.0,reviewed,us,us
+1983-04-18T10:58:51.260Z,27.793,62.054,64.0,7.0,mw,,,,1.2,us,usp0001uj8,2025-12-19T21:31:55.427Z,"95 km ESE of Kh?sh, Iran",earthquake,,3.2,,,reviewed,us,nc
+1983-04-19T18:52:58.430Z,-21.847,-138.906,0.0,5.6,mb,,,,0.9,us,usp0001uk6,2015-06-16T17:24:43.678Z,"Tuamotu Archipelago, French Polynesia region",nuclear explosion,,,,22.0,reviewed,us,us
+1983-04-22T00:37:37.000Z,14.926,99.023,10.0,5.7,mw,,,,1.0,us,usp0001und,2025-12-19T21:32:00.104Z,"66 km ESE of Sangkhla Buri, Thailand",earthquake,,,,,reviewed,us,nc
+1983-04-22T07:51:50.300Z,6.105,126.884,67.8,5.6,mb,,,,1.1,us,usp0001unv,2025-12-19T21:32:02.601Z,"83 km ESE of Pondaguitan, Philippines",earthquake,,2.7,,40.0,reviewed,us,us
+1983-04-23T09:20:15.240Z,-11.206,118.92,33.0,5.5,mb,,,,1.2,us,usp0001upz,2025-12-19T21:32:03.694Z,"225 km SW of Waingapu, Indonesia",earthquake,,,,21.0,reviewed,us,us
+1983-04-23T23:33:58.980Z,-53.072,-117.844,10.0,5.5,ms,,,,1.3,us,usp0001uqk,2025-12-19T21:32:04.827Z,southern East Pacific Rise,earthquake,,,,10.0,reviewed,us,us
+1983-04-24T03:26:40.100Z,-16.233,-177.817,33.0,5.6,ms,,,,1.2,us,usp0001uqq,2014-11-07T00:33:01.359Z,"215 km S of Alo, Wallis and Futuna",earthquake,,,,1.0,reviewed,us,us
+1983-04-24T03:29:17.530Z,-23.976,-175.956,29.0,5.6,mw,,,,1.0,us,usp0001uqr,2025-12-19T20:59:09.838Z,Tonga region,earthquake,,8.5,,,reviewed,us,nc
+1983-04-24T09:08:47.850Z,-8.875,157.669,12.4,6.4,mw,,,,1.3,us,usp0001ur5,2025-12-19T21:32:05.925Z,"124 km SE of Gizo, Solomon Islands",earthquake,,4.1,,,reviewed,us,nc
+1983-04-26T11:15:37.430Z,-15.993,168.428,33.0,5.5,mb,,,,1.2,us,usp0001usw,2025-12-19T21:32:08.279Z,"108 km E of Lakatoro, Vanuatu",earthquake,,,,24.0,reviewed,us,us
+1983-04-26T15:26:40.330Z,24.647,122.589,116.1,5.7,mb,,,,0.9,us,usp0001ut3,2022-04-27T23:00:31.859Z,"46 km WNW of Yonakuni, Japan",earthquake,,1.4,,72.0,reviewed,us,us
+1983-04-27T01:39:20.240Z,-62.511,155.497,10.0,5.9,ms,,,,1.4,us,usp0001utq,2025-12-19T21:32:09.556Z,Balleny Islands region,earthquake,,,,7.0,reviewed,us,us
+1983-04-27T17:20:35.210Z,-21.137,-174.272,21.0,5.6,ms,,,,1.4,us,usp0001uu7,2025-12-19T21:32:11.925Z,"73 km ENE of ‘Ohonua, Tonga",earthquake,,,,15.0,reviewed,us,us
+1983-04-28T21:36:47.200Z,-30.945,-178.064,33.0,5.6,mb,,,,1.4,us,usp0001uut,2025-12-19T21:32:13.107Z,"Kermadec Islands, New Zealand",earthquake,,,,3.0,reviewed,us,us
+1983-04-30T02:51:43.320Z,-21.354,-174.252,23.0,5.8,mb,,,,1.2,us,usp0001uvg,2025-12-19T21:32:14.344Z,"72 km E of ‘Ohonua, Tonga",earthquake,,,,34.0,reviewed,us,us
+1983-04-30T14:03:49.230Z,41.473,143.764,30.4,6.5,mb,,,,1.0,us,usp0001uvt,2025-12-19T21:32:15.547Z,"150 km SE of Shizunai-furukawach?, Japan",earthquake,,1.4,,108.0,reviewed,us,us
+1983-05-01T18:10:40.390Z,46.353,153.453,24.0,6.2,mw,,,,1.0,us,usp0001uwm,2025-12-19T21:30:22.797Z,Kuril Islands,earthquake,,,,,reviewed,us,nc
+1983-05-01T20:11:58.470Z,46.327,153.435,33.0,5.6,mb,,,,0.9,us,usp0001uwr,2025-12-19T21:30:23.466Z,Kuril Islands,earthquake,,,,66.0,reviewed,us,us
+1983-05-02T09:58:13.810Z,-20.733,-178.475,596.0,5.7,mb,,,,0.9,us,usp0001ux3,2022-04-27T23:59:01.245Z,Fiji region,earthquake,,,,48.0,reviewed,us,us
+1983-05-02T23:42:38.060Z,36.2316667,-120.312,9.578,6.7,ml,64.0,137.0,0.03063,0.07,nc,nc1091100,2025-12-19T21:30:26.448Z,"The 1983 Coalinga, California Earthquake",earthquake,0.28,0.24,,0.0,reviewed,nc,nc
+1983-05-02T23:46:06.000Z,36.23,-120.29,8.0,5.5,mb,,,,,us,usp0001uxb,2021-03-09T23:55:28.978Z,"11 km NNE of Coalinga, California",earthquake,,,,3.0,reviewed,brk,us
+1983-05-03T15:39:39.180Z,-20.29,-178.296,593.5,5.5,mb,,,,0.9,us,usp0001v05,2022-04-27T23:59:25.941Z,Fiji region,earthquake,,1.5,,25.0,reviewed,us,us
+1983-05-05T04:43:50.460Z,-33.866,179.649,25.2,5.7,mw,,,,1.3,us,usp0001v2j,2025-12-19T21:30:29.700Z,south of the Kermadec Islands,earthquake,,9.3,,,reviewed,us,nc
+1983-05-05T07:33:46.200Z,5.429,-82.601,10.0,5.5,mb,,,,1.2,us,usp0001v2r,2022-04-27T23:59:49.198Z,"288 km SW of Arenas, Panama",earthquake,,,,56.0,reviewed,us,us
+1983-05-06T18:24:18.400Z,15.439,121.711,33.0,5.6,ms,,,,1.1,us,usp0001v3x,2025-12-19T21:30:32.148Z,"34 km E of Dingalan, Philippines",earthquake,,,,10.0,reviewed,us,us
+1983-05-08T15:05:08.580Z,19.972,-109.367,10.0,5.8,ms,,,,1.3,us,usp0001v5s,2025-12-19T21:30:33.510Z,Revilla Gigedo Islands region,earthquake,,,,3.0,reviewed,us,us
+1983-05-09T10:58:25.400Z,-40.93,-74.909,23.0,6.0,mw,,,,1.1,us,usp0001v6h,2025-12-19T21:30:34.864Z,"138 km NW of Ancud, Chile",earthquake,,3.3,,,reviewed,us,nc
+1983-05-09T13:45:28.090Z,-61.865,161.283,10.0,5.5,mb,,,,1.0,us,usp0001v6m,2022-04-28T00:00:40.357Z,Balleny Islands region,earthquake,,,,3.0,reviewed,us,us
+1983-05-09T15:53:03.070Z,8.233,-82.957,39.1,6.1,ms,,,,1.1,us,usp0001v6r,2025-12-19T21:30:35.600Z,"11 km WSW of Puerto Armuelles, Panama",earthquake,,4.4,,17.0,reviewed,us,us
+1983-05-09T20:09:15.400Z,19.98,-109.454,10.0,6.1,ms,,,,1.2,us,usp0001v6w,2025-12-19T21:30:36.260Z,Revilla Gigedo Islands region,earthquake,,,,11.0,reviewed,us,us
+1983-05-10T00:15:05.560Z,24.419,121.56,28.2,5.6,mb,,,,1.2,us,usp0001v71,2025-12-19T21:30:37.116Z,"42 km SSW of Yilan, Taiwan",earthquake,,2.9,,56.0,reviewed,us,us
+1983-05-10T11:02:35.810Z,-5.399,150.896,112.4,6.5,mw,,,,1.0,us,usp0001v7c,2022-04-28T00:01:26.223Z,"85 km ENE of Kimbe, Papua New Guinea",earthquake,,1.9,,,reviewed,us,nc
+1983-05-10T18:27:31.890Z,-4.805,152.509,71.6,6.7,mw,,,,1.0,us,usp0001v7p,2025-12-19T21:30:37.897Z,"57 km SSE of Kokopo, Papua New Guinea",earthquake,,1.6,,,reviewed,us,nc
+1983-05-11T00:17:12.070Z,2.293,128.34,125.0,6.2,mw,,,,1.2,us,usp0001v7v,2022-04-28T00:01:34.174Z,"72 km NNE of Tobelo, Indonesia",earthquake,,,,,reviewed,us,nc
+1983-05-11T21:48:15.420Z,-21.432,-173.453,33.0,5.7,mw,,,,1.1,us,usp0001v8p,2025-12-19T21:30:38.609Z,"155 km E of ‘Ohonua, Tonga",earthquake,,,,,reviewed,us,nc
+1983-05-12T10:51:49.710Z,17.631,-46.529,10.0,5.7,ms,,,,1.2,us,usp0001v96,2025-12-19T21:30:40.044Z,northern Mid-Atlantic Ridge,earthquake,,,,25.0,reviewed,us,us
+1983-05-12T11:02:41.840Z,17.63,-46.567,10.0,5.6,ms,,,,0.9,us,usp0001v97,2022-04-28T00:01:53.859Z,northern Mid-Atlantic Ridge,earthquake,,,,1.0,reviewed,us,us
+1983-05-13T18:09:35.410Z,2.965,128.055,123.0,5.5,mb,,,,1.1,us,usp0001vac,2022-04-28T00:02:00.184Z,"136 km N of Tobelo, Indonesia",earthquake,,,,31.0,reviewed,us,us
+1983-05-15T00:24:00.680Z,-18.907,-175.641,33.0,6.5,ms,,,,1.2,us,usp0001vbx,2025-12-19T21:30:43.015Z,"168 km NW of Pangai, Tonga",earthquake,,,,24.0,reviewed,us,us
+1983-05-17T23:26:30.890Z,-5.371,150.938,97.0,5.7,mb,,,,1.0,us,usp0001vf0,2022-04-28T00:02:23.260Z,"90 km ENE of Kimbe, Papua New Guinea",earthquake,,,,24.0,reviewed,us,us
+1983-05-19T19:07:18.610Z,0.147,-77.122,22.7,5.7,mb,,,,0.9,us,usp0001vgk,2022-04-27T23:00:25.922Z,"26 km WNW of Nueva Loja, Ecuador",earthquake,,3.1,,72.0,reviewed,us,us
+1983-05-23T00:54:11.880Z,-19.065,-69.139,110.0,5.5,mb,,,,1.0,us,usp0001vk0,2025-12-19T21:30:49.502Z,"138 km ESE of Arica, Chile",earthquake,,,,51.0,reviewed,us,us
+1983-05-23T06:54:36.620Z,-13.812,171.308,27.0,5.7,mb,,,,1.1,us,usp0001vk5,2025-12-19T21:30:50.196Z,Vanuatu region,earthquake,,,,23.0,reviewed,us,us
+1983-05-25T17:30:58.240Z,-21.895,-138.918,0.0,5.9,mb,,,,1.0,us,usp0001vms,2015-06-16T17:24:44.631Z,"Tuamotu Archipelago, French Polynesia region",nuclear explosion,,,,27.0,reviewed,us,us
+1983-05-26T02:59:59.600Z,40.462,139.102,23.7,7.4,mw,,,,1.1,us,usp0001vmy,2025-12-19T21:30:54.533Z,"83 km WNW of Noshiro, Japan",earthquake,,1.7,,,reviewed,us,nc
+1983-05-26T03:39:02.700Z,40.95,139.395,33.0,5.7,mb,,,,0.8,us,usp0001vn1,2022-04-28T00:02:57.316Z,"83 km W of Shimokizukuri, Japan",earthquake,,,,47.0,reviewed,us,us
+1983-05-26T03:56:58.700Z,40.826,139.326,28.7,5.8,mb,,,,0.9,us,usp0001vn4,2022-04-28T00:03:04.865Z,"88 km W of Shimokizukuri, Japan",earthquake,,1.7,,67.0,reviewed,us,us
+1983-05-26T05:45:27.170Z,40.979,139.256,29.0,5.5,mb,,,,0.9,us,usp0001vnd,2022-04-28T00:03:15.825Z,"96 km W of Shimokizukuri, Japan",earthquake,,,,72.0,reviewed,us,us
+1983-05-26T06:17:43.250Z,41.243,138.948,17.0,5.6,mb,,,,0.9,us,usp0001vnf,2025-12-19T21:30:55.178Z,"129 km WNW of Shimokizukuri, Japan",earthquake,,,,75.0,reviewed,us,us
+1983-05-26T14:12:22.910Z,40.234,138.984,28.0,5.6,mb,,,,1.0,us,usp0001vp9,2025-12-19T21:30:58.452Z,"88 km W of Noshiro, Japan",earthquake,,,,76.0,reviewed,us,us
+1983-05-28T11:35:51.920Z,32.594,48.581,18.0,5.6,mb,,,,0.9,us,usp0001vr5,2025-12-19T20:59:06.736Z,"28 km NNE of Shahrak-e K?l?r?, Iran",earthquake,,,,88.0,reviewed,us,us
+1983-05-29T22:01:49.880Z,40.696,139.367,36.4,5.6,mb,,,,0.9,us,usp0001vsm,2025-12-19T21:31:05.004Z,"77 km NW of Noshiro, Japan",earthquake,,2.0,,92.0,reviewed,us,us
+1983-05-30T14:47:10.100Z,-4.741,103.082,63.0,5.6,mb,,,,1.0,us,usp0001vtb,2025-12-19T21:31:07.155Z,"81 km SSW of Pagar Alam, Indonesia",earthquake,,,,23.0,reviewed,us,us
+1983-06-01T01:36:58.170Z,13.833,120.749,236.4,5.5,mb,,,,0.9,us,usp0001vub,2022-04-27T23:56:37.965Z,"5 km ESE of Hukay, Philippines",earthquake,,1.8,,57.0,reviewed,us,us
+1983-06-01T01:59:54.680Z,-17.038,-174.605,179.6,6.6,mw,,,,1.0,us,usp0001vuc,2022-04-27T23:56:43.352Z,"147 km SW of Hihifo, Tonga",earthquake,,,,,reviewed,us,nc
+1983-06-01T10:58:44.840Z,-15.694,-172.812,33.0,6.1,ms,,,,1.4,us,usp0001vup,2025-12-19T21:29:44.627Z,"109 km ENE of Hihifo, Tonga",earthquake,,,,20.0,reviewed,us,us
+1983-06-01T20:09:57.800Z,-53.049,9.724,10.0,5.7,mb,,,,1.3,us,usp0001vv8,2025-12-19T21:29:45.326Z,southwest of Africa,earthquake,,,,9.0,reviewed,us,us
+1983-06-02T20:12:50.730Z,-9.512,-71.249,598.6,6.2,mw,,,,1.0,us,usp0001vvq,2022-04-27T23:56:57.249Z,"158 km SSW of Tarauacá, Brazil",earthquake,,1.3,,,reviewed,us,nc
+1983-06-06T21:40:17.730Z,45.344,150.38,35.4,5.7,mb,,,,0.7,us,usp0001vy9,2025-12-19T21:29:50.637Z,"196 km E of Kuril’sk, Russia",earthquake,,,,81.0,reviewed,us,us
+1983-06-07T20:40:26.520Z,-50.685,29.103,10.0,5.5,mb,,,,1.2,us,usp0001vyq,2025-12-19T21:29:51.486Z,south of Africa,earthquake,,,,9.0,reviewed,us,us
+1983-06-09T12:49:03.860Z,40.237,139.023,30.6,6.0,mw,,,,0.9,us,usp0001vzg,2025-12-19T21:29:52.274Z,"85 km W of Noshiro, Japan",earthquake,,,,,reviewed,us,nc
+1983-06-09T13:04:00.520Z,40.268,139.023,28.0,6.3,mb,,,,1.1,us,usp0001vzj,2025-12-19T21:29:52.917Z,"85 km W of Noshiro, Japan",earthquake,,,,106.0,reviewed,us,us
+1983-06-09T18:46:00.900Z,51.414,-174.111,20.8,6.1,mw,,,,1.0,us,usp0001vzr,2025-12-19T21:29:53.728Z,"87 km S of Atka, Alaska",earthquake,,2.9,,,reviewed,us,nc
+1983-06-09T20:26:50.460Z,-5.937,122.636,46.3,5.5,mb,,,,1.0,us,usp0001vzs,2025-12-19T21:29:54.527Z,"111 km S of Katabu, Indonesia",earthquake,,,,20.0,reviewed,us,us
+1983-06-10T02:13:22.940Z,75.53,122.76,10.0,5.6,mb,,,,1.0,us,usp0001w02,2025-12-19T21:29:56.007Z,Laptev Sea,earthquake,,,,81.0,reviewed,us,us
+1983-06-10T22:39:09.270Z,-24.183,-176.329,46.7,5.7,mb,,,,1.0,us,usp0001w0b,2025-12-19T21:29:56.686Z,south of the Fiji Islands,earthquake,,3.4,,24.0,reviewed,us,us
+1983-06-12T02:36:43.500Z,49.906,78.981,0.0,6.1,mb,,,,0.8,us,usp0001w19,2014-11-07T00:33:19.013Z,"99 km SSE of Kurchatov, Kazakhstan",nuclear explosion,,,,93.0,reviewed,us,us
+1983-06-12T10:12:42.850Z,1.527,127.323,119.9,5.7,mb,,,,1.1,us,usp0001w1m,2022-04-27T23:57:19.768Z,"79 km WSW of Tobelo, Indonesia",earthquake,,1.1,,40.0,reviewed,us,us
+1983-06-15T06:07:54.840Z,-15.232,-173.631,33.0,5.5,ms,,,,1.2,us,usp0001w40,2025-12-19T21:30:00.771Z,"81 km NNE of Hihifo, Tonga",earthquake,,,,11.0,reviewed,us,us
+1983-06-17T11:33:16.670Z,-36.383,-97.524,10.0,5.6,mb,,,,0.9,us,usp0001w5c,2025-12-19T21:30:01.631Z,West Chile Rise,earthquake,,,,17.0,reviewed,us,us
+1983-06-17T22:02:31.490Z,52.235,159.599,33.0,5.5,mb,,,,1.0,us,usp0001w5q,2025-12-19T21:30:02.285Z,"110 km SE of Petropavlovsk-Kamchatsky, Russia",earthquake,,,,89.0,reviewed,us,us
+1983-06-18T19:31:10.400Z,-8.228,156.357,9.3,5.5,mb,,,,1.0,us,usp0001w68,2025-12-19T21:30:03.043Z,"55 km WSW of Gizo, Solomon Islands",earthquake,,3.2,,17.0,reviewed,us,us
+1983-06-18T22:13:31.510Z,40.176,138.944,21.3,5.5,mb,,,,1.0,us,usp0001w6a,2025-12-19T21:30:03.919Z,"92 km W of Noshiro, Japan",earthquake,,,,77.0,reviewed,us,us
+1983-06-20T05:43:37.760Z,-23.579,179.098,544.4,5.5,mb,,,,0.9,us,usp0001w7a,2022-04-27T23:57:44.204Z,south of the Fiji Islands,earthquake,,1.4,,37.0,reviewed,us,us
+1983-06-21T06:25:27.350Z,41.346,139.099,9.9,6.7,mw,,,,1.1,us,usp0001w81,2025-12-19T21:30:07.124Z,"122 km WNW of Shimokizukuri, Japan",earthquake,,1.3,,,reviewed,us,nc
+1983-06-21T07:04:20.990Z,41.381,139.281,23.5,5.5,mb,,,,0.9,us,usp0001w84,2022-04-27T23:57:56.544Z,"111 km NW of Shimokizukuri, Japan",earthquake,,,,66.0,reviewed,us,us
+1983-06-21T14:48:07.340Z,24.199,122.422,36.9,6.4,mw,,,,1.0,us,usp0001w8q,2025-12-19T21:30:09.549Z,"65 km WSW of Yonakuni, Japan",earthquake,,2.2,,,reviewed,us,nc
+1983-06-21T17:06:51.470Z,29.718,129.395,157.9,5.9,mb,,,,1.0,us,usp0001w8z,2022-04-27T23:58:06.181Z,"116 km WSW of Kurio, Japan",earthquake,,1.2,,93.0,reviewed,us,us
+1983-06-23T12:05:19.000Z,-51.722,139.573,10.0,5.6,ms,,,,1.5,us,usp0001wac,2025-12-19T21:30:10.934Z,western Indian-Antarctic Ridge,earthquake,,,,14.0,reviewed,us,us
+1983-06-24T07:18:22.140Z,21.721,103.282,18.4,6.3,mw,,,,1.2,us,usp0001way,2025-12-19T21:30:11.603Z,"45 km NE of Dien Bien Phu, Vietnam",earthquake,,,,,reviewed,us,nc
+1983-06-24T09:06:45.800Z,24.176,122.402,44.1,6.7,mw,,,,1.0,us,usp0001wb0,2025-12-19T21:30:12.333Z,"68 km WSW of Yonakuni, Japan",earthquake,,1.7,,,reviewed,us,nc
+1983-06-24T09:07:14.300Z,21.4,102.604,33.0,6.9,ms,,,,1.5,us,usp0001wb1,2020-08-26T22:45:18.803Z,"43 km W of Dien Bien Phu, Vietnam",earthquake,,,,1.0,reviewed,us,us
+1983-06-25T10:03:17.420Z,-32.835,-178.791,45.8,5.6,ms,,,,1.1,us,usp0001wcj,2025-12-19T21:30:13.016Z,south of the Kermadec Islands,earthquake,,,,4.0,reviewed,us,us
+1983-06-25T15:04:10.440Z,-22.003,-177.451,277.8,5.5,mb,,,,0.9,us,usp0001wcu,2022-04-27T23:58:23.031Z,"250 km WSW of Haveluloto, Tonga",earthquake,,,,28.0,reviewed,us,us
+1983-06-25T19:10:01.880Z,-32.926,-178.699,33.0,5.5,mb,,,,1.2,us,usp0001wd0,2022-04-27T23:58:28.179Z,south of the Kermadec Islands,earthquake,,,,5.0,reviewed,us,us
+1983-06-28T03:25:17.070Z,60.219,-141.287,18.5,5.9,mw,,,,1.0,us,usp0001weg,2025-12-19T21:30:18.512Z,"115 km NW of Yakutat, Alaska",earthquake,,1.2,,,reviewed,us,nc
+1983-06-30T13:39:04.040Z,44.043,147.837,42.4,5.6,mb,,,,0.9,us,usp0001wgf,2025-12-19T21:30:20.071Z,"93 km ENE of Shikotan, Russia",earthquake,,,,78.0,reviewed,us,us
+1983-06-30T17:37:46.100Z,2.578,128.293,23.0,5.5,ms,,,,1.2,us,usp0001wgk,2025-12-19T21:30:20.736Z,"99 km NNE of Tobelo, Indonesia",earthquake,,,,10.0,reviewed,us,us
+1983-07-01T03:16:05.040Z,-20.749,-178.345,529.4,5.5,mb,,,,1.0,us,usp0001wgv,2022-04-27T23:53:46.789Z,Fiji region,earthquake,,,,29.0,reviewed,us,us
+1983-07-01T11:57:22.020Z,-57.934,-25.373,32.4,5.6,mb,,,,1.1,us,usp0001wh6,2022-04-27T23:53:47.960Z,South Sandwich Islands region,earthquake,,,,9.0,reviewed,us,us
+1983-07-01T22:03:42.100Z,36.935,141.115,51.7,5.5,mb,,,,1.0,us,usp0001wh9,2025-12-19T21:29:01.558Z,"24 km ESE of Iwaki, Japan",earthquake,,,,63.0,reviewed,us,us
+1983-07-02T09:34:04.950Z,5.747,94.715,92.6,5.7,mw,,,,1.0,us,usp0001whf,2022-04-27T23:53:59.801Z,"68 km WSW of Sabang, Indonesia",earthquake,,2.1,,,reviewed,us,nc
+1983-07-03T02:49:27.970Z,20.161,122.379,220.3,5.9,mw,,,,1.0,us,usp0001whv,2022-04-27T23:54:06.399Z,"53 km SE of Basco, Philippines",earthquake,,1.4,,,reviewed,us,nc
+1983-07-03T17:14:23.170Z,9.652,-83.688,33.0,6.5,mw,,,,1.0,us,usp0001wjc,2025-12-19T21:29:03.099Z,"17 km S of Pejibaye, Costa Rica",earthquake,,,,,reviewed,us,nc
+1983-07-04T11:32:45.890Z,-55.575,-27.994,33.0,5.5,mb,,,,0.9,us,usp0001wjp,2014-11-07T00:33:25.714Z,South Sandwich Islands region,earthquake,,,,3.0,reviewed,us,us
+1983-07-05T05:58:21.490Z,-55.849,-123.404,10.0,5.9,ms,,,,1.3,us,usp0001wk1,2025-12-19T21:29:03.922Z,southern East Pacific Rise,earthquake,,,,7.0,reviewed,us,us
+1983-07-05T09:57:38.050Z,-24.22,-174.867,33.0,5.5,mb,,,,0.9,us,usp0001wk3,2022-04-27T23:54:22.815Z,south of Tonga,earthquake,,,,22.0,reviewed,us,us
+1983-07-05T11:11:39.890Z,-22.599,171.02,33.0,6.4,mw,,,,1.1,us,usp0001wk4,2025-12-19T21:29:05.728Z,southeast of the Loyalty Islands,earthquake,,,,,reviewed,us,nc
+1983-07-05T12:01:27.380Z,40.324,27.222,10.0,6.1,ms,,,,1.2,us,usp0001wk7,2025-12-19T21:29:06.578Z,"10 km N of Biga, Turkey",earthquake,,,,2.0,reviewed,us,us
+1983-07-05T12:55:05.590Z,-22.66,171.018,33.0,5.6,mb,,,,1.3,us,usp0001wka,2025-12-19T21:29:07.375Z,southeast of the Loyalty Islands,earthquake,,,,10.0,reviewed,us,us
+1983-07-05T16:37:06.130Z,-57.879,-25.615,33.0,5.7,mb,,,,1.1,us,usp0001wkk,2022-04-27T23:54:33.475Z,South Sandwich Islands region,earthquake,,,,14.0,reviewed,us,us
+1983-07-07T05:29:45.820Z,-22.648,170.89,38.7,5.8,ms,,,,1.2,us,usp0001wmw,2025-12-19T21:29:09.584Z,southeast of the Loyalty Islands,earthquake,,4.2,,16.0,reviewed,us,us
+1983-07-07T16:05:39.790Z,-22.609,170.731,33.7,6.2,ms,,,,1.2,us,usp0001wn5,2025-12-19T21:29:11.663Z,southeast of the Loyalty Islands,earthquake,,3.2,,18.0,reviewed,us,us
+1983-07-07T20:35:38.150Z,-7.271,27.844,10.0,5.8,mb,,,,0.9,us,usp0001wna,2025-12-19T21:29:12.588Z,"169 km SE of Kabalo, Democratic Republic of the Congo",earthquake,,,,63.0,reviewed,us,us
+1983-07-08T10:05:00.430Z,-21.745,-173.381,33.0,5.5,mb,,,,1.0,us,usp0001wnn,2025-12-19T21:29:13.401Z,"168 km ESE of ‘Ohonua, Tonga",earthquake,,,,13.0,reviewed,us,us
+1983-07-11T12:56:28.370Z,-60.889,-53.02,10.0,6.9,mw,,,,1.2,us,usp0001wq7,2025-12-19T20:58:59.073Z,South Shetland Islands,earthquake,,,,,reviewed,us,nc
+1983-07-12T03:39:27.740Z,23.952,-108.293,10.0,5.5,ms,,,,1.3,us,usp0001wr3,2025-12-19T21:29:15.835Z,"84 km SSW of Altata, Mexico",earthquake,,,,8.0,reviewed,us,us
+1983-07-12T11:34:17.570Z,27.606,56.381,25.0,5.9,mw,,,,0.9,us,usp0001wra,2025-12-19T21:29:16.706Z,"47 km NNE of Bandar Abbas, Iran",earthquake,,,,,reviewed,us,nc
+1983-07-12T15:10:03.400Z,61.031,-147.286,37.0,6.6,mw,,,,0.9,us,usp0001wrg,2025-12-19T21:29:18.214Z,"37 km WNW of Tatitlek, Alaska",earthquake,,1.3,,,reviewed,us,nc
+1983-07-14T19:47:46.530Z,5.557,126.452,43.0,6.3,mw,,,,1.1,us,usp0001wtb,2025-12-19T21:29:19.943Z,"93 km SSE of Pondaguitan, Philippines",earthquake,,2.3,,,reviewed,us,nc
+1983-07-15T10:45:38.520Z,5.488,126.502,49.4,5.7,mb,,,,1.2,us,usp0001wtx,2025-12-19T21:29:22.246Z,"103 km SSE of Pondaguitan, Philippines",earthquake,,3.0,,35.0,reviewed,us,us
+1983-07-16T07:55:24.540Z,-7.176,129.336,149.2,5.5,mb,,,,1.0,us,usp0001wuh,2025-12-19T21:29:23.917Z,"297 km ENE of Lospalos, Timor Leste",earthquake,,3.3,,26.0,reviewed,us,us
+1983-07-17T21:56:16.620Z,-31.411,-178.125,48.6,5.6,mb,,,,1.1,us,usp0001wvu,2025-12-19T21:29:25.386Z,Kermadec Islands region,earthquake,,,,7.0,reviewed,us,us
+1983-07-17T22:10:23.760Z,-0.123,121.654,52.3,5.5,mb,,,,1.1,us,usp0001wvw,2022-04-27T23:55:41.902Z,"155 km NW of Luwuk, Indonesia",earthquake,,6.8,,8.0,reviewed,us,us
+1983-07-18T12:52:43.440Z,12.669,-87.181,86.3,5.6,mb,,,,1.2,us,usp0001wwn,2022-04-27T23:55:44.670Z,"1 km WNW of El Viejo, Nicaragua",earthquake,,2.1,,70.0,reviewed,us,us
+1983-07-20T22:57:18.800Z,5.957,127.44,43.0,5.7,mb,,,,1.0,us,usp0001wz6,2025-12-19T21:29:30.330Z,"146 km ESE of Pondaguitan, Philippines",earthquake,,,,44.0,reviewed,us,us
+1983-07-21T07:11:33.830Z,-22.193,-68.451,126.1,5.5,mb,,,,1.0,us,usp0001wzn,2022-04-27T23:55:50.576Z,"56 km ENE of Calama, Chile",earthquake,,,,42.0,reviewed,us,us
+1983-07-22T02:41:00.880Z,36.948,49.18,41.3,5.6,mb,,,,1.1,us,usp0001x0j,2025-12-19T21:29:32.337Z,"31 km NW of P?deg?n-e Manj?l, Iran",earthquake,,3.8,,47.0,reviewed,us,us
+1983-07-22T04:27:58.230Z,-0.161,121.564,66.1,5.8,mb,,,,1.2,us,usp0001x0w,2020-08-26T22:48:19.418Z,"161 km WNW of Luwuk, Indonesia",earthquake,,11.7,,3.0,reviewed,us,us
+1983-07-24T00:52:25.190Z,-27.995,-176.382,71.3,5.5,mb,,,,1.2,us,usp0001x29,2025-12-19T21:29:33.684Z,Kermadec Islands region,earthquake,,,,23.0,reviewed,us,us
+1983-07-24T23:07:30.970Z,53.93,158.372,180.4,6.2,mw,,,,1.0,us,usp0001x37,2022-04-27T23:55:55.920Z,"82 km N of Yelizovo, Russia",earthquake,,,,,reviewed,us,nc
+1983-07-24T23:38:09.840Z,-8.141,119.504,48.1,6.4,mw,,,,1.2,us,usp0001x38,2025-12-19T21:29:34.489Z,"49 km N of Komodo, Indonesia",earthquake,,3.1,,,reviewed,us,nc
+1983-07-28T01:40:33.320Z,-28.159,-176.32,30.7,5.6,mb,,,,1.1,us,usp0001x5v,2025-12-19T21:29:38.826Z,Kermadec Islands region,earthquake,,,,20.0,reviewed,us,us
+1983-07-28T15:06:44.760Z,41.97,142.654,62.8,5.5,mb,,,,1.0,us,usp0001x64,2025-12-19T21:29:40.455Z,"46 km SSE of Shizunai-furukawach?, Japan",earthquake,,1.7,,82.0,reviewed,us,us
+1983-07-29T18:03:59.810Z,10.502,56.967,10.0,5.7,mb,,,,1.2,us,usp0001x6s,2025-12-19T21:29:42.496Z,Carlsberg Ridge,earthquake,,,,63.0,reviewed,us,us
+1983-07-31T10:26:00.330Z,-20.127,-126.931,10.0,5.7,mw,,,,0.9,us,usp0001x85,2025-12-19T21:29:43.905Z,South Pacific Ocean,earthquake,,,,,reviewed,us,nc
+1983-08-01T14:09:23.550Z,-48.284,-75.848,33.0,5.6,mb,,,,0.9,us,usp0001x99,2025-12-19T21:28:24.551Z,"271 km WSW of Cochrane, Chile",earthquake,,,,16.0,reviewed,us,us
+1983-08-02T02:17:41.030Z,20.435,122.101,157.9,6.3,mw,,,,1.1,us,usp0001x9n,2022-04-27T23:52:16.561Z,"13 km E of Basco, Philippines",earthquake,,,,,reviewed,us,nc
+1983-08-02T06:08:06.660Z,45.139,153.485,56.0,5.5,mb,,,,1.0,us,usp0001x9q,2025-12-19T21:28:25.448Z,east of the Kuril Islands,earthquake,,8.4,,63.0,reviewed,us,us
+1983-08-03T18:17:42.230Z,-17.395,167.914,33.0,5.6,ms,,,,1.1,us,usp0001xaq,2025-12-19T21:28:27.107Z,"56 km NW of Port-Vila, Vanuatu",earthquake,,,,14.0,reviewed,us,us
+1983-08-05T00:33:44.510Z,52.934,159.734,33.0,5.5,mb,,,,0.9,us,usp0001xbn,2025-12-19T21:28:28.612Z,"73 km E of Petropavlovsk-Kamchatsky, Russia",earthquake,,,,78.0,reviewed,us,us
+1983-08-05T05:25:43.440Z,-17.304,167.87,33.0,5.7,ms,,,,1.2,us,usp0001xbr,2025-12-19T20:58:54.799Z,"67 km NW of Port-Vila, Vanuatu",earthquake,,,,13.0,reviewed,us,us
+1983-08-05T06:21:42.700Z,-3.596,-62.153,23.0,5.6,mb,,,,1.0,us,usp0001xbu,2022-04-27T23:52:37.398Z,"28 km NNW of Codajás, Brazil",earthquake,,,,85.0,reviewed,us,us
+1983-08-06T01:20:22.360Z,51.63,15.994,10.0,5.8,mb,,,,1.3,us,usp0001xcb,2020-08-26T22:50:12.162Z,"7 km WSW of G?ogów, Poland",earthquake,,,,1.0,reviewed,us,us
+1983-08-06T02:26:49.340Z,16.125,-93.885,87.2,5.7,mb,,,,1.0,us,usp0001xcd,2022-04-27T23:52:40.485Z,"2 km NW of Ignacio Ramírez, Mexico",earthquake,,,,83.0,reviewed,us,us
+1983-08-06T15:43:51.240Z,40.142,24.766,2.4,6.8,mw,,,,1.2,us,usp0001xcs,2025-12-19T21:28:30.753Z,"39 km NW of Mýrina, Greece",earthquake,,1.0,,,reviewed,us,nc
+1983-08-06T22:37:54.970Z,-6.518,130.119,160.0,6.0,mw,,,,1.0,us,usp0001xe6,2022-04-27T23:52:43.957Z,Banda Sea,earthquake,,,,,reviewed,us,nc
+1983-08-08T03:47:57.160Z,35.498,139.069,24.8,5.7,mw,,,,1.2,us,usp0001xgb,2025-12-19T21:28:31.732Z,"13 km SSW of Uenohara, Japan",earthquake,,,,,reviewed,us,nc
+1983-08-10T20:05:48.010Z,-23.782,-175.967,33.0,5.5,ms,,,,1.1,us,usp0001xk4,2025-12-19T21:28:33.872Z,"290 km SSW of ‘Ohonua, Tonga",earthquake,,,,8.0,reviewed,us,us
+1983-08-11T12:02:58.890Z,18.828,120.957,14.8,5.6,mb,,,,1.3,us,usp0001xkv,2025-12-19T21:28:34.703Z,"27 km NNW of Claveria, Philippines",earthquake,,2.4,,68.0,reviewed,us,us
+1983-08-11T22:56:10.780Z,1.815,127.294,99.8,5.7,mb,,,,1.0,us,usp0001xm5,2025-12-19T21:28:35.383Z,"80 km W of Tobelo, Indonesia",earthquake,,4.4,,35.0,reviewed,us,us
+1983-08-13T15:39:33.590Z,-7.054,129.472,124.9,5.6,mb,,,,1.1,us,usp0001xnc,2022-04-27T23:53:03.996Z,"Kepulauan Babar, Indonesia",earthquake,,4.3,,24.0,reviewed,us,us
+1983-08-13T22:28:19.620Z,-8.667,111.24,81.2,5.9,mw,,,,1.1,us,usp0001xnj,2025-12-19T21:28:37.502Z,"83 km SW of Trenggalek, Indonesia",earthquake,,2.6,,,reviewed,us,nc
+1983-08-14T19:56:39.420Z,-63.364,169.439,10.0,5.9,ms,,,,1.2,us,usp0001xpa,2025-12-19T21:28:38.154Z,Balleny Islands region,earthquake,,,,10.0,reviewed,us,us
+1983-08-15T19:44:39.040Z,-17.102,-174.513,181.5,5.5,mb,,,,0.9,us,usp0001xq0,2022-04-27T23:53:15.295Z,"148 km SSW of Hihifo, Tonga",earthquake,,,,39.0,reviewed,us,us
+1983-08-17T10:55:54.130Z,55.867,161.287,62.6,7.1,mw,,,,1.2,us,usp0001xqy,2022-04-27T23:53:18.132Z,"57 km SSE of Klyuchi, Russia",earthquake,,5.4,,,reviewed,us,nc
+1983-08-17T12:17:56.010Z,18.231,120.86,28.8,6.5,ms,,,,1.1,us,usp0001xr0,2025-12-19T21:28:39.747Z,"16 km ENE of Piddig, Philippines",earthquake,,,,7.0,reviewed,us,us
+1983-08-18T16:09:58.620Z,73.383,54.913,0.0,5.9,mb,,,,0.9,us,usp0001xry,2014-11-07T00:33:38.940Z,"Novaya Zemlya, Russia",nuclear explosion,,,,94.0,reviewed,us,us
+1983-08-20T06:19:30.710Z,-8.53,117.563,156.2,5.5,mb,,,,1.1,us,usp0001xt8,2025-12-19T21:28:44.752Z,"15 km SE of Pototano, Indonesia",earthquake,,,,24.0,reviewed,us,us
+1983-08-20T13:08:32.560Z,27.904,141.793,40.8,5.9,mw,,,,1.0,us,usp0001xtd,2025-12-19T21:28:45.689Z,"Bonin Islands, Japan region",earthquake,,2.3,,,reviewed,us,nc
+1983-08-21T08:34:45.700Z,3.742,126.617,45.8,5.9,mw,,,,1.1,us,usp0001xu6,2025-12-19T21:28:46.475Z,"223 km SE of Sarangani, Philippines",earthquake,,3.5,,,reviewed,us,nc
+1983-08-21T18:58:19.570Z,-28.726,-112.587,10.0,5.5,ms,,,,1.1,us,usp0001xuc,2025-12-19T21:28:48.782Z,Easter Island region,earthquake,,,,13.0,reviewed,us,us
+1983-08-21T22:57:29.310Z,-23.527,-177.138,150.5,5.5,mb,,,,1.0,us,usp0001xuh,2025-12-19T21:28:49.487Z,south of the Fiji Islands,earthquake,,,,17.0,reviewed,us,us
+1983-08-22T23:16:36.750Z,-3.552,146.641,20.9,5.5,ms,,,,1.3,us,usp0001xvg,2025-12-19T21:28:50.297Z,"181 km SSW of Lorengau, Papua New Guinea",earthquake,,5.0,,10.0,reviewed,us,us
+1983-08-23T23:39:40.350Z,-5.884,151.033,46.4,5.8,ms,,,,1.1,us,usp0001xwk,2025-12-19T21:28:50.969Z,"105 km ESE of Kimbe, Papua New Guinea",earthquake,,2.4,,16.0,reviewed,us,us
+1983-08-24T13:36:28.830Z,40.372,-124.9245,11.188,5.5,ml,41.0,257.0,0.4604,0.14,nc,nc1100970,2025-12-19T21:28:51.666Z,"60 km WSW of Ferndale, California",earthquake,1.65,2.18,,0.0,reviewed,nc,nc
+1983-08-25T20:23:33.320Z,33.509,131.484,126.4,6.5,mw,,,,1.1,us,usp0001xxv,2022-04-27T23:53:34.888Z,"6 km SE of Bungo-Takada-shi, Japan",earthquake,,1.0,,,reviewed,us,nc
+1983-08-27T18:49:48.430Z,8.171,125.946,20.5,6.0,ms,,,,1.3,us,usp0001xzd,2025-12-19T21:28:54.750Z,"4 km W of Bunawan, Philippines",earthquake,,,,17.0,reviewed,us,us
+1983-08-28T11:30:14.590Z,46.177,151.514,74.9,5.5,mb,,,,0.8,us,usp0001y03,2025-12-19T21:28:55.613Z,Kuril Islands,earthquake,,,,83.0,reviewed,us,us
+1983-08-29T05:19:24.880Z,-3.448,148.799,33.0,5.8,ms,,,,1.3,us,usp0001y0q,2025-12-19T21:28:56.412Z,"230 km SE of Lorengau, Papua New Guinea",earthquake,,,,10.0,reviewed,us,us
+1983-08-30T08:50:17.180Z,-16.708,-172.082,38.7,6.1,mw,,,,1.1,us,usp0001y1u,2025-12-19T21:28:57.858Z,"201 km ESE of Hihifo, Tonga",earthquake,,,,,reviewed,us,nc
+1983-08-30T10:39:27.360Z,25.092,94.711,62.8,5.6,mb,,,,1.0,us,usp0001y1y,2025-12-19T21:28:58.624Z,"67 km SSE of Phek, India",earthquake,,,,82.0,reviewed,us,us
+1983-09-01T17:59:29.080Z,-52.484,25.838,10.0,5.8,ms,,,,1.3,us,usp0001y3q,2025-12-19T21:27:49.585Z,south of Africa,earthquake,,,,4.0,reviewed,us,us
+1983-09-01T18:18:07.980Z,-29.405,-111.905,10.0,5.5,ms,,,,1.2,us,usp0001y3r,2025-12-19T21:27:50.301Z,Easter Island region,earthquake,,,,5.0,reviewed,us,us
+1983-09-01T20:01:47.080Z,-17.33,-69.932,105.3,5.9,mw,,,,1.0,us,usp0001y3t,2022-04-27T23:49:39.872Z,"12 km ESE of Chuquitira, Peru",earthquake,,,,,reviewed,us,nc
+1983-09-04T20:52:59.590Z,-20.998,169.801,111.8,5.5,mb,,,,1.0,us,usp0001y50,2024-01-17T20:44:18.557Z,"170 km SSE of Isangel, Vanuatu",earthquake,,2.2,,33.0,reviewed,us,us
+1983-09-06T01:05:58.760Z,-9.305,158.655,37.7,5.5,mb,,,,1.1,us,usp0001y5f,2025-12-19T20:58:50.973Z,"124 km WNW of Malango, Solomon Islands",earthquake,,,,30.0,reviewed,us,us
+1983-09-07T19:22:05.150Z,60.976,-147.5,45.0,6.4,mw,,,,0.9,us,usp0001y6d,2025-12-19T21:27:52.478Z,"46 km WNW of Tatitlek, Alaska",earthquake,,1.3,,,reviewed,us,nc
+1983-09-07T23:11:57.960Z,24.032,122.327,33.0,5.7,ms,,,,0.9,us,usp0001y6j,2025-12-19T21:27:53.243Z,"73 km E of Hualien City, Taiwan",earthquake,,,,1.0,reviewed,us,us
+1983-09-09T16:30:55.340Z,19.3268333,-155.1195,8.455,5.66,ml,49.0,105.0,,0.1,hv,hv19832451,2022-04-27T23:50:06.745Z,"15 km S of Fern Forest, Hawaii",earthquake,0.55,0.43,0.01,2.0,reviewed,hv,hv
+1983-09-12T15:42:08.550Z,36.502,71.082,208.8,6.2,mw,,,,1.0,us,usp0001yac,2022-04-27T23:50:15.704Z,"45 km WSW of Ashk?sham, Afghanistan",earthquake,,,,,reviewed,us,nc
+1983-09-13T02:03:27.110Z,7.529,126.625,46.5,5.6,mb,,,,1.2,us,usp0001yaj,2025-12-19T21:27:58.061Z,"8 km SE of Baganga, Philippines",earthquake,,2.2,,43.0,reviewed,us,us
+1983-09-13T19:30:54.950Z,-24.013,-175.706,33.0,5.5,ms,,,,1.5,us,usp0001yb5,2025-12-19T21:28:00.384Z,south of Tonga,earthquake,,,,10.0,reviewed,us,us
+1983-09-14T08:35:17.240Z,-3.672,-79.245,94.0,5.6,mb,,,,1.0,us,usp0001ybv,2022-04-27T23:50:41.410Z,"35 km N of Loja, Ecuador",earthquake,,4.0,,72.0,reviewed,us,us
+1983-09-14T11:25:00.900Z,18.104,145.77,158.5,6.3,mw,,,,1.2,us,usp0001ybz,2022-04-27T23:50:42.606Z,"Pagan region, Northern Mariana Islands",earthquake,,,,,reviewed,us,nc
+1983-09-15T10:39:02.390Z,16.103,-93.153,115.2,6.3,mw,,,,1.1,us,usp0001yda,2022-04-27T23:50:48.049Z,"4 km WNW of San Pedro Buenavista, Mexico",earthquake,,,,,reviewed,us,nc
+1983-09-16T08:09:26.680Z,-24.032,-179.796,510.2,6.0,mb,,,,1.0,us,usp0001yds,2022-04-27T23:50:57.094Z,south of the Fiji Islands,earthquake,,,,44.0,reviewed,us,us
+1983-09-16T23:10:47.870Z,17.974,120.766,33.0,5.6,mb,,,,1.1,us,usp0001ye2,2025-12-19T21:28:01.939Z,"8 km S of Padong, Philippines",earthquake,,,,38.0,reviewed,us,us
+1983-09-17T05:56:56.690Z,4.75,95.039,66.4,6.1,mw,,,,1.1,us,usp0001yeb,2025-12-19T21:28:04.257Z,"93 km SSW of Banda Aceh, Indonesia",earthquake,,3.7,,,reviewed,us,nc
+1983-09-17T12:11:42.790Z,-16.636,-177.476,33.0,6.7,mw,,,,1.2,us,usp0001yeg,2025-12-19T20:58:52.125Z,"266 km SSE of Alo, Wallis and Futuna",earthquake,,,,,reviewed,us,nc
+1983-09-17T12:46:55.950Z,-60.371,-27.067,33.0,5.5,mb,,,,1.1,us,usp0001yej,2022-04-27T23:51:15.432Z,South Sandwich Islands region,earthquake,,,,7.0,reviewed,us,us
+1983-09-17T22:25:41.780Z,-55.953,-24.83,37.9,5.5,mb,,,,1.3,us,usp0001yev,2026-02-04T20:08:28.592Z,South Sandwich Islands region,earthquake,,,,3.0,reviewed,us,us
+1983-09-20T08:50:58.310Z,18.185,-68.474,101.3,5.6,mb,,,,0.9,us,usp0001ygk,2025-12-19T21:28:07.073Z,"25 km SSE of Boca de Yuma, Dominican Republic",earthquake,,,,65.0,reviewed,us,us
+1983-09-21T19:20:42.460Z,24.095,122.148,28.2,6.3,mw,,,,1.1,us,usp0001yhr,2025-12-19T21:28:09.386Z,"56 km ENE of Hualien City, Taiwan",earthquake,,,,,reviewed,us,nc
+1983-09-23T12:29:23.030Z,24.013,122.228,32.4,5.8,ms,,,,1.0,us,usp0001ykr,2025-12-19T21:28:11.819Z,"63 km E of Hualien City, Taiwan",earthquake,,2.2,,14.0,reviewed,us,us
+1983-09-23T23:44:30.290Z,8.422,-83.391,42.0,5.6,mb,,,,1.0,us,usp0001ym5,2025-12-19T21:28:12.626Z,"36 km WSW of Golfito, Costa Rica",earthquake,,3.2,,82.0,reviewed,us,us
+1983-09-24T15:51:57.770Z,-41.853,-83.61,10.0,5.5,mb,,,,1.1,us,usp0001ymp,2025-12-19T21:28:13.320Z,West Chile Rise,earthquake,,,,9.0,reviewed,us,us
+1983-09-24T17:17:53.670Z,-3.727,151.09,10.0,6.1,ms,,,,1.2,us,usp0001ymw,2025-12-19T21:28:14.145Z,"130 km WNW of Rabaul, Papua New Guinea",earthquake,,,,10.0,reviewed,us,us
+1983-09-25T13:09:57.770Z,73.348,54.495,0.0,5.8,mb,,,,0.9,us,usp0001ynm,2014-11-07T00:33:51.368Z,"Novaya Zemlya, Russia",nuclear explosion,,,,98.0,reviewed,us,us
+1983-09-27T23:59:38.450Z,36.688,26.912,158.6,5.5,mb,,,,1.0,us,usp0001yps,2025-12-19T21:28:16.762Z,"7 km SW of Kéfalos, Greece",earthquake,,1.8,,57.0,reviewed,us,us
+1983-09-29T02:06:20.360Z,-11.177,115.371,33.0,5.6,mb,,,,1.2,us,usp0001yqn,2025-12-19T21:28:18.454Z,"263 km S of Nusa Dua, Indonesia",earthquake,,,,29.0,reviewed,us,us
+1983-09-30T18:58:14.340Z,11.912,43.267,10.0,5.5,mb,,,,1.0,us,usp0001yru,2025-12-19T21:28:21.357Z,"6 km SSW of Obock, Djibouti",earthquake,,,,53.0,reviewed,us,us
+1983-10-01T12:57:57.860Z,45.628,150.762,33.0,5.5,ms,,,,0.9,us,usp0001ysb,2025-12-19T21:27:11.129Z,"230 km E of Kuril’sk, Russia",earthquake,,,,8.0,reviewed,us,us
+1983-10-02T15:18:09.510Z,-6.627,154.552,67.8,5.6,mb,,,,1.1,us,usp0001ysq,2022-04-27T23:47:15.183Z,"108 km WSW of Panguna, Papua New Guinea",earthquake,,5.3,,11.0,reviewed,us,us
+1983-10-03T13:33:35.070Z,33.941,139.513,12.4,6.0,mw,,,,1.0,us,usp0001yt1,2025-12-19T21:27:12.780Z,"96 km SSE of Shimoda, Japan",earthquake,,0.9,,,reviewed,us,nc
+1983-10-04T03:10:01.370Z,20.126,121.392,33.0,5.5,ms,,,,1.0,us,usp0001yt8,2025-12-19T21:27:14.462Z,"70 km WSW of Basco, Philippines",earthquake,,,,2.0,reviewed,us,us
+1983-10-04T18:52:13.300Z,-26.535,-70.563,14.8,7.4,mw,,,,1.2,us,usp0001ytj,2025-12-19T21:27:16.800Z,"54 km WSW of Diego de Almagro, Chile",earthquake,,3.5,,,reviewed,us,nc
+1983-10-04T19:26:58.050Z,-26.339,-70.654,31.2,5.7,mb,,,,1.1,us,usp0001ytk,2022-04-27T23:47:19.850Z,"60 km W of Diego de Almagro, Chile",earthquake,,3.6,,25.0,reviewed,us,us
+1983-10-06T01:47:06.560Z,49.932,78.843,0.0,6.0,mb,,,,0.9,us,usp0001yu0,2014-11-07T00:33:56.050Z,"94 km SSE of Kurchatov, Kazakhstan",nuclear explosion,,,,100.0,reviewed,us,us
+1983-10-06T10:00:02.810Z,41.566,88.766,33.0,5.5,mb,,,,0.9,us,usp0001yu6,2015-06-16T15:42:09.957Z,"157 km SSW of Turpan, China",nuclear explosion,,,,56.0,reviewed,us,us
+1983-10-06T15:01:48.400Z,-26.724,-70.908,19.7,5.5,mb,,,,1.2,us,usp0001yua,2022-04-27T23:47:22.227Z,"91 km NW of Copiapó, Chile",earthquake,,4.4,,4.0,reviewed,us,us
+1983-10-08T07:45:26.680Z,44.229,130.741,557.9,6.1,mw,,,,1.0,us,usp0001yv8,2022-04-27T23:47:23.365Z,"35 km WNW of Dongning, China",earthquake,,2.1,,,reviewed,us,nc
+1983-10-08T22:33:32.000Z,-5.458,146.02,58.6,5.8,mw,,,,1.0,us,usp0001yvj,2025-12-19T20:58:47.234Z,"36 km SE of Madang, Papua New Guinea",earthquake,,,,,reviewed,us,nc
+1983-10-09T11:25:40.580Z,-26.135,-70.518,16.1,6.7,mw,,,,1.1,us,usp0001yvs,2025-12-19T21:27:19.137Z,"53 km WNW of Diego de Almagro, Chile",earthquake,,3.4,,,reviewed,us,nc
+1983-10-10T03:33:22.670Z,-5.818,103.163,37.7,5.6,mb,,,,1.1,us,usp0001yvz,2025-12-19T21:27:19.941Z,"198 km S of Pagar Alam, Indonesia",earthquake,,,,21.0,reviewed,us,us
+1983-10-11T22:41:10.970Z,27.157,-44.497,10.0,5.7,ms,,,,1.1,us,usp0001yxh,2025-12-19T21:27:21.416Z,northern Mid-Atlantic Ridge,earthquake,,,,17.0,reviewed,us,us
+1983-10-12T02:23:57.010Z,-2.948,128.13,31.3,5.5,ms,,,,1.4,us,usp0001yxn,2025-12-19T21:27:22.316Z,"82 km N of Ambon, Indonesia",earthquake,,,,6.0,reviewed,us,us
+1983-10-12T03:39:38.790Z,8.055,-82.741,20.2,5.7,mb,,,,1.0,us,usp0001yxr,2025-12-19T21:27:23.147Z,"14 km E of Punta de Burica, Panama",earthquake,,5.3,,76.0,reviewed,us,us
+1983-10-13T10:01:40.810Z,41.694,144.391,29.8,5.5,ms,,,,1.0,us,usp0001yyw,2025-12-19T21:27:24.559Z,"142 km S of Kushiro, Japan",earthquake,,2.3,,5.0,reviewed,us,us
+1983-10-13T12:22:15.100Z,24.457,-46.279,10.0,5.5,mb,,,,0.9,us,usp0001yz2,2022-04-27T23:47:55.061Z,northern Mid-Atlantic Ridge,earthquake,,,,52.0,reviewed,us,us
+1983-10-13T13:06:38.220Z,-0.854,-21.816,10.0,5.6,mb,,,,0.9,us,usp0001yz7,2025-12-19T21:27:25.246Z,central Mid-Atlantic Ridge,earthquake,,,,64.0,reviewed,us,us
+1983-10-15T10:56:50.800Z,-8.101,156.311,7.4,6.5,mw,,,,1.0,us,usp0001z0k,2025-12-19T21:27:26.835Z,"58 km W of Gizo, Solomon Islands",earthquake,,3.3,,,reviewed,us,nc
+1983-10-16T05:32:28.710Z,1.084,121.052,40.1,6.5,mw,,,,1.1,us,usp0001z19,2025-12-19T21:27:28.497Z,"231 km WNW of Gorontalo, Indonesia",earthquake,,,,,reviewed,us,nc
+1983-10-16T09:59:46.550Z,-23.681,-70.129,65.6,6.1,mw,,,,1.1,us,usp0001z1c,2025-12-19T21:27:29.216Z,"27 km E of Antofagasta, Chile",earthquake,,,,,reviewed,us,nc
+1983-10-17T13:24:55.810Z,-56.889,-25.1,33.0,5.9,ms,,,,0.9,us,usp0001z24,2014-11-07T00:33:59.943Z,South Sandwich Islands region,earthquake,,,,1.0,reviewed,us,us
+1983-10-17T13:25:21.130Z,-20.794,-173.758,30.4,6.3,mw,,,,1.3,us,usp0001z25,2025-12-19T21:27:30.156Z,"125 km SSE of Pangai, Tonga",earthquake,,,,,reviewed,us,nc
+1983-10-17T19:36:21.470Z,37.588,-17.52,10.0,6.4,mw,,,,1.1,us,usp0001z2b,2025-12-19T21:27:30.840Z,Azores-Cape St. Vincent Ridge,earthquake,,,,,reviewed,us,nc
+1983-10-21T08:14:18.100Z,-30.773,-69.194,116.7,5.5,mb,,,,1.0,us,usp0001z4a,2025-12-19T21:27:35.168Z,"65 km NNE of Calingasta, Argentina",earthquake,,,,42.0,reviewed,us,us
+1983-10-22T04:21:35.010Z,-60.665,-25.451,24.0,7.2,mw,,,,1.3,us,usp0001z5e,2025-12-19T21:27:37.111Z,South Sandwich Islands region,earthquake,,,,,reviewed,us,nc
+1983-10-22T05:53:23.710Z,-60.404,-24.865,33.0,6.3,mb,,,,1.3,us,usp0001z5h,2025-12-19T21:27:37.826Z,South Sandwich Islands region,earthquake,,,,22.0,reviewed,us,us
+1983-10-22T13:07:39.170Z,-60.62,-25.392,33.0,6.5,mw,,,,1.1,us,usp0001z5u,2025-12-19T21:27:38.581Z,South Sandwich Islands region,earthquake,,,,,reviewed,us,nc
+1983-10-22T22:08:28.920Z,-60.282,-25.249,33.0,5.5,mb,,,,1.0,us,usp0001z65,2025-12-19T21:27:40.167Z,South Sandwich Islands region,earthquake,,,,6.0,reviewed,us,us
+1983-10-23T04:44:44.250Z,41.825,142.513,67.1,5.5,mb,,,,1.0,us,usp0001z6n,2025-12-19T21:27:40.978Z,"57 km SSE of Shizunai-furukawach?, Japan",earthquake,,1.5,,90.0,reviewed,us,us
+1983-10-24T00:36:06.540Z,-12.849,-76.658,48.3,5.6,mb,,,,1.1,us,usp0001z7c,2025-12-19T20:58:49.845Z,"13 km SW of Asia, Peru",earthquake,,,,58.0,reviewed,us,us
+1983-10-25T00:36:23.430Z,1.131,120.858,33.0,6.5,mw,,,,1.3,us,usp0001z8j,2025-12-19T21:27:41.655Z,"250 km NNE of Palu, Indonesia",earthquake,,,,,reviewed,us,nc
+1983-10-26T01:55:04.880Z,49.921,78.907,0.0,6.1,mb,,,,0.9,us,usp0001z9k,2014-11-07T00:34:00.918Z,"96 km SSE of Kurchatov, Kazakhstan",nuclear explosion,,,,121.0,reviewed,us,us
+1983-10-26T10:46:14.760Z,1.626,122.16,499.4,5.6,mb,,,,1.1,us,usp0001z9x,2022-04-27T23:48:40.153Z,"156 km NW of Gorontalo, Indonesia",earthquake,,2.9,,53.0,reviewed,us,us
+1983-10-27T19:43:48.410Z,1.093,120.833,27.7,6.6,mw,,,,1.1,us,usp0001zb4,2025-12-19T21:27:43.357Z,"245 km NNE of Palu, Indonesia",earthquake,,2.3,,,reviewed,us,nc
+1983-10-28T05:56:56.220Z,-31.358,-179.517,33.0,5.9,ms,,,,1.3,us,usp0001zbg,2025-12-19T21:27:44.178Z,Kermadec Islands region,earthquake,,,,13.0,reviewed,us,us
+1983-10-28T14:06:06.610Z,44.058,-113.857,10.0,6.9,mw,,,,1.1,us,usp0001zbv,2026-08-22T23:19:57.668Z,"The 1983 Borah Peak Earthquake, Idaho",earthquake,,,,,reviewed,us,nc
+1983-10-29T23:39:05.530Z,44.281,-114.115,10.0,5.5,mb,,,,0.8,us,usp0001zda,2022-04-27T23:49:13.946Z,"22 km E of Clayton, Idaho",earthquake,,,,57.0,reviewed,us,us
+1983-10-30T01:45:50.990Z,36.427,71.443,131.7,5.6,mb,,,,0.9,us,usp0001zdf,2022-04-27T23:49:19.980Z,"29 km SSW of Ashk?sham, Afghanistan",earthquake,,,,73.0,reviewed,us,us
+1983-10-30T04:12:27.130Z,40.33,42.187,11.6,6.8,mw,,,,1.1,us,usp0001zdn,2025-12-19T21:27:46.612Z,"27 km E of Narman, Turkey",earthquake,,3.0,,,reviewed,us,nc
+1983-10-30T16:51:57.060Z,35.464,133.899,26.9,5.5,mb,,,,1.1,us,usp0001ze7,2025-12-19T21:27:48.133Z,"8 km ENE of Kurayoshi, Japan",earthquake,,1.3,,42.0,reviewed,us,us
+1983-10-30T21:39:16.370Z,47.788,152.869,78.7,5.7,mb,,,,0.9,us,usp0001zeg,2025-12-19T21:27:48.769Z,Kuril Islands,earthquake,,6.9,,73.0,reviewed,us,us
+1983-10-31T17:37:56.290Z,-9.016,119.18,83.4,6.4,mw,,,,1.2,us,usp0001zf2,2022-04-27T23:49:29.500Z,"58 km SW of Komodo, Indonesia",earthquake,,,,,reviewed,us,nc
+1983-11-03T07:41:11.470Z,-4.014,-79.418,92.8,5.9,mw,,,,1.0,us,usp0001zhg,2022-04-27T23:43:54.978Z,"7 km WSW of Catamayo, Ecuador",earthquake,,,,,reviewed,us,nc
+1983-11-03T10:40:44.020Z,-5.779,104.506,50.3,5.5,mb,,,,1.1,us,usp0001zhm,2025-12-19T21:26:36.037Z,"92 km WSW of Bandar Lampung, Indonesia",earthquake,,,,22.0,reviewed,us,us
+1983-11-06T09:38:39.940Z,-20.145,-177.678,386.6,5.6,mb,,,,0.9,us,usp0001zkr,2022-04-27T23:00:12.251Z,"280 km WNW of Haveluloto, Tonga",earthquake,,,,40.0,reviewed,us,us
+1983-11-06T21:09:45.240Z,35.206,115.213,19.0,5.7,mb,,,,0.9,us,usp0001zm0,2025-12-19T21:26:39.284Z,"24 km W of Heze, China",earthquake,,1.9,,83.0,reviewed,us,us
+1983-11-07T08:39:20.470Z,1.411,128.164,31.3,6.1,mw,,,,1.3,us,usp0001zmb,2025-12-19T21:26:39.983Z,"39 km SSE of Tobelo, Indonesia",earthquake,,,,,reviewed,us,nc
+1983-11-07T08:42:29.920Z,1.27,128.335,59.4,6.6,mw,,,,1.3,us,usp0001zmc,2025-12-19T21:26:40.817Z,"62 km SE of Tobelo, Indonesia",earthquake,,,,,reviewed,us,nc
+1983-11-07T16:26:31.750Z,1.413,128.154,39.0,6.4,ms,,,,1.3,us,usp0001zmq,2025-12-19T21:26:42.175Z,"38 km SSE of Tobelo, Indonesia",earthquake,,,,21.0,reviewed,us,us
+1983-11-07T16:46:14.250Z,1.404,128.137,56.8,5.5,mb,,,,1.1,us,usp0001zmr,2025-12-19T21:26:42.918Z,"38 km SSE of Tobelo, Indonesia",earthquake,,5.0,,15.0,reviewed,us,us
+1983-11-07T20:12:38.170Z,1.43,128.267,36.7,5.6,ms,,,,1.2,us,usp0001zmv,2025-12-19T21:26:44.467Z,"43 km SE of Tobelo, Indonesia",earthquake,,,,1.0,reviewed,us,us
+1983-11-10T23:33:52.050Z,4.264,123.024,576.5,5.6,mb,,,,0.9,us,usp0001zqd,2022-04-27T23:44:53.364Z,"231 km SSE of Tabiauan, Philippines",earthquake,,1.7,,43.0,reviewed,us,us
+1983-11-15T17:35:05.030Z,31.184,141.796,23.4,5.9,ms,,,,1.3,us,usp0001zux,2025-12-19T21:26:52.063Z,"Izu Islands, Japan region",earthquake,,3.8,,11.0,reviewed,us,us
+1983-11-15T18:03:58.770Z,31.196,141.809,25.8,5.9,ms,,,,1.1,us,usp0001zuz,2025-12-19T21:26:52.932Z,"Izu Islands, Japan region",earthquake,,3.6,,2.0,reviewed,us,us
+1983-11-16T10:44:06.540Z,37.353,141.618,42.7,5.5,mb,,,,1.0,us,usp0001zvq,2025-12-19T21:26:54.427Z,"56 km ESE of Namie, Japan",earthquake,,,,83.0,reviewed,us,us
+1983-11-16T16:13:00.140Z,19.4263333,-155.4495,8.722,6.71,md,39.0,56.0,,0.12,hv,hv19832953,2025-12-19T21:26:55.208Z,"22 km W of Volcano, Hawaii",earthquake,0.44,0.9,,1.0,reviewed,hv,hv
+1983-11-16T22:07:21.740Z,-8.98,119.156,79.4,5.5,mw,,,,1.1,us,usp0001zw1,2022-04-27T23:45:10.299Z,"56 km SW of Komodo, Indonesia",earthquake,,4.3,,,reviewed,us,nc
+1983-11-20T00:44:43.560Z,43.706,148.444,29.3,6.1,mw,,,,1.0,us,usp0001zy5,2025-12-19T21:26:57.414Z,"139 km E of Shikotan, Russia",earthquake,,3.7,,,reviewed,us,nc
+1983-11-20T03:27:04.470Z,50.066,79.036,0.0,5.5,mb,,,,0.9,us,usp0001zy6,2014-11-07T00:34:08.874Z,"84 km SSE of Kurchatov, Kazakhstan",nuclear explosion,,,,84.0,reviewed,us,us
+1983-11-20T20:32:20.520Z,-7.45,130.645,59.3,6.1,mw,,,,1.0,us,usp0001zyk,2025-12-19T21:26:58.075Z,"Pulau Pulau Tanimbar, Indonesia",earthquake,,,,,reviewed,us,nc
+1983-11-22T02:07:12.270Z,12.118,144.296,38.7,5.6,mb,,,,1.1,us,usp0001zzc,2025-12-19T21:26:59.699Z,"133 km SSW of Merizo Village, Guam",earthquake,,3.2,,42.0,reviewed,us,us
+1983-11-22T14:21:03.080Z,0.482,-79.877,54.9,6.6,mw,,,,1.2,us,usp0001zzs,2025-12-19T21:27:00.536Z,"21 km SE of Muisne, Ecuador",earthquake,,,,,reviewed,us,nc
+1983-11-22T16:01:13.090Z,-31.125,-178.402,33.0,5.5,mb,,,,1.2,us,usp0001zzv,2022-04-27T23:45:46.189Z,Kermadec Islands region,earthquake,,,,7.0,reviewed,us,us
+1983-11-23T05:48:33.580Z,-18.105,-178.333,606.7,5.6,mb,,,,0.9,us,usp0002004,2022-04-27T23:45:47.940Z,"248 km E of Levuka, Fiji",earthquake,,1.6,,46.0,reviewed,us,us
+1983-11-24T05:30:34.230Z,-7.481,128.168,178.5,7.3,mw,,,,1.2,us,usp000200r,2022-04-27T23:45:57.945Z,"172 km NE of Lospalos, Timor Leste",earthquake,,2.2,,,reviewed,us,nc
+1983-11-25T19:56:07.830Z,-40.451,155.507,18.5,6.2,mw,,,,1.0,us,usp0002027,2025-12-19T21:27:02.157Z,southeast of Australia,earthquake,,2.9,,,reviewed,us,nc
+1983-11-25T21:54:12.300Z,-5.466,152.003,26.4,6.1,mw,,,,1.1,us,usp0002028,2025-12-19T21:27:02.979Z,"127 km SSW of Kokopo, Papua New Guinea",earthquake,,6.7,,,reviewed,us,nc
+1983-11-25T22:56:25.880Z,-3.77,-76.309,114.7,5.5,mb,,,,0.9,us,usp000202b,2022-04-27T23:46:21.204Z,"35 km SSE of Alianza Cristiana, Peru",earthquake,,,,69.0,reviewed,us,us
+1983-11-26T20:18:23.220Z,7.359,-82.268,10.0,6.0,ms,,,,1.4,us,usp0002038,2025-12-19T21:27:04.586Z,"95 km S of Boca Chica, Panama",earthquake,,,,14.0,reviewed,us,us
+1983-11-27T20:22:51.420Z,-5.463,152.16,37.1,5.5,mb,,,,1.0,us,usp000203t,2025-12-19T21:27:05.405Z,"124 km S of Kokopo, Papua New Guinea",earthquake,,3.8,,21.0,reviewed,us,us
+1983-11-28T19:10:08.050Z,-44.87,-75.935,26.0,5.6,mb,,,,1.2,us,usp000204a,2022-04-27T23:46:52.228Z,"253 km WNW of Puerto Chacabuco, Chile",earthquake,,,,24.0,reviewed,us,us
+1983-11-29T20:59:50.850Z,32.598,140.003,136.7,5.6,mw,,,,1.1,us,usp0002052,2025-12-19T21:27:07.608Z,"250 km SSE of Shimoda, Japan",earthquake,,1.9,,,reviewed,us,nc
+1983-11-29T22:18:30.940Z,-6.22,146.56,39.0,5.7,mw,,,,1.1,us,usp0002054,2025-12-19T20:58:45.966Z,"73 km NW of Lae, Papua New Guinea",earthquake,,3.4,,,reviewed,us,nc
+1983-11-29T23:41:07.310Z,-19.503,-177.783,525.0,6.0,mw,,,,0.9,us,usp0002056,2022-04-27T23:47:00.057Z,Fiji region,earthquake,,1.6,,,reviewed,us,nc
+1983-11-30T02:56:47.280Z,41.79,142.772,56.9,6.0,mw,,,,1.0,us,usp000205b,2025-12-19T21:27:08.303Z,"69 km SSE of Shizunai-furukawach?, Japan",earthquake,,1.6,,,reviewed,us,nc
+1983-11-30T10:16:13.310Z,-56.494,-26.383,84.6,5.8,mw,,,,1.1,us,usp000205j,2022-04-27T23:47:02.920Z,South Sandwich Islands region,earthquake,,,,,reviewed,us,nc
+1983-11-30T17:46:00.670Z,-6.852,72.11,10.0,7.3,mw,,,,1.2,us,usp000205u,2025-12-19T21:27:09.099Z,Chagos Archipelago region,earthquake,,,,,reviewed,us,nc
+1983-12-01T05:45:34.420Z,-6.653,71.423,10.0,5.6,mw,,,,1.0,us,usp000206n,2025-12-19T21:25:49.140Z,Chagos Archipelago region,earthquake,,,,,reviewed,us,nc
+1983-12-02T03:09:05.660Z,14.066,-91.924,67.1,7.0,mw,,,,1.1,us,usp000207b,2025-12-19T21:25:50.831Z,"25 km S of Champerico, Guatemala",earthquake,,2.0,,,reviewed,us,nc
+1983-12-03T01:23:55.300Z,-15.24,-172.915,33.0,6.2,mw,,,,1.3,us,usp0002081,2025-12-19T21:25:53.760Z,"123 km NE of Hihifo, Tonga",earthquake,,,,,reviewed,us,nc
+1983-12-03T17:43:14.840Z,-6.463,71.417,10.0,6.3,mw,,,,1.1,us,usp000208h,2025-12-19T21:25:54.602Z,Chagos Archipelago region,earthquake,,,,,reviewed,us,nc
+1983-12-08T01:26:22.000Z,4.396,62.513,10.0,5.5,mb,,,,0.9,us,usp00020bf,2025-12-19T21:26:00.403Z,Carlsberg Ridge,earthquake,,,,43.0,reviewed,us,us
+1983-12-08T02:19:10.950Z,-19.216,-178.378,627.0,5.5,mb,,,,1.0,us,usp00020bk,2022-04-27T23:40:25.221Z,"274 km ESE of Levuka, Fiji",earthquake,,1.8,,47.0,reviewed,us,us
+1983-12-08T10:21:56.570Z,18.548,-102.581,68.3,5.5,mb,,,,1.3,us,usp00020bs,2022-04-27T23:40:26.328Z,"21 km W of Tumbiscatío de Ruiz, Mexico",earthquake,,3.9,,55.0,reviewed,us,us
+1983-12-08T11:01:20.570Z,-22.479,-179.503,629.6,5.5,mb,,,,1.2,us,usp00020bt,2022-04-27T23:40:27.495Z,south of the Fiji Islands,earthquake,,2.0,,32.0,reviewed,us,us
+1983-12-08T13:17:56.380Z,3.792,148.958,10.0,6.3,mw,,,,1.2,us,usp00020bx,2025-12-19T21:26:01.323Z,Federated States of Micronesia region,earthquake,,,,,reviewed,us,nc
+1983-12-08T13:50:51.050Z,46.248,150.927,97.7,5.6,mb,,,,0.8,us,usp00020by,2022-04-27T23:40:29.933Z,"263 km ENE of Kuril’sk, Russia",earthquake,,4.6,,71.0,reviewed,us,us
+1983-12-11T09:13:49.230Z,8.137,137.239,23.9,6.4,mw,,,,1.2,us,usp00020dr,2025-12-19T21:26:05.296Z,"180 km SSW of Colonia, Micronesia",earthquake,,,,,reviewed,us,nc
+1983-12-11T13:02:52.880Z,-18.361,168.047,54.2,5.5,mb,,,,1.2,us,usp00020dv,2022-04-27T23:40:36.872Z,"74 km SSW of Port-Vila, Vanuatu",earthquake,,4.8,,11.0,reviewed,us,us
+1983-12-11T22:17:20.910Z,-5.077,151.892,85.5,5.5,mb,,,,1.1,us,usp00020e9,2022-04-27T23:40:38.036Z,"91 km SSW of Kokopo, Papua New Guinea",earthquake,,3.8,,15.0,reviewed,us,us
+1983-12-12T09:26:07.000Z,-7.583,127.288,136.9,6.4,mw,,,,1.1,us,usp00020eu,2022-04-27T23:40:39.228Z,"108 km NNE of Lospalos, Timor Leste",earthquake,,1.1,,,reviewed,us,nc
+1983-12-13T06:37:00.700Z,14.267,-92.961,39.2,5.5,mb,,,,1.0,us,usp00020f7,2022-04-27T23:40:46.081Z,"76 km SW of Puerto Madero, Mexico",earthquake,,3.7,,42.0,reviewed,us,us
+1983-12-15T03:52:50.520Z,-56.041,-27.629,120.0,5.84,mw,,,,,iscgem,iscgem562898,2022-04-27T23:40:53.573Z,South Sandwich Islands region,earthquake,,23.9,0.29,,reviewed,iscgem,iscgem
+1983-12-15T03:57:25.160Z,-29.155,-176.524,20.0,6.11,mw,,,,,iscgem,iscgem562899,2022-04-27T23:41:04.432Z,Kermadec Islands region,earthquake,,19.6,0.2,,reviewed,iscgem,iscgem
+1983-12-15T04:22:33.460Z,-33.099,-70.12,100.1,6.2,mw,,,,0.9,us,usp00020gh,2022-04-27T23:41:11.514Z,"53 km ESE of Los Andes, Chile",earthquake,,1.1,,,reviewed,us,nc
+1983-12-15T14:11:24.780Z,-3.155,145.393,23.8,6.4,mw,,,,1.0,us,usp00020gt,2025-12-19T21:26:09.393Z,"178 km NE of Angoram, Papua New Guinea",earthquake,,1.8,,,reviewed,us,nc
+1983-12-16T13:15:57.320Z,39.326,72.926,37.2,5.7,mb,,,,1.0,us,usp00020h9,2025-12-19T21:26:10.151Z,"62 km ESE of Kyzyl-Eshme, Kyrgyzstan",earthquake,,,,79.0,reviewed,us,us
+1983-12-17T15:31:06.050Z,-6.605,71.704,10.0,5.5,ms,,,,0.7,us,usp00020jv,2014-11-07T00:34:15.671Z,Chagos Archipelago region,earthquake,,,,2.0,reviewed,us,us
+1983-12-18T17:28:30.320Z,-8.964,119.728,35.5,5.8,mb,,,,1.2,us,usp00020m4,2022-04-27T23:41:51.456Z,"48 km SSE of Komodo, Indonesia",earthquake,,5.8,,30.0,reviewed,us,us
+1983-12-20T10:41:02.250Z,40.408,-125.6465,8.126,5.66,ml,86.0,287.0,1.066,0.23,nc,nc1108755,2025-12-19T21:26:19.940Z,"118 km W of Ferndale, California",earthquake,3.82,20.61,,7.0,reviewed,nc,nc
+1983-12-20T16:06:07.900Z,-16.489,178.028,24.4,5.5,mb,,,,1.2,us,usp00020nh,2022-04-27T23:41:59.018Z,"121 km NNE of Ba, Fiji",earthquake,,,,9.0,reviewed,us,us
+1983-12-20T16:58:30.770Z,-2.408,145.045,10.0,6.2,mw,,,,1.2,us,usp00020nk,2025-12-19T21:26:21.438Z,"201 km NE of Wewak, Papua New Guinea",earthquake,,,,,reviewed,us,nc
+1983-12-20T18:46:31.500Z,-2.515,145.08,8.9,5.9,ms,,,,1.0,us,usp00020nn,2025-12-19T21:26:22.286Z,"197 km NE of Wewak, Papua New Guinea",earthquake,,2.6,,7.0,reviewed,us,us
+1983-12-21T12:05:06.380Z,-28.19,-63.172,601.9,6.9,mw,,,,1.0,us,usp00020ph,2022-04-27T23:42:03.307Z,"38 km SE of Suncho Corral, Argentina",earthquake,,,,,reviewed,us,nc
+1983-12-21T12:15:06.940Z,-28.042,-63.008,608.8,5.9,mb,,,,1.0,us,usp00020pj,2022-05-09T19:15:24.780Z,"43 km ESE of Suncho Corral, Argentina",earthquake,,,,45.0,reviewed,us,us
+1983-12-21T23:32:11.620Z,-5.54,151.86,33.0,6.2,mw,,,,1.1,us,usp00020q0,2025-12-19T21:26:23.094Z,"139 km SSW of Kokopo, Papua New Guinea",earthquake,,,,,reviewed,us,nc
+1983-12-22T00:07:33.790Z,-5.435,151.965,33.0,5.5,mb,,,,1.0,us,usp00020q1,2025-12-19T21:26:23.779Z,"125 km SSW of Kokopo, Papua New Guinea",earthquake,,,,17.0,reviewed,us,us
+1983-12-22T01:02:02.430Z,-5.392,151.868,26.0,6.4,mw,,,,1.2,us,usp00020q3,2025-12-19T21:26:24.625Z,"124 km SSW of Kokopo, Papua New Guinea",earthquake,,2.6,,,reviewed,us,nc
+1983-12-22T04:11:29.230Z,11.866,-13.529,11.3,6.3,mw,,,,1.0,us,usp00020q5,2025-12-19T21:26:25.337Z,"38 km WNW of Gaoual, Guinea",earthquake,,2.1,,,reviewed,us,nc
+1983-12-22T05:31:45.470Z,35.994,69.115,33.0,5.6,mb,,,,1.2,us,usp00020q7,2025-12-19T21:26:26.247Z,"8 km SSW of Nahr?n, Afghanistan",earthquake,,,,67.0,reviewed,us,us
+1983-12-23T14:35:54.890Z,-20.899,-175.913,33.0,5.6,ms,,,,1.4,us,usp00020rd,2022-04-27T23:42:12.114Z,"77 km WNW of Haveluloto, Tonga",earthquake,,,,1.0,reviewed,us,us
+1983-12-23T15:30:34.130Z,-5.244,131.615,43.6,5.7,mb,,,,1.1,us,usp00020rf,2026-01-07T19:35:36.182Z,"133 km WNW of Tual, Indonesia",earthquake,,3.3,,32.0,reviewed,us,us
+1983-12-24T04:10:45.590Z,45.416,151.384,52.4,5.6,mb,,,,0.9,us,usp00020rz,2025-12-19T21:26:28.477Z,"275 km E of Kuril’sk, Russia",earthquake,,,,78.0,reviewed,us,us
+1983-12-26T04:29:06.870Z,49.838,78.218,0.0,5.5,mb,,,,0.9,us,usp00020tm,2014-11-07T00:34:17.293Z,"104 km SSW of Kurchatov, Kazakhstan",nuclear explosion,,,,74.0,reviewed,us,us
+1983-12-26T04:37:04.530Z,-7.366,128.47,144.7,5.6,mb,,,,1.0,us,usp00020tn,2022-04-27T23:42:42.312Z,"206 km NE of Lospalos, Timor Leste",earthquake,,1.6,,39.0,reviewed,us,us
+1983-12-26T13:50:44.580Z,-55.919,-27.762,88.8,5.8,mw,,,,1.0,us,usp00020tz,2022-04-27T23:42:47.901Z,South Sandwich Islands region,earthquake,,,,,reviewed,us,nc
+1983-12-27T10:59:11.010Z,-6.206,104.14,49.7,5.5,mb,,,,1.0,us,usp00020ur,2025-12-19T21:26:31.488Z,"150 km SW of Bandar Lampung, Indonesia",earthquake,,,,25.0,reviewed,us,us
+1983-12-27T23:05:57.960Z,54.191,-164.14,52.8,5.6,mb,,,,1.3,us,usp00020v3,2025-12-19T21:26:32.148Z,"87 km SSW of False Pass, Alaska",earthquake,,,,84.0,reviewed,us,us
+1983-12-28T06:24:41.080Z,-13.056,166.781,114.2,5.6,mb,,,,0.8,us,usp00020v9,2025-12-19T21:26:33.662Z,"123 km NW of Sola, Vanuatu",earthquake,,3.4,,35.0,reviewed,us,us
+1983-12-30T23:52:39.930Z,36.372,70.738,214.5,7.4,mw,,,,1.0,us,usp00020xw,2022-04-27T23:43:31.914Z,"55 km S of Jurm, Afghanistan",earthquake,,,,,reviewed,us,nc
+1983-12-31T00:44:42.570Z,-26.051,-70.077,55.1,5.5,mb,,,,1.2,us,usp00020xx,2022-04-27T23:43:38.191Z,"35 km N of Diego de Almagro, Chile",earthquake,,5.1,,6.0,reviewed,us,us
