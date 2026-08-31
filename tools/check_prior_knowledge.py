@@ -23,6 +23,9 @@ ALWAYS = set(dir(builtins)) | {
     "plt", "pd", "np", "torch", "sklearn", "f", "self",
     "rcParams", "update", "show", "format", "strip", "split", "join", "lower", "upper",
     "read_csv", "figure", "subplots", "tight_layout",
+    # matplotlib internals a self-check reaches for; not course content and never
+    # something a student is taught to write
+    "get_array", "get_offsets", "get_children",
 }
 
 
@@ -66,6 +69,12 @@ def used_in(path, skip_setup=True):
                 for node in ast.walk(ast.parse("".join(c["source"]))):
                     if isinstance(node, ast.FunctionDef):
                         defined.add(node.name)
+                    # A callable held in a VARIABLE — model(x), loss_function(a, b) — is what
+                    # PyTorch requires, and reads as an untaught function unless assignment
+                    # targets count as defined too.
+                    elif isinstance(node, ast.Assign):
+                        for tgt in node.targets:
+                            defined |= {x.id for x in ast.walk(tgt) if isinstance(x, ast.Name)}
             except SyntaxError:
                 pass
     for c in cells:
@@ -95,8 +104,14 @@ def check(week_n):
         return None
     calls, defined = used_in(nb)
     sol = nb.with_name(nb.stem + "_solution.ipynb")
-    if sol.exists():                      # a function the student must WRITE is defined only there
+    if sol.exists():
+        # BOTH halves from the solution: a function the student must write is defined only there,
+        # and so is any variable a model answer binds — model = make_picker() reads as an untaught
+        # call otherwise, which is exactly what PyTorch requires a week to do.
         defined |= used_in(sol)[1]
+        # NOT the solution's calls. Adding them surfaces every function a model answer uses that
+        # no module declares — real gaps in weeks 3, 4, 7 and 8, and worth closing, but it is a
+        # separate job from checking that a week does not reach forward. Deferred deliberately.
     allowed = taught_by(week_n) | ALWAYS | defined
     stray = sorted(c for c in calls if c not in allowed and c.split(".")[-1] not in allowed)
     # A module with NO functions: declared cannot be checked against — that is an unpopulated

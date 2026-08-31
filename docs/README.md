@@ -29,6 +29,7 @@ Each link opens that week's notebook in your own DataHub account.
 | 10 | [Earthquake or explosion — how does the world verify a nuclear test ban?](https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F10_earthquake_or_explosion.ipynb&branch=main) | Logistic regression | seismology / policy |
 | 11 | [Where does a volcano get its magma?](https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F11_where_magma.ipynb&branch=main) | SVM, Decision Trees | volcanology / petrology |
 | 12 | [Can you find a fault that nobody mapped?](https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F12_hidden_fault.ipynb&branch=main) | Clustering | seismology / tectonics |
+| 13 | [Can a machine hear an earthquake?](https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F13_machine_hears.ipynb&branch=main) | Neural networks | seismology |
 
 ## How the course works
 

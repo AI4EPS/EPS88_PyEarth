@@ -29,3 +29,4 @@ nav:
     - "Week 10: Earthquake or explosion — how does the world verify a nuclear test ban?": notebooks/10_earthquake_or_explosion.ipynb
     - "Week 11: Where does a volcano get its magma?": notebooks/11_where_magma.ipynb
     - "Week 12: Can you find a fault that nobody mapped?": notebooks/12_hidden_fault.ipynb
+    - "Week 13: Can a machine hear an earthquake?": notebooks/13_machine_hears.ipynb

@@ -42,6 +42,11 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "docs/notebooks"
 SLUG = "13_machine_hears"
 
+# TEMPLATE 5 makes these sentences binding, so they are READ rather than retyped: a hand-copied
+# one drifts from the catalogue the first time either is edited, and four of them already had.
+WORDS = {d["idea"]: d["words"] for d in weekkit._modules().get("plain_words", [])
+         if d["module"] == "ML6"}
+
 course = yaml.safe_load((ROOT / "course.yml").read_text())
 WEEK = next(s for s in course["schedule"] if s["n"] == 13)
 PLATFORM = course["platform"]
@@ -797,13 +802,13 @@ built decoration.
 """)
 
 # --- section 4 -------------------------------------------------------------
-md("""
+md(f"""
 ## Sliding a pattern-detector along the signal
 
 Look again at what each of STA/LTA's two averages is. Take a small list of weights — one over the
 window length, repeated — line it up against the samples ending at the current one, multiply and
 add. Then move along one sample and do it again. That sliding-and-summing has a name: it is a
-**convolution**. Slide a small pattern-detector along the signal. STA/LTA does it twice, with two
+**convolution**. {WORDS['1-D CNN']} STA/LTA does it twice, with two
 different window lengths, and divides the answers.
 
 The small list of weights is the detector, and what it detects depends entirely on the numbers in
@@ -880,15 +885,14 @@ twenty numbers. So stop choosing them.
 md(f"""
 ## Letting the machine choose the numbers
 
-**A stack of the logistic regressions you already know.** That is all a neural network is. One
-logistic regression takes a weighted sum of its inputs and squashes the answer; a single one of
-those is called a **perceptron**. Put several side by side and feed their outputs into another
-row, and you have a stack.
+**{WORDS['Neural network']}** That is all a neural network is. Take the piece it stacks first.
+**{WORDS['Perceptron']}** That is a **perceptron**. Put several of them side by side, feed their
+outputs into another row of them, and you have a stack.
 
-The squashing step between rows is the **activation**, and it is not optional. A weighted sum of
-weighted sums is still a weighted sum — stacking straight lines gives you a straight line, no
-matter how many. The activation bends it. Here are two stacks with identical shape, one with the
-bend and one without.
+Between the rows sits one more step. **{WORDS['Activation']}** That is the **activation**, and it
+is what makes stacking worth anything: without it, a weighted sum of weighted sums is still a
+weighted sum, however many rows you use. Here are two stacks of identical shape, one with the bend
+and one without.
 """)
 
 code("""
@@ -910,13 +914,13 @@ plt.show()
 md(f"""
 Three more words and we can build one.
 
-The **loss** is the number the network is trying to make small. Ours is the same one you used to
-fit a straight line: the average squared miss between what the network says and what we wanted.
+**{WORDS['Loss']}** That is the **loss**, and ours is the same one you used to fit a straight
+line: the average squared miss between what the network says and what we wanted.
 
-**Roll downhill on the error surface.** That is **gradient descent** — the loss depends on every
-weight in the network, PyTorch works out which way each weight would have to move to make the loss
-smaller, and every weight takes a small step that way. One pass over all the training data is an
-**epoch**, and training is just doing that again and again.
+**{WORDS['Gradient descent']}** That is **gradient descent** — the loss depends on every weight in
+the network, PyTorch works out which way each weight would have to move to make the loss smaller,
+and every weight takes a small step that way. **{WORDS['Epoch']}** That is an **epoch**, and
+training is doing it again and again.
 
 The last thing to decide is what "what we wanted" means. We are not asking for a number. We are
 asking the network, at each of the {M['n_samples']:,} samples, *how much does this look like the
