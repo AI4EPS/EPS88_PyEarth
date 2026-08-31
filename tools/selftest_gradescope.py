@@ -69,10 +69,20 @@ for d in sorted(GS.glob("week*/")):
     got, mx, _ = run(d, {f"{stem}.ipynb": stu.read_bytes()})
     check(f"week {n:>2}: an untouched notebook scores zero", got == 0, f"scored {got}")
 
-print("\ncorner cases, on week 1")
 w1 = GS / "week01"
 stem = json.loads((w1 / "spec.json").read_text())["notebook_stem"]
-sol = (ROOT / "docs/notebooks" / f"{stem}_solution.ipynb").read_bytes()
+_sol_path = ROOT / "docs/notebooks" / f"{stem}_solution.ipynb"
+if not _sol_path.exists():
+    # Solutions are gitignored until release, so a public checkout — CI's — has none. Every
+    # assertion below is about how a WORKED notebook scores, and there is no worked notebook
+    # here to score. Skipping is honest; failing would be a checker complaining that the
+    # release policy is in force.
+    print("\ncorner cases skipped: no solution notebooks in this checkout")
+    print(f"\n{'all checks pass' if not fails else str(len(fails)) + ' FAILED'}")
+    sys.exit(1 if fails else 0)
+
+print("\ncorner cases, on week 1")
+sol = _sol_path.read_bytes()
 
 got, mx, r = run(w1, {f"{stem}.ipynb": tamper(sol)})
 check("a stripped self-check with a faked tick scores almost nothing", got <= 10, f"scored {got}")

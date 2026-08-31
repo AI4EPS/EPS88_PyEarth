@@ -449,8 +449,13 @@ def check_checkpoints_rebuild(cells, solution_cells):
     Static, not executed: collect what the homework READS, subtract what setup + the homework's
     own checkpoint + the homework itself BIND. Anything left is a name that only class defined.
     """
-    # The model answers are where names are actually bound; the student copy has stubs.
-    cs = solution_cells or cells
+    # Needs the SOLUTION. Every name a student writes is bound only there, so on a checkout
+    # without solutions this rule reports the student's own answers as missing state — which is
+    # exactly what it did on CI, failing weeks 1, 2 and 3 for defects that do not exist. The
+    # rule is real where the solution is; where it is not, there is nothing to reason from.
+    if not solution_cells:
+        return
+    cs = solution_cells
     setup = [c for c in cs if c["cell_type"] == "code"][:1]
 
     # Every checkpoint, plus the homework heading — which is a checkpoint in intent whether or
