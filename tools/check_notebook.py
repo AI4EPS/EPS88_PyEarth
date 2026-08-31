@@ -175,6 +175,42 @@ def check_opening(cells):
                         f"{want[:64]}...")
 
 
+def check_summary_is_this_week(cells, n):
+    """Every function the summary lists is one this week's notebook actually calls.
+
+    The table is built from what the MODULE declares, and nothing checked it against what the
+    week does. A module can outlive the week that introduced it, or a week can drop a section —
+    either way the summary starts advertising functions the student never met, which is the
+    opposite of a summary.
+    """
+    mods_ = {m["id"]: m for m in yaml.safe_load((ROOT / "modules.yml").read_text())["modules"]}
+    wk = next(s for s in course["schedule"] if s["n"] == n)
+    called = set()
+    for c in cells:
+        if c["cell_type"] != "code":
+            continue
+        try:
+            tree = ast.parse(src(c))
+        except SyntaxError:
+            continue
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                f = node.func
+                if isinstance(f, ast.Name):
+                    called.add(f.id)
+                elif isinstance(f, ast.Attribute):
+                    base = f.value.id if isinstance(f.value, ast.Name) else None
+                    called.add(f"{base}.{f.attr}" if base in ("plt", "pd", "np") else f.attr)
+    for mid in wk["modules"]:
+        for f in mods_.get(mid, {}).get("functions", []) or []:
+            if not f.get("remember", True):
+                continue
+            names = set(re.findall(r"[A-Za-z_][A-Za-z0-9_.]*", f["name"]))
+            if not (names & called) and not ({x.split(".")[-1] for x in names} & called):
+                errs.append(f"the summary lists `{f['name']}`, which this week's notebook never "
+                            f"calls — a summary is what the student met, not what the module owns")
+
+
 def check_conventions(cells):
     """The shapes that must be identical in every week: the self-check line and the closing.
 
@@ -335,7 +371,7 @@ def main():
     cells = student["cells"]
     figs = check_pair(student, solution)
     check_banned(cells); qs = check_questions(cells); check_order(cells)
-    check_opening(cells); check_conventions(cells); check_predict(cells); check_plain_words(cells, n)
+    check_opening(cells); check_summary_is_this_week(cells, n); check_conventions(cells); check_predict(cells); check_plain_words(cells, n)
     check_asserts(cells); check_imports(cells)
     # Figures live in the SOLUTION too: a model answer that draws a map was never
     # checked for labels or coastlines, because only the student copy was passed in.

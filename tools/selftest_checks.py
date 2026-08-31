@@ -45,6 +45,8 @@ CASES = [
      [MD("A catalogue only lists what instruments happened to record.")], True),
     ("...but not the recorded wording, verbatim", lambda c: C.check_plain_words(c, 1),
      [MD("A catalogue lists what somebody's instruments recorded, not what happened. Where there are no seismometers there are no earthquakes in the file.")], False),
+    ("a summary listing a function the week never calls",
+     lambda c: C.check_summary_is_this_week(c, 1), [CODE("print(1)")], True),
     ("a self-check with no conventional result line", C.check_conventions,
      [MD("## The question, answered"), CODE("assert x > 0\nprint('nice work')")], True),
     ("...but not one that uses weekkit.CHECK_LINE", C.check_conventions,

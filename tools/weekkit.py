@@ -68,7 +68,7 @@ STANDARDS = [
     # --- tier 3: does it TEACH? ---------------------------------------------------------------
     (3, "every question serves a named takeaway or teaches: item", False),
     (3, "the summary lists what a student must remember, not everything the notebook touched",
-        False),
+        True),
     (3, "every takeaway is exercised by a question, and the homework touches all of them", False),
     (3, "the week's question is answered FOR THE STUDENT, on their own data or their own choice",
         False),
