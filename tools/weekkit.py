@@ -147,6 +147,19 @@ def load({signature}):
 """
 
 
+def setup_cell(**kw):
+    """Fill SETUP_CELL, defaulting any slot the caller does not pass.
+
+    Adding `{imports}` to the template broke every already-built week's build script with
+    KeyError until it was rerun — a shared template that grows a slot must not invalidate the
+    scripts that predate it. Defaults here mean a new slot is opt-in.
+    """
+    defaults = {"imports": "", "figsize": "(7, 4)", "signature": "", "cache_expr": '""',
+                "docstring": "Read the live source; fall back to the copy stored with the course.",
+                "url_expr": '""', "unpack": "", "cache_base": ""}
+    return SETUP_CELL.format(**{**defaults, **kw})
+
+
 def stop_list():
     """The builder's view: the same standards, marked with the tier that grades them."""
     mark = {1: "[must]", 2: "[craft]", 3: "[teaching]"}
