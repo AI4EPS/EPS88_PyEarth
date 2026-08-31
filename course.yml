@@ -181,10 +181,23 @@ schedule:
         T_sun_K: 5772            # IAU 2015 nominal
         R_sun_AU: 0.00465047
         albedo: {earth: 0.306, venus: 0.770, mars: 0.250}
-        albedo_note: "Earth 0.306 read from the NSSDC fact sheet 2026-08-30; that sheet now prints
-          0.294, but its own black-body row still reproduces only from 0.306. Quote ONE albedo
+        albedo_note: "Earth 0.306 is the SELF-CONSISTENT value, not a reading: the sheet prints
+          0.294 and has since at least 2025-08-21, but 0.294 gives a black-body temperature
+          of 255.13 K while the sheet's own black-body row says 254.0 — which only 0.306
+          reproduces (254.04). Do NOT tell students 0.306 was read off the page on a date
+          when the page said 0.294. Quote ONE albedo
           per week and check every number that hangs off it moves with it."
-        surface_T_K: {earth: 288.0, venus: 737.0, mars: 210}
+        surface_T_K: {earth: 288.0, venus: 737.0, mars: 214.0}   # Mars CORRECTED 2026-08-31
+        surface_T_note: >
+          Mars was pinned at 210, which made its greenhouse effect 0.2 K and was quoted
+          three times in the week as "too small to see". The NSSDC Mars fact sheet says
+          "Average temperature: ~214 K (-59 C)", so the real figure is 214.0 - 209.8 =
+          4.2 K, and 0.2 K was an artifact of a surface temperature that happened to equal
+          the black-body one. Two builders disagreed about this and the disagreement was
+          closed by RECOMPUTING from the pinned 210 — which only ever proved the
+          arithmetic self-consistent, never that 210 was what the source said. Nobody
+          opened the page until a reviewer did. The lesson survives at 4.2: the greenhouse
+          effect still tracks pressure across three decades, 4.2 << 34.0 << 510.3.
       expect:
         T_eq_at_measured_albedo: {earth: 254.0, venus: 226.7, mars: 209.8}
         T_eq_at_albedo_zero: {earth: 278.3, venus: 327.3}

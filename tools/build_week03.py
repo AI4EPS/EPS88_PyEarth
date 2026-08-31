@@ -110,6 +110,46 @@ BIN_SWEEP = [3, 4, 5, 6, 8, 10, 20]
 M["earth_fewest_bins"] = min(n for n in BIN_SWEEP if humps(earth, n) >= 2)
 M["mars_fewest_bins"] = min(n for n in BIN_SWEEP if humps(mars, n) >= 2)
 
+# The third, much smaller bump on the right of Earth's histogram. The prose beside the class
+# figure used to say the histogram has two humps; this measures the third one instead.
+counts_250, edges_250 = np.histogram(earth.ravel(), bins=BINS)
+centres_250 = (edges_250[:-1] + edges_250[1:]) / 2
+high_ground = (centres_250 >= 2000) & (centres_250 <= 4000)
+i_third = int(np.arange(len(centres_250))[high_ground][counts_250[high_ground].argmax()])
+M["third_centre"] = int(centres_250[i_third])
+M["third_count"] = int(counts_250[i_third])
+M["n_exact_zero"] = int((earth == 0).sum())
+
+lat_grid = np.repeat(lats[:, None], 360, axis=1)                 # centre latitude of every cell
+lon_grid = np.repeat(np.arange(-179.5, 180)[None, :], 180, axis=0)
+in_third = (earth >= edges_250[i_third]) & (earth < edges_250[i_third + 1])
+M["third_antarctica"] = int((in_third & (lat_grid <= -60)).sum())
+M["third_greenland"] = int((in_third & (lat_grid >= 59.5) & (lat_grid <= 84)
+                            & (lon_grid >= -75) & (lon_grid <= -10)).sum())
+
+# What area weighting does to that bump, and to the two peak positions — the homework's model
+# answer quotes both, so both are measured rather than asserted.
+weights = np.repeat(cell_width[:, None], 360, axis=1).ravel()
+wcounts, _ = np.histogram(earth.ravel(), bins=BINS, weights=weights)
+M["third_weighted"] = int(round(wcounts[i_third]))
+M["third_shrink"] = int(round(M["third_count"] / wcounts[i_third]))
+
+
+def weighted_peak(lowest, highest):
+    """The same peak position, counting each cell by its width instead of one apiece."""
+    inside = (centres_250 >= lowest) & (centres_250 <= highest)
+    return int(centres_250[inside][wcounts[inside].argmax()])
+
+
+M["earth_deep_weighted"] = weighted_peak(-10000, -1000)
+M["earth_high_weighted"] = weighted_peak(-1000, 21000)
+BIN_WIDTH = int(BINS[1] - BINS[0])
+assert abs(M["earth_deep_weighted"] - M["earth_deep"]) <= BIN_WIDTH, "peaks move more than a bin"
+assert abs(M["earth_high_weighted"] - M["earth_high"]) <= BIN_WIDTH, "peaks move more than a bin"
+assert M["third_shrink"] == 7, "the homework prose says sevenfold; it no longer is"
+assert (wcounts[i_third] > wcounts[i_third - 1]
+        and wcounts[i_third] > wcounts[i_third + 1]), "the third bump is no longer a local max"
+
 M["n_quakes"] = len(quakes_full)
 M["n_columns"] = len(quakes_full.columns)
 M["n_dmin_missing"] = int(quakes_full["dmin"].isna().sum())
@@ -130,6 +170,11 @@ M["busiest_count"] = int(per_year.max())
 M["year_before"] = int(per_year.loc[str(int(M["busiest_year"]) - 1)])
 M["year_after"] = int(per_year.loc[str(int(M["busiest_year"]) + 1)])
 M["median_year"] = float(per_year.median())
+# The year used as the syntax example in Your turn 8 must be an unremarkable one, or it reads as
+# the answer to the question it sits in: the ordinary year closest to the median.
+ordinary = per_year.drop([M["busiest_year"], str(int(M["busiest_year"]) - 1),
+                          str(int(M["busiest_year"]) + 1)])
+M["example_year"] = str((ordinary - per_year.median()).abs().idxmin())
 
 
 # ---------------------------------------------------------------------------
@@ -202,8 +247,9 @@ and what is still argued about Mars's.
 A table with named columns is a **pandas DataFrame**: `.info()`, `.head()`, `.isna()`,
 `.value_counts()`, `.sort_values()` and `.groupby()`.
 
-**Ten places where you write something: five in class, five at home.** Each one is headed
-*Your turn*, with an empty cell under it.
+**Eight places where you write something: five in class, three at home.** Each one is headed
+*Your turn*, with an empty cell under it. The last two ask for a number and then for a sentence
+about it, so those have a second cell as well.
 """)
 
 setup = weekkit.SETUP_CELL.format(
@@ -299,9 +345,6 @@ A histogram wants one long line of numbers, not a grid. `.ravel()` reads the gri
 lays it out flat — the same 64,800 numbers, in one line instead of 180 of them.
 """)
 
-code(weekkit.CHECKPOINT.format(body="""earth = elevation("earth")
-mars = elevation("mars")"""))
-
 code("""
 flat = earth.ravel()
 print(flat.shape)
@@ -348,12 +391,18 @@ plt.title("Earth, {M['n_cells']:,} cells, 250 m bins")
 plt.show()
 """)
 
-md("""
-Two humps, and a thinly populated gap between them: a broad one a few kilometres down, and a
-taller, narrower one sitting right at zero. (Only 423 of the 64,800 cells are exactly 0 m, so
-that spike is real low ground, not the grid rounding anything to sea level.) Reading their
-positions off the picture by eye is guesswork, so count instead: `np.histogram` does the same counting `plt.hist` does but
-hands you the numbers. `counts[i]` is how many cells fell in bin `i`, and `edges` holds the bin
+md(f"""
+Two big humps with a thinly populated gap between them: a broad one a few kilometres down, and a
+taller, narrower one sitting right at zero. (Only {M['n_exact_zero']} of the {M['n_cells']:,} cells
+are exactly 0 m, so that spike is real low ground, not the grid rounding anything to sea level.)
+There is a third, far smaller bump out on the right, near {M['third_centre']} m, and it is worth
+knowing what it is: {M['third_antarctica']:,} of the {M['third_count']:,} cells in that bin lie
+south of 60 degrees, so it is the Antarctic ice sheet, with {M['third_greenland']} more from
+Greenland. Two levels is the story of this planet's crust; that bump is the story of where its ice
+is, and the homework asks how much of its size is the planet and how much is the grid.
+
+Reading the two main positions off the picture by eye is guesswork, so count instead:
+`np.histogram` does the same counting `plt.hist` does but hands you the numbers. `counts[i]` is how many cells fell in bin `i`, and `edges` holds the bin
 boundaries, so the middle of bin `i` is halfway between `edges[i]` and `edges[i+1]`.
 
 `.argmax()` gives the *position* of the largest value — the same move as week one's
@@ -398,7 +447,10 @@ earth_high = peak_position(earth, -1000, 21000)
 print("Earth's deep level:   ", earth_deep, "m")
 print("Earth's shallow level:", earth_high, "m")
 """, """
-assert earth_deep < earth_high, "the deep peak should come out below the shallow one"
+assert -6000 < earth_deep < -3000, \\
+    "earth_deep should be an elevation in metres, not the height of a bin"
+assert -500 < earth_high < 1000, \\
+    "earth_high should be an elevation in metres, not the height of a bin"
 print("\u2713 Earth's two levels \u2014", earth_deep, "m and", earth_high, "m,",
       earth_high - earth_deep, "m apart")
 """)
@@ -519,7 +571,10 @@ print("Mars's two levels: ", mars_deep, "m and", mars_high, "m")
 print("Mars step: ", mars_high - mars_deep, "m")
 print("Earth step:", earth_high - earth_deep, "m")
 """, """
-assert mars_deep < mars_high, "the deep peak should come out below the shallow one"
+assert -6000 < mars_deep < -3000, \\
+    "mars_deep should be an elevation in metres, not the height of a bin"
+assert 500 < mars_high < 2500, \\
+    "mars_high should be an elevation in metres, not the height of a bin"
 print("\u2713 Mars's two levels \u2014", mars_deep, "m and", mars_high, "m, a step",
       (mars_high - mars_deep) - (earth_high - earth_deep), "m bigger than Earth's")
 """)
@@ -574,8 +629,6 @@ in the file.*
 `.info()` is the first thing to run on a table you have not seen. It names every column, says
 what type it holds, and — the part that matters — says how many rows are not blank.
 """)
-
-code(weekkit.CHECKPOINT.format(body=f'quakes = load("{START}", "{END}", {MINMAG})'))
 
 code("""
 print(quakes.shape)
@@ -671,8 +724,8 @@ md(f"""
 ocean floor and thick light continent, floating at two heights and continuously remade by plate
 tectonics; Mars's are one hemisphere-wide step in crustal thickness, made once and never reworked,
 on a planet with neither ocean nor plates. The table half is the same story from its other end:
-the earthquakes you filtered out below 500 km happen where ocean floor is sinking back into the
-mantle, which is the half of the cycle that keeps Earth's low level low.
+the earthquakes you picked out, the ones deeper than 500 km, happen where ocean floor is sinking
+back into the mantle, which is the half of the cycle that keeps Earth's low level low.
 """)
 
 # --- summary and homework --------------------------------------------------
@@ -728,8 +781,20 @@ for n in bin_counts:
 earth_fewest_bins = {M['earth_fewest_bins']}
 mars_fewest_bins = {M['mars_fewest_bins']}
 """, """
-assert earth_fewest_bins in bin_counts, "pick one of the bin counts you actually tried"
-assert mars_fewest_bins in bin_counts, "pick one of the bin counts you actually tried"
+
+def fewest_bins(grid):
+    \"\"\"The smallest count in bin_counts whose histogram still dips between two humps.\"\"\"
+    for n in bin_counts:
+        counts, edges = np.histogram(grid.ravel(), bins=n)
+        for i in range(1, len(counts) - 1):
+            if counts[i] < counts[:i].max() and counts[i] < counts[i + 1:].max():
+                return n
+
+
+assert earth_fewest_bins == fewest_bins(earth), \\
+    "that is not where Earth's dip disappears — read the counts again"
+assert mars_fewest_bins == fewest_bins(mars), \\
+    "that is not where Mars's dip disappears — read the counts again"
 print("\u2713 where the peaks merge \u2014 Earth keeps two humps down to", earth_fewest_bins,
       "bins, Mars down to", mars_fewest_bins)
 """)
@@ -770,7 +835,8 @@ earth_weighted = (rows_below * cell_width).sum() / (360 * cell_width.sum())
 print("counting cells:      ", f"{fraction_below:.3f}")
 print("weighting by width:  ", f"{earth_weighted:.3f}")
 """, """
-assert earth_weighted != fraction_below, "if nothing moved, the weights were not used"
+assert earth_weighted > fraction_below, \\
+    "the weighted fraction should be the bigger one — check what you divided by"
 print("\u2713 area weighting \u2014 the fraction below sea level moved from",
       f"{fraction_below:.3f}", "to", f"{earth_weighted:.3f}")
 """)
@@ -783,9 +849,13 @@ square at the pole as worth the same as one at the equator, and it is not — `c
 over-counts high latitudes, and high latitudes are exactly where the two largest pieces of
 high-standing land sit: Antarctica and Greenland. Over-counting them pulls the below-sea-level
 share down, from {M['frac_below_weighted']:.3f} to {M['frac_below']:.3f}, about
-{abs(M['frac_below_weighted'] - M['frac_below']) * 100:.0f} percentage points. The peak positions
-survive this — they are elevations, not shares of area — so the two-levels story from class is
-unaffected. Only the percentage was wrong.
+{abs(M['frac_below_weighted'] - M['frac_below']) * 100:.0f} percentage points. The same weights
+explain the small third bump near {M['third_centre']} m in the class histogram, the one that is
+nearly all Antarctica: weighting shrinks it about sevenfold, from {M['third_count']:,} cells to a
+weighted {M['third_weighted']}, and leaves it a local maximum but a much less impressive one.
+The two peak positions survive to within one {BIN_WIDTH}-metre bin, because a peak position is an
+elevation and not a share of area, so the two-levels story from class is unaffected. Only the
+percentage was wrong.
 """)
 
 ask(f"""
@@ -795,8 +865,8 @@ Back to the table. `quakes` has a `year` column, so `.groupby("year")` will spli
 into one group per year, and `["mag"].count()` will count the rows in each group.
 
 Build `per_year`, print the three largest years using `.sort_values(ascending=False).head(3)`,
-and then print the year before and the year after the busiest one — `per_year.loc["2007"]` reads
-one year out — together with `per_year.median()`.
+and then print the year before and the year after the busiest one — `per_year.loc["{M['example_year']}"]`
+reads one year out — together with `per_year.median()`.
 
 Then, in the cell after, answer this in two or three sentences using your own numbers: was the
 planet busier in that year, or did one thing happen? Whatever you claim, the neighbouring years
@@ -813,7 +883,8 @@ print("the year before:", per_year.loc["{int(M['busiest_year']) - 1}"])
 print("the year after: ", per_year.loc["{int(M['busiest_year']) + 1}"])
 print("median year:    ", per_year.median())
 """, f"""
-assert len(per_year) == {M['n_years']}, "one row per year is expected, from 2000 to 2025"
+assert per_year.sum() == len(quakes), \\
+    "the yearly counts should add up to every row in the catalogue"
 print("\u2713 earthquakes by year \u2014 busiest is",
       per_year.sort_values(ascending=False).index[0], "with", per_year.max(),
       "against a median of", per_year.median())

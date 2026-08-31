@@ -122,6 +122,18 @@ def build(n):
     # from "they uploaded the wrong week", and rejecting a rename costs a student their marks
     # for something harmless — renaming is one of the commonest things students do.
     others = [s["slug"] for s in course["schedule"] if s.get("slug") and s["n"] != n]
+    # WHICH FIELDS ARE A CONTRACT WITH THE STUDENT, and which are only ours.
+    #   checks · marker · released · homework_heading  -> these must match the notebook the
+    #     student is HOLDING. Changing one after they have pulled is a breaking change: the
+    #     tamper check refuses a self-check whose asserts differ, so re-uploading fails everyone
+    #     on the old copy and not re-uploading fails everyone who pulls fresh. nbgitpuller gives
+    #     the student's copy priority on a merge, so the fix cannot be relied on to arrive.
+    #     Change these only between a week's deadline and its next release.
+    #   name · points · figures · autograder_max · other_stems  -> ours alone. A student holding
+    #     the old notebook is graded identically, so these ship whenever. The rename fix was one
+    #     of these, and a blanket freeze would have barred it for no gain.
+    # tools/gradescope_deploy.py hashes the two classes separately and labels a stale week
+    # BREAKING or SAFE on that split.
     spec = {"week": n, "notebook_stem": w["slug"], "other_stems": others,
             "homework_heading": "## Homework", "parts": []}
     for k, (marker, a) in enumerate(zip(marks, alloc), start=1):
