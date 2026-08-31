@@ -35,7 +35,10 @@ platform:
   cache_base: "https://raw.githubusercontent.com/AI4EPS/EPS88_PyEarth/main/data"
   cache_note: >
     Every live-data cell needs a cached fallback, and this is where it lives: a CSV committed to
-    data/ on main, read from cache_base. NOT a release asset — that needs a release step nobody
+    data/ on main, read from cache_base. Small CSVs only. A LARGE binary (the week-13 waveform
+    array, 42 MB) goes to a GitHub release instead, because nbgitpuller clones this repo onto 46
+    student accounts and the fallbacks must stay cheap: see the data-v1 release. A fallback CSV is
+    NOT a release asset — that needs a release step nobody
     will remember. The cache is written by the week's build script and MUST BE PUSHED BEFORE THE
     NOTEBOOK IS RELEASED; until then the fallback path 404s and is untested. The reason for the
     fallback is campus-side network failure with no graceful degradation, not a server limit.

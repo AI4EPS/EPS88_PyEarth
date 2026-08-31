@@ -270,8 +270,11 @@ The tiers gate each other. A notebook that fails tier 1 is not ready to be judge
 saying so in one line is more useful than a long review of a file that has to be rebuilt anyway.
 
 {weekkit.tiers()}
-*Tier 1 failure -> REBUILD, list them, and stop. Tier 2 -> FIX. Tier 3 -> FIX if a question
-or claim can be rewritten, REBUILD if the week does not teach what it claims.*
+*A Tier 1 failure BLOCKS: list every one and stop reviewing. Whether the verdict is then FIX or
+REBUILD depends on the WORK, not the tier — the first reviewer to run this found two Tier 1
+failures that were each a two-cell edit, and reported that "REBUILD" overstated them. Judge by
+how much has to be rewritten. Tier 2 -> FIX. Tier 3 -> FIX if a question or claim can be
+rewritten, REBUILD if the week does not teach what it claims.*
 
 ## Report
 

@@ -286,7 +286,11 @@ Then loop, several times:
 5. **Read the student version end to end, as a student**, not as its author. Most defects are only
    visible from there: an answer cell with no hint of the variable names its own assert needs, a
    summary that gives away the homework below it, a heading that spoils its own reveal.
-6. `python tools/check_notebook.py N` — the mechanical gate. It reads the built artifact and
+6. `python tools/check_notebook.py N` — the mechanical gate, and if you add a rule to it,
+   add the case to `tools/selftest_checks.py` that must trip the rule and the near-miss that
+   must not. Two rules there were DEAD when written and three had false positives; a check
+   nobody has watched fail is decoration that reads as coverage.
+   The mechanical gate It reads the built artifact and
    enforces what a machine can see, so your attention goes to what it cannot.
 7. Fix, and go back to 1.
 
