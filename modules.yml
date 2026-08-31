@@ -65,7 +65,7 @@ modules:
     data: [usgs_fdsn_live]
     functions:
       - {name: "print(x)",                 does: "show a value"}
-      - {name: "type(x)",                  does: "what kind of value is this"}
+      - {name: "type(x)",                  does: "what kind of value is this", remember: false}
       - {name: "len(list)",                does: "how many items"}
       - {name: "list[i]",                  does: "one item, counting from 0; list[-1] is the last"}
       - {name: "list[a:b]",                does: "a slice — items a up to but not including b"}
@@ -76,7 +76,7 @@ modules:
       - {name: "plt.scatter(x, y)",        does: "a dot per pair of values"}
       - {name: "plt.xlabel / ylabel / title / show", does: "label it, then draw it"}
       - {name: "round(x, 1)",              does: "trim a long decimal — 9.1 rather than sixteen digits"}
-      - {name: "plt.xlim(a, b) / plt.ylim(a, b)", does: "fix how far the map reaches, so the world is always the whole world"}
+      - {name: "plt.xlim(a, b) / plt.ylim(a, b)", does: "fix how far the map reaches, so the world is always the whole world", remember: false}
       - {name: 'plt.gca().set_aspect("equal")', does: "one degree across = one degree up, so the map is not stretched", remember: false}
       - {name: 'plt.locator_params(axis="y", integer=True)', does: "whole numbers on a count axis — half an earthquake is not a thing", remember: false}
     harvest: "offerings/2023-spring_swansonhysell/Week01_Birthquake_intro/W1_inclass_finding_birthquakes.ipynb"
