@@ -10,6 +10,8 @@ single-week reviewer could catch it. This is the only check that can.
     python tools/check_prior_knowledge.py all    # every week that exists
 """
 import ast, builtins, json, pathlib, re, sys, yaml
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+import weekkit
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 course = yaml.safe_load((ROOT / "course.yml").read_text())
@@ -27,17 +29,14 @@ ALWAYS = set(dir(builtins)) | {
 def taught_by(week_n):
     """Every function name the course has introduced up to and including week n."""
     names = set()
-    for s in course["schedule"]:
-        if s["n"] > week_n or not s["modules"]:
-            continue
-        for mid in s["modules"]:
-            for f in mods.get(mid, {}).get("functions", []) or []:
-                # Take EVERY identifier in the entry, not just the head: an entry may chain
-                # (plt.gca().set_aspect) or list alternatives (max(list) / min(list)), and
-                # reading only the head silently lost set_aspect.
-                for ident in re.findall(r"[A-Za-z_][A-Za-z0-9_.]*", f["name"]):
-                    names.add(ident)
-                    names.add(ident.split(".")[-1])
+    for mid in weekkit.modules_upto(week_n, inclusive=True):
+        for f in mods.get(mid, {}).get("functions", []) or []:
+            # Every identifier in the entry, not just the head: an entry may chain
+            # (plt.gca().set_aspect) or list alternatives (max(list) / min(list)), and reading
+            # only the head silently lost set_aspect.
+            for ident in re.findall(r"[A-Za-z_][A-Za-z0-9_.]*", f["name"]):
+                names.add(ident)
+                names.add(ident.split(".")[-1])
     return names
 
 

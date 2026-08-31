@@ -68,7 +68,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--target", type=int, default=2000)
     ap.add_argument("--days", type=int, default=60)
-    ap.add_argument("--out", default="data/phasenet_ncedc.npz")
+    ap.add_argument("--out", required=True,   # NOT data/: 42 MB in the repo clones onto
+                help="output .npz; ship it as a release asset, not in data/")
     a = ap.parse_args()
     rng, rows = random.Random(0), []
     with tempfile.TemporaryDirectory() as tmp:

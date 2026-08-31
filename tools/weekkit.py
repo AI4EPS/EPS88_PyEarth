@@ -183,6 +183,19 @@ if __name__ == "__main__":
     print(tiers() if len(sys.argv) > 1 and sys.argv[1] == "tiers" else stop_list())
 
 
+def _course():
+    return yaml.safe_load((pathlib.Path(__file__).resolve().parent.parent / "course.yml").read_text())
+
+
+def modules_upto(week_n, inclusive):
+    """Module ids taught up to week_n. `inclusive` is the whole difference between the two
+    callers: the prior-knowledge CONTRACT is what a student knows BEFORE this week (exclusive),
+    the prior-knowledge CHECK is what the week may legally use (inclusive)."""
+    return [m for s in _course()["schedule"]
+            if (s["n"] <= week_n if inclusive else s["n"] < week_n)
+            for m in s["modules"]]
+
+
 def gate(week_n, variant=""):
     """The two gates a build must pass. Called at the END of every build_weekNN.py.
 

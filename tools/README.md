@@ -21,6 +21,10 @@ both notebooks from one source so the student version cannot drift from the solu
 | `check_prior_knowledge.py` | Does week N use anything the course has not taught by week N? The only check that sees across weeks. |
 | `selftest_checks.py` | Proves every check_notebook rule fires on its motivating defect and stays quiet on the near-miss beside it. |
 
+## Validating
+
+    python tools/check_all.py     # the plan, the checkers themselves, then every built week
+
 ## Running a build or a review
 
 Give the agent the COMMAND, not a copy of its output:

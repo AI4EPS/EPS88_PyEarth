@@ -40,6 +40,10 @@ def main(src: str, out: str) -> None:
             for seg in polylines(shp):
                 for lon, lat in seg:
                     rows.append((round(lon, 4), round(lat, 4), seg_id, label))
+                # A blank row between segments, exactly as make_coastlines.py does: it lets ONE
+                # plt.plot draw the whole layer, so a week before groupby (D2) can use it. The
+                # segment column stays for the weeks that can.
+                rows.append(("", "", seg_id, label))
                 seg_id += 1
     with open(out, "w", newline="") as f:
         w = csv.writer(f)
@@ -47,7 +51,7 @@ def main(src: str, out: str) -> None:
         w.writerows(rows)
     kb = pathlib.Path(out).stat().st_size / 1024
     print(f"{seg_id} segments, {len(rows)} vertices -> {out} ({kb:.0f} KB)")
-    print("plot with:  for _, g in df.groupby('segment'): plt.plot(g.lon, g.lat)")
+    print("plot with:  plt.plot(df.lon, df.lat)   # one call — blank rows break the line")
 
 
 if __name__ == "__main__":
