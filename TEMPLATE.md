@@ -204,6 +204,10 @@ part 1.**
    reads as the one that was secretly wrong.
 3. **Explain** — one paragraph about *their own numbers*, checked against the week's takeaways.
    Make them quote their own output back (*"your two counts differ by a factor of ___"*).
+   **"Explain" names this part's SIZE, not a monopoly on thinking.** Part 3 is where a paragraph
+   is owed; it is not the only part that owes an answer. Read literally the other way, this line
+   licensed twelve weeks of parts 1 and 2 that ask for nothing but output — measured, 21 of 36 —
+   with every part 3 passing and almost no part 1 or 2 in the course doing so.
 
 **Every part ends in a question, not a list of names to produce.** A part that says "print the
 prediction, the count, and the ratio" and stops has asked for arithmetic; the student can finish
@@ -211,7 +215,14 @@ it having computed two numbers and thought nothing. The computation earns its pl
 *evidence for* an answer, so the last thing the prompt does is ask for the answer — in words, on
 their own numbers. A hint pointing at an earlier section ("keep section 6 in mind while you look
 at your answer") is not a question and does not discharge this: week 1's part 2 shipped with
-exactly that and never once asked why the prediction was so much larger than the count.
+exactly that and never once asked why the prediction was so much larger than the count. Nor does
+naming the purpose — "print them underneath, so you can see which of them your choice moved" sets
+up an ask and never makes it.
+
+**The two-prose-questions cap counts WHOLE questions, not closing sentences.** A part whose only
+output is prose is a prose question and counts against the cap; one sentence closing a part that
+also writes code does not. Otherwise the cap forbids the rule above, which is how a week ends up
+with three parts of arithmetic and one paragraph at the end carrying all the thinking.
 
 **Design the homework from the week's takeaways, not from the class cells.** Name the takeaway each
 part serves before writing the part, and check the set: a takeaway no part touches was taught and
