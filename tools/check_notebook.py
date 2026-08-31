@@ -12,7 +12,12 @@ import weekkit
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 course = yaml.safe_load((ROOT / "course.yml").read_text())
-LIBS = {"numpy", "np", "pandas", "pd", "matplotlib", "sklearn", "torch"}
+# Derived from course.yml, not restated here: the list existed in three places (this file,
+# TEMPLATE.md and platform: libraries:) and a fourth library would have had to be added to all
+# three. The aliases are what a notebook actually writes.
+_ALIAS = {"numpy": "np", "pandas": "pd", "scikit-learn": "sklearn", "pytorch": "torch"}
+LIBS = {l for lib in course["platform"]["libraries"] if lib != "python"
+        for l in (lib, _ALIAS.get(lib, lib))}
 errs, warns = [], []
 
 

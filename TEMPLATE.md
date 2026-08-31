@@ -343,11 +343,12 @@ as the prose. Write it to be **copied**, not admired.
   and every self-check ending in a `print` that states the student's own numbers — that line is
   what the grader actually reads. The ✏️ headings and the identical answer cells are what make
   46 PDFs navigable; they are not decoration.
-- **Six libraries only**: python, numpy, pandas, matplotlib, scikit-learn, pytorch. A ceiling on
-  the whole course; the standard library is not a loophole.
+- **Only the libraries in `course.yml`'s `platform: libraries:`** — that list is the data, and
+  `check_notebook.py` reads it from there. A ceiling on the whole course; the standard library is
+  not a loophole.
 - **A live query that feeds a number written into prose must be reproducible.** Pin what can be
   pinned in `course.yml` — a date range, a magnitude floor, a version. Where the query has nothing
-  to pin (`where default_flag=1` returns whatever the archive holds today), say in `course.yml`
+  to pin — some archives return whatever they hold that day — say in `course.yml`
   that **the cached CSV is authoritative for the prose**, and write the prose numbers from the
   cache. A week whose markdown hardcodes eleven numbers off a query that can silently change is a
   week that goes wrong quietly, months later, in front of students.

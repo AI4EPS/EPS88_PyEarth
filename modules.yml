@@ -64,7 +64,6 @@ modules:
     core: 50
     extension: 25
     mode: live
-    problem: "What was your birthquake?"
     data: [usgs_fdsn_live]
     functions:
       - {name: "print(x)",                 does: "show a value"}
@@ -276,7 +275,6 @@ modules:
       better lesson — you do not need a map library, the earthquakes draw the coastline for you.
       Projections are still DISCUSSED (why Greenland looks enormous), using the Spring 2023
       projection figures from the archive as images.
-    problem: "Where do earthquakes and volcanoes happen — and why there?"
     data: [usgs_fdsn_live, gvp_live, plate_boundaries_csv]
 
   - id: S2
@@ -299,7 +297,6 @@ modules:
     core: 70
     extension: 30
     mode: live
-    problem: "Do earthquakes cluster — or is that just what randomness looks like?"
     note: "Ends on the probabilistic forecast the course catalogue promises. 'Overdue' is subtle under a memoryless model — the limits are the lesson."
     data: [usgs_fdsn_live]
     harvest: "offerings/2023-spring_swansonhysell/Week06_Probabilities_Geomagnetic_Field/W6_inclass_probability.ipynb"
@@ -384,14 +381,9 @@ modules:
     extension: 30
     mode: live
     problem: "How old is the universe?  →  How fast does the seafloor spread?"
-    note_second_example: >
-      VERIFIED. Hubble: a free fit gives slope 67.5 with intercept 711.8 km/s, but zero distance
-      must mean zero recession; forced through the origin, H0 = 70.7 and 1/H0 = 13.84 Gyr.
-      Then the SAME decision on the Pacific-Antarctic Ridge: a free fit gives 6.11 cm/yr with an
-      intercept of +181 km, which is physically impossible since distance from the ridge is zero
-      at age zero; forced through the origin, 6.77 cm/yr against a published ~7. The Atlantic
-      gives 1.74. Two datasets, one modelling decision, and the fourfold difference between
-      ridges IS the science.
+    # The week-6 flagship numbers (Hubble and Pacific-Antarctic, free fit versus forced through
+    # the origin) lived here AND in course.yml's flagship: block — the same measured values in two
+    # files. course.yml owns a week's problem design; this catalogue owns the module.
     data: [freedman2000_sn1a, mar_par_age_distance, noaa_sealevel_sf]
     harvest: "offerings/2023-spring_swansonhysell/Week08_Age_of_the_Universe/W8_inclass_age_of_universe.ipynb"
 
@@ -477,7 +469,6 @@ modules:
     extension: 30
     mode: live
     note: "Closes with a ten-minute demo of the group's generative and foundation-model work — which is CS229's newest Part. Real waveforms, not MNIST."
-    problem: "Can a machine hear an earthquake?"
     data: [phasenet_ncedc]
     paper: >
       Zhu & Beroza (2019), "PhaseNet: a deep-neural-network-based seismic arrival-time picking

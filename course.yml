@@ -63,14 +63,10 @@ calendar:
   finals: [2026-12-14, 2026-12-18]
 
 # ------------------------------------------------------------------ schedule
-# THE HOMEWORK REUSES THE WEEK'S DATA AND TOOLS, BUT ASKS A QUESTION CLASS DID NOT ANSWER.
-# A fresh dataset would make a beginner fight loading and cleaning before practising anything;
-# a repeat of the class task with one string changed teaches typing. So: same data, new question.
-# And the code must never be reused — the student notebook is derived from the SOLUTION by
-# deleting answers, never from the class notebook by copying it. (Measured Fall 2024 defect:
-# exercises were 41-86% byte-identical to their lectures, with no markers showing which cells were
-# the student's.) There is no "lecture": the class cells are the student's graded work too.
-# Earth-science breadth comes from the weekly questions themselves.
+# How a homework is designed, and why the student notebook is derived from the solution rather
+# than copied from the class one, are TEMPLATE.md §4 and §7 — stated there once. What belongs
+# here is only each week's own `exercise:`. There is no "lecture": the class cells are the
+# student's graded work too, and Earth-science breadth comes from the weekly questions.
 #
 # Each Monday runs one session of ~100 teaching minutes: a module's CORE (~70 min)
 # plus its EXTENSION (~30 min) if the pace allows. A slow week converts that

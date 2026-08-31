@@ -132,9 +132,11 @@ def count(start, end, minmag):
     return len(load(start, end, minmag))
 
 
-def ratio(start, end, small, large):
-    """how many earthquakes of at least `small` there are for every one of at least `large`"""
-    return count(start, end, small) / count(start, end, large)
+def report_window(label, start, end):
+    """print how many M6.5+ and M7.5+ a window holds, and the ratio between them"""
+    big = count(start, end, 6.5)
+    huge = count(start, end, 7.5)
+    print(label, big, "at M6.5+ and", huge, "at M7.5+, ratio", round(big / huge, 1))
 
 
 def columns(quakes):
@@ -184,23 +186,25 @@ print(minutes_in_a_day, type(minutes_in_a_day))
 ''')
 
 md("""
-✏️ **Your turn.** Make a name called `gap` holding `minutes_in_a_day` divided by `n_quakes` — the
-average number of minutes from one of that day's earthquakes to the next.
+✏️ **Your turn.** Make a name called `minutes_each` holding `minutes_in_a_day` divided by
+`n_quakes`: how many minutes of that day there were for each earthquake in it. (That is a rate,
+not a stopwatch reading — the earthquakes did not arrive politely spaced out, and we have not
+looked at when they arrived yet.)
 
-Then print one sentence reporting it to **one** decimal place. Two tools for that. `round(gap, 1)`
-trims the decimals. And an **f-string** is a piece of text with an `f` in front of the opening
-quote, where anything in `{curly braces}` is replaced by its value:
+Then print one sentence reporting it to **one** decimal place. Two tools for that.
+`round(minutes_each, 1)` trims the decimals. And an **f-string** is a piece of text with an `f` in
+front of the opening quote, where anything in `{curly braces}` is replaced by its value:
 
 ```python
 print(f"there were {n_quakes} earthquakes")
 ```
 
-**Use these names**: `gap`.
+**Use these names**: `minutes_each`.
 """)
 
 answer_code('''
-gap = minutes_in_a_day / n_quakes
-print(f"On average, one earthquake every {round(gap, 1)} minutes.")
+minutes_each = minutes_in_a_day / n_quakes
+print(f"That day held one earthquake for every {round(minutes_each, 1)} minutes of it.")
 ''')
 
 # ---------------------------------------------------------------- 2. a day, as lists
@@ -256,8 +260,10 @@ md("""
 Now look again at what `where` came out as: **0**. The largest earthquake of the day was also the
 *first* of the day. The list is in time order, and nothing bigger followed.
 
-Three others among the fourteen name the same town, later the same day. There is no way yet to
-search a list for a word — searching arrives with loops — so here they are by hand.
+That matters, because the fourteen are not fourteen separate places. Three others name the same
+town in Guatemala, later the same day, and five more share one spot in the Indian Ocean. There is
+no way yet to search a list for a word — searching arrives with loops — so here are both groups by
+hand.
 """)
 
 code('''
@@ -265,7 +271,21 @@ print(times[0], mags[0], places[0])
 print(times[2], mags[2], places[2])
 print(times[4], mags[4], places[4])
 print(times[6], mags[6], places[6])
+
+print(times[5], mags[5], places[5])
+print(times[8], mags[8], places[8])
+print(times[9], mags[9], places[9])
+print(times[11], mags[11], places[11])
+print(times[12], mags[12], places[12])
 ''')
+
+md("""
+Two very different shapes. The Guatemala four open with the largest and get smaller: one earthquake
+broke, and the ground around it kept adjusting — those are its aftershocks. The Indian Ocean five
+have no such leader; the biggest of them is the fourth to arrive. A sequence with no dominant
+earthquake is called a **swarm**, and what causes one is a live question rather than a settled
+answer.
+""")
 
 # ---------------------------------------------------------------- 3. maps
 md("""
@@ -295,9 +315,11 @@ plt.show()
 ''')
 
 md("""
-Fourteen dots. They are not on a line, they are not in a cluster, they are not anywhere in
-particular — and fourteen is far too few to be anything else. A thin figure is not a failed figure
-as long as you say out loud that it is thin. Hold on to this one.
+Fourteen earthquakes, and fewer dots than that: the Guatemala four sit on top of one another at
+this scale, the Indian Ocean five very nearly do, so ten places is all the map has to work with.
+Ten places scattered over a globe cannot show you a shape, and no amount of staring will make them.
+A thin figure is not a failed figure as long as you say out loud that it is thin. Hold on to this
+one.
 
 The only fix is more data, and the only thing that has to change is the two dates. Here is a whole
 year, at the same magnitude floor.
@@ -433,35 +455,30 @@ print("M7.5 and above in 1984:", count("1984-01-01", "1985-01-01", 7.5))
 md("""
 Zero, one, two. At this end of the scale a single year is not a measurement at all: 1982 gives us
 nothing to divide by, and one earthquake either way moves the answer by a factor of two. So widen
-the window — whole decades, and then fifty years. `ratio(start, end, small, large)` does the two
-counts and the division in one go.
+the window — whole decades, and then fifty years. `report_window(label, start, end)` does the two
+counts and the division in one go, and prints all three.
 """)
 
 code('''
-print("1980s:", count("1980-01-01", "1990-01-01", 7.5), "at M7.5+, ratio",
-      round(ratio("1980-01-01", "1990-01-01", 6.5, 7.5), 1))
-print("1990s:", count("1990-01-01", "2000-01-01", 7.5), "at M7.5+, ratio",
-      round(ratio("1990-01-01", "2000-01-01", 6.5, 7.5), 1))
-print("2000s:", count("2000-01-01", "2010-01-01", 7.5), "at M7.5+, ratio",
-      round(ratio("2000-01-01", "2010-01-01", 6.5, 7.5), 1))
-print("2010s:", count("2010-01-01", "2020-01-01", 7.5), "at M7.5+, ratio",
-      round(ratio("2010-01-01", "2020-01-01", 6.5, 7.5), 1))
-print("fifty years:", count("1976-01-01", "2026-01-01", 6.5), "at M6.5+,",
-      count("1976-01-01", "2026-01-01", 7.5), "at M7.5+, ratio",
-      round(ratio("1976-01-01", "2026-01-01", 6.5, 7.5), 1))
+report_window("1980s:", "1980-01-01", "1990-01-01")
+report_window("1990s:", "1990-01-01", "2000-01-01")
+report_window("2000s:", "2000-01-01", "2010-01-01")
+report_window("2010s:", "2010-01-01", "2020-01-01")
+report_window("fifty years:", "1976-01-01", "2026-01-01")
 ''')
 
 md("""
-Four decades, and the answer moves between 7.8 and 19.9 — near enough a factor of three. Look at
-what each one is built on. The 1980s ratio rests on 20 earthquakes at M7.5 and above; the 2000s
-rests on 58. With twenty, moving a handful of events across the 7.5 line moves the ratio a long
-way. Whether those years really were quieter at the top of the scale, or whether the catalogue
-simply measured their magnitudes differently, one decade cannot tell you — and that is the point.
-The 19.9 is not a result to explain. It is a sign that a decade is too short a window here.
-
 Over the full fifty years, on 2192 earthquakes at M6.5 and above and 218 at M7.5 and above, the
-ratio is 10.1. The rule of thumb survives at the scale where there is enough data to test it, and
-falls apart at the scale where there is not. Both halves of that sentence are the lesson.
+ratio is 10.1 — the rule of thumb, near enough, at the scale where there is enough data to test it.
+
+The four decades move between 7.8 and 19.9, a factor of two and a half, and some of that is simply
+that the counts are small: a ratio built on 20 earthquakes moves a long way when a handful of them
+cross the line. But not all of it. If the fifty-year ratio held in the 1980s, that decade's 397
+earthquakes at M6.5 and above would have come with about forty at M7.5 and above. Twenty are
+listed. That gap is too big to blame on the smallness of the count, and this notebook cannot tell
+you what closes it: either the 1980s genuinely had half as many of the very largest earthquakes, or
+their magnitudes were measured in a way that put some of them below 7.5. Nobody in this room can
+settle that from these five lines, and saying so is the honest end of the section.
 """)
 
 # ---------------------------------------------------------------- 7. 1940
@@ -475,6 +492,11 @@ ending the dinosaurs with it. He was born on 3 October 1940.
 Ask the catalogue for his birthday, and then for his whole birth year, exactly the way we asked it
 for 1983.
 """)
+
+code('''
+# ── Checkpoint ── run this if you restarted the kernel or fell behind ──
+n_45 = count("1983-01-01", "1984-01-01", 4.5)
+''')
 
 md("""
 ### Predict before you run
