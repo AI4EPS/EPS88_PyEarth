@@ -6,15 +6,25 @@ Emits both notebooks from one source so they cannot drift:
     docs/notebooks/10_earthquake_or_explosion_solution.ipynb   executed, every output saved
     docs/notebooks/10_earthquake_or_explosion.ipynb            the same file with the answers deleted
 
-It also writes the week's two cached data files into data/. The quarry-blast query is small
-enough to run live, so its cache is a fallback; the matching earthquake query matches far more
-than the archive's 20,000-event ceiling, so the earthquakes can only travel with the course as a
-file, and the notebook reads that file directly.
+It also writes the week's two data files into data/. BOTH halves ship with the course and the
+notebook reads both directly, with no live branch. The earthquake half has no choice: its query
+matches far more than the archive's 20,000-event ceiling. The blast half could be fetched live,
+and used to be — but the two halves are ONE catalogue, and a live half joined to a frozen half is
+no longer the slice this week is pinned to. USGS keeps editing events inside the pinned window
+(18 of them were revised in the month before this build), and one late-inserted blast or one
+revised depth moves the blast count, both split sizes and all four F1 scores, under prose that
+hardcodes the old ones and asserts that still pass. Weeks 7 and 9 keep their live read and take
+`--refresh` because their prose is derived from a cache the student's own live read reproduces;
+here it cannot be, because the other half of the join can never be refreshed at all. So the cache
+is the data — TEMPLATE 1.3's shipped-dataset exception, via `weekkit.asset_setup_cell` — and
+`--refresh` belongs to the instructor, who re-pulls both halves together and rebuilds the prose
+around them.
 
 Every number that appears in prose or in a model answer is computed HERE, from the same files
 the notebook reads. Nothing is typed from memory or copied from the plan.
 
     python tools/build_week10.py
+    python tools/build_week10.py --refresh    # re-pull BOTH halves, then rebuild every number
 """
 import json
 import math
@@ -42,9 +52,12 @@ WEEK = next(s for s in course["schedule"] if s["n"] == 10)
 PLATFORM = course["platform"]
 CACHE_BASE = PLATFORM["cache_base"]
 
-# The slice, pinned so the cached files, the notebook and the prose below cannot drift apart.
+REFRESH = "--refresh" in sys.argv
+
+# The slice, pinned so the shipped files, the notebook and the prose below cannot drift apart.
 # course.yml pins "M1.5+ 2015-01-01 onward"; `onward` grows every day, so the end is pinned here
-# at the date the files were built and the notebook asks the archive for the same window.
+# at the date the files were built. The notebook no longer asks the archive for anything — see
+# the module docstring — so these constants describe the files rather than a live query.
 START, END, MINMAG = "2015-01-01", "2026-08-31", 1.5
 BOX = "&minlatitude=32&maxlatitude=42&minlongitude=-125&maxlongitude=-114"
 QUERY = ("https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&orderby=time-asc"
@@ -75,12 +88,17 @@ for _y in range(FIRST_YEAR, LAST_YEAR + 1):
 # 1. build the two cached files, then measure everything the notebook will say
 # ---------------------------------------------------------------------------
 def build_caches():
-    """Write data/week10_* once. Both files are the exact bytes the notebook reads."""
+    """Write data/week10_*. Both files are the exact bytes the notebook reads.
+
+    `--refresh` re-pulls both halves TOGETHER. Refreshing one alone would break the join: the
+    two files are one catalogue cut by `type`, and half a catalogue from August against half
+    from November is not the pinned slice.
+    """
     blast_path = ROOT / "data" / BLAST_CACHE
-    if not blast_path.exists():
+    if REFRESH or not blast_path.exists():
         pd.read_csv(QUERY + "&eventtype=quarry%20blast").to_csv(blast_path, index=False)
     quake_path = ROOT / "data" / QUAKE_CACHE
-    if not quake_path.exists():
+    if REFRESH or not quake_path.exists():
         parts = []
         for start, end in SPANS:
             url = (QUERY.replace(f"starttime={START}", f"starttime={start}")
@@ -148,11 +166,24 @@ M["depth_grid_share"] = float((((blast_rows["depth"] * 100).round()
 # names the site the analyst matched the event to, and depthError says whether the location
 # routine ever solved for depth at all.
 blast_meta = pd.read_csv(BLAST_PATH)
-top_meta = blast_meta[blast_meta["depth"] == M["top_depth"]]
-towns = top_meta["place"].str.split(" of ").str[-1].str.split(",").str[0].value_counts()
+# `place` reads "5 km NNW of Boron, CA" — and, in the same column, "5km NNW of Boron, CA" and
+# "5km N of Boron, California". The distance, the bearing, the space and the state's name all
+# vary, so counting the raw text scatters ONE quarry across dozens of rows: the largest raw
+# value_counts row at the top depth is 82 of 360, which reads as a fifth of a site and is really
+# one spelling of all of it. Cut out what sits between " of " and the comma before counting, and
+# the notebook prints exactly this, so the share the prose quotes is on the screen.
+sites = blast_meta["place"].str.split(" of ").str[-1].str.split(",").str[0]
+towns = sites[blast_meta["depth"] == M["top_depth"]].value_counts()
 M["top_site_a"], M["top_site_a_n"] = str(towns.index[0]), int(towns.iloc[0])
 M["top_site_b"], M["top_site_b_n"] = str(towns.index[1]), int(towns.iloc[1])
 M["top_sites"] = int(len(towns))
+# The second depth was asserted to be "most of them back at Boron" and never measured; the cell
+# beside the claim printed raw place strings, whose top row is 69 of 247 — 28%, not "most".
+second_towns = sites[blast_meta["depth"] == M["second_depth"]].value_counts()
+M["second_site_a"], M["second_site_a_n"] = str(second_towns.index[0]), int(second_towns.iloc[0])
+M["second_site_b"] = str(second_towns.index[1])
+M["second_site_share"] = M["second_site_a_n"] / M["second_depth_n"]
+M["second_sites"] = int(len(second_towns))
 M["depth_err_top"] = float(blast_meta["depthError"].value_counts().index[0])
 M["depth_err_share"] = float((blast_meta["depthError"] == M["depth_err_top"]).mean())
 M["depth_err_n"] = int((blast_meta["depthError"] == M["depth_err_top"]).sum())
@@ -208,13 +239,21 @@ score("nbnd", GaussianNB().fit(X_train[NO_DEPTH], y_train).predict(X_test[NO_DEP
 score("wide", hand_rule(X_test, 7, 19))
 score("narrow", hand_rule(X_test, 11, 15))
 
-per_year, year_prec, year_rec, biggest = {}, {}, {}, {}
+per_year, year_prec, year_rec, biggest, year_blasts = {}, {}, {}, {}, {}
 for yr in range(FIRST_YEAR, LAST_YEAR + 1):
     rows = events[events["year"] == str(yr)]
     per_year[yr] = float(f1_score(rows["is_blast"], hand_rule(rows), zero_division=0))
     year_prec[yr] = float(precision_score(rows["is_blast"], hand_rule(rows), zero_division=0))
     year_rec[yr] = float(recall_score(rows["is_blast"], hand_rule(rows), zero_division=0))
     biggest[yr] = float(rows["mag"].max())
+    year_blasts[yr] = int(rows["is_blast"].sum())
+# The last row of that table is NOT a whole year — the slice is pinned at END — so its blast
+# count sits below every full year's and means nothing until the reader is told why.
+M["last_year"] = LAST_YEAR
+M["last_year_blasts"] = year_blasts[LAST_YEAR]
+M["last_year_months"] = int(events[events["year"] == str(LAST_YEAR)]["time"].str[5:7].max())
+M["full_year_blasts_lo"] = min(year_blasts[y] for y in year_blasts if y != LAST_YEAR)
+M["full_year_blasts_hi"] = max(year_blasts[y] for y in year_blasts if y != LAST_YEAR)
 worst_two = sorted(per_year, key=per_year.get)[:2]
 M["year_worst"], M["year_second"] = sorted(worst_two)
 M["year_best"] = max(per_year, key=per_year.get)
@@ -234,9 +273,18 @@ M["rec_year_before"] = year_rec[M["year_worst"] - 1]
 # within 0.012 of each other, so before any of it is written down, re-draw the split and find out
 # how far these numbers move on their own. `random_state=42` stays pinned for everything the
 # notebook reports; this is the scatter the reported numbers have to be read against.
-SEEDS = list(range(10))
+#
+# READ THE PAIRING, NOT THE RANGE. An earlier version of this build reported only the two ranges
+# and the min/max of the gap, saw one negative excursion, and concluded the two TIE. They do not.
+# Every seed scores both classifiers on the SAME held-out rows, so the gap is a paired difference,
+# and a paired difference that keeps its sign in 8 draws out of 10 is the opposite of a straddle:
+# the mean and the sign count are what settle it, and the range is what hides it. Week 8 taught
+# exactly this, so a week that reads a range here teaches the wrong test three weeks later.
+# The notebook prints 10 splits, which is what the prose quotes; 20 are run here because a
+# standard deviation off 10 numbers is itself noisy, and the pin in course.yml records the 20.
+NOTEBOOK_SEEDS, PIN_SEEDS = 10, 20
 seed_hand, seed_lr, seed_nb = [], [], []
-for seed in SEEDS:
+for seed in range(PIN_SEEDS):
     X_fit, X_held, y_fit, y_held = train_test_split(X, y, test_size=0.3, random_state=seed,
                                                     stratify=y)
     seed_hand.append(float(f1_score(y_held, hand_rule(X_held))))
@@ -244,14 +292,30 @@ for seed in SEEDS:
                                   .fit(X_fit, y_fit).predict(X_held))))
     seed_nb.append(float(f1_score(y_held, GaussianNB().fit(X_fit, y_fit).predict(X_held))))
 seed_gap = [h - l for h, l in zip(seed_hand, seed_lr)]
-M["seed_n"] = len(SEEDS)
-M["seed_hand_lo"], M["seed_hand_hi"] = min(seed_hand), max(seed_hand)
-M["seed_lr_lo"], M["seed_lr_hi"] = min(seed_lr), max(seed_lr)
-M["seed_nb_lo"], M["seed_nb_hi"] = min(seed_nb), max(seed_nb)
-M["seed_gap_lo"], M["seed_gap_hi"] = min(seed_gap), max(seed_gap)
-M["seed_lr_ahead"] = sum(1 for g in seed_gap if g < 0)
+
+shown_hand, shown_lr, shown_nb = (seed_hand[:NOTEBOOK_SEEDS], seed_lr[:NOTEBOOK_SEEDS],
+                                  seed_nb[:NOTEBOOK_SEEDS])
+shown_gap = seed_gap[:NOTEBOOK_SEEDS]
+M["seed_n"] = NOTEBOOK_SEEDS
+M["seed_hand_lo"], M["seed_hand_hi"] = min(shown_hand), max(shown_hand)
+M["seed_lr_lo"], M["seed_lr_hi"] = min(shown_lr), max(shown_lr)
+M["seed_nb_lo"], M["seed_nb_hi"] = min(shown_nb), max(shown_nb)
+M["seed_gap_lo"], M["seed_gap_hi"] = min(shown_gap), max(shown_gap)
+M["seed_gap_mean"] = sum(shown_gap) / len(shown_gap)
+M["seed_hand_ahead"] = sum(1 for g in shown_gap if g > 0)
+M["seed_lr_ahead"] = sum(1 for g in shown_gap if g < 0)
+M["seed_level"] = sum(1 for g in shown_gap if g == 0)
 M["pinned_gap"] = M["hand_f1"] - M["lr_f1"]
-M["seed_worst_spread"] = max(max(seed_hand) - min(seed_hand), max(seed_lr) - min(seed_lr))
+M["seed_worst_spread"] = max(max(shown_hand) - min(shown_hand), max(shown_lr) - min(shown_lr))
+
+# The 20-seed paired summary. Not printed in the notebook — it is what course.yml pins, so that
+# the next reader of the pin finds the statistic that settles the comparison rather than a range.
+M["pin_seed_n"] = PIN_SEEDS
+M["pin_gap_mean"] = sum(seed_gap) / PIN_SEEDS
+M["pin_gap_sd"] = math.sqrt(sum((g - M["pin_gap_mean"]) ** 2 for g in seed_gap) / (PIN_SEEDS - 1))
+M["pin_gap_t"] = M["pin_gap_mean"] / (M["pin_gap_sd"] / math.sqrt(PIN_SEEDS))
+M["pin_hand_ahead"] = sum(1 for g in seed_gap if g > 0)
+M["pin_lr_ahead"] = sum(1 for g in seed_gap if g < 0)
 
 for k in sorted(M):
     print(f"{k:22s} {M[k]}")
@@ -326,7 +390,7 @@ with `precision_score`, `recall_score` and `f1_score` rather than with accuracy.
 *Your turn*, with an empty cell under it.
 """)
 
-setup = weekkit.setup_cell(
+setup = weekkit.asset_setup_cell(
     imports=("import numpy as np\n"
              "from sklearn.model_selection import train_test_split\n"
              "from sklearn.linear_model import LogisticRegression\n"
@@ -335,23 +399,27 @@ setup = weekkit.setup_cell(
              "from sklearn.metrics import f1_score, confusion_matrix\n"),
     figsize="(7, 4)",
     cache_base=CACHE_BASE,
-    docstring="Ask the USGS catalogue for California's quarry blasts; fall back to the cached copy.",
-    url_expr=('"https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&orderby=time-asc"\n'
-              f'                           "&starttime={START}&endtime={END}'
-              f'&minmagnitude={MINMAG}"\n'
-              f'                           "{BOX}"\n'
-              '                           "&eventtype=quarry%20blast"'),
-    cache_expr=f'"{BLAST_CACHE}"',
     unpack=f'''
 COLUMNS = {COLUMNS}
 
-# The blast query runs live. The matching earthquake query cannot: the archive refuses any
-# request that matches more than 20,000 events, and that one matches far more, so the
-# earthquakes travel with the course as a file instead of coming down the wire.
+# Both files came out of ONE query to the USGS catalogue, asked twice — once for each label:
+#
+#   https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&orderby=time-asc
+#     &starttime={START}&endtime={END}&minmagnitude={MINMAG}
+#     {BOX}
+#     &eventtype=earthquake   ... and again with &eventtype=quarry%20blast
+#
+# Unlike most weeks, this one does not run that query for you. It cannot: the archive refuses any
+# request matching more than 20,000 events and the earthquake half matches far more, so that half
+# has to travel with the course as a file. Fetching only the blast half live would leave you
+# joining this week's blasts to last summer's earthquakes — not the same slice of the catalogue,
+# and every count in the text below would drift away from what your screen says. So both halves
+# ship together, and the numbers you print are the numbers you read.
+#
 # The archive sends more columns than COLUMNS keeps. Hold on to the whole blast table too: two
 # of the columns we are about to drop turn out to say where a blast was and how its depth was
 # arrived at, and we come back for them.
-blasts_all = load()
+blasts_all = pd.read_csv(CACHE + "/{BLAST_CACHE}")
 blasts = blasts_all[COLUMNS]
 quakes = pd.read_csv(CACHE + "/{QUAKE_CACHE}")
 coast = pd.read_csv(CACHE + "/coastlines.csv")
@@ -410,7 +478,8 @@ n_quakes = counts["earthquake"]
 print(counts)
 print("earthquakes per blast:", round(n_quakes / n_blasts, 1))
 """, """
-assert n_blasts + n_quakes == len(events), "the two labels should account for every row"
+assert n_blasts < n_quakes, "blasts are the rare label here — if your n_blasts is the bigger of \
+the two numbers, the two names are the wrong way round"
 print("✓ the two classes —", n_blasts, "quarry blasts and", n_quakes,
       "earthquakes, a ratio of", round(n_quakes / n_blasts, 1), "to 1")
 """)
@@ -457,16 +526,22 @@ way of saying that it sits near the smaller of the two, so it is only good when 
 ask("""
 ### ✏️ Your turn 2
 
-Score the always-earthquake rule properly. With `events["is_blast"]` as the truth and
-`always_earthquake` as the prediction, print its precision, its recall and its F1, using
-`precision_score`, `recall_score` and `f1_score`.
+Score **both** ways of cheating, because the paragraph above claims they fail in opposite
+directions and a claim like that is worth checking.
+
+The first is the rule you just ran: `always_earthquake`, which never says blast. The second is its
+mirror image — a rule that calls every single event a blast, which is `[True] * len(events)`.
+
+With `events["is_blast"]` as the truth, print the precision, the recall and the F1 of each, using
+`precision_score`, `recall_score` and `f1_score`. Six numbers, three per rule.
 
 Each of those three takes `zero_division=0` as a third argument. It tells scikit-learn what to do
 when a rule flags nothing at all: there is no *"of the ones you flagged"* left to divide by, so
 count it as zero rather than stopping with an error.
 
 **Use these names**, because the self-check looks for them: `always_precision`, `always_recall`
-and `always_f1`.
+and `always_f1` for the first rule, then `always_blast` for the second rule's predictions and
+`blast_precision`, `blast_recall` and `blast_f1` for its three scores.
 """)
 
 answer("""
@@ -474,14 +549,23 @@ always_precision = precision_score(events["is_blast"], always_earthquake, zero_d
 always_recall = recall_score(events["is_blast"], always_earthquake, zero_division=0)
 always_f1 = f1_score(events["is_blast"], always_earthquake, zero_division=0)
 
-print("precision:", always_precision)
-print("recall:   ", always_recall)
-print("F1:       ", always_f1)
+always_blast = [True] * len(events)
+blast_precision = precision_score(events["is_blast"], always_blast, zero_division=0)
+blast_recall = recall_score(events["is_blast"], always_blast, zero_division=0)
+blast_f1 = f1_score(events["is_blast"], always_blast, zero_division=0)
+
+print("never says blast  — precision:", always_precision, " recall:", always_recall,
+      " F1:", always_f1)
+print("always says blast — precision:", round(blast_precision, 4), " recall:", blast_recall,
+      " F1:", round(blast_f1, 4))
 """, """
-assert always_recall == 0, "a rule that never says blast cannot have caught one"
-print("✓ accuracy against F1 — the same rule scores",
-      round(accuracy_score(events["is_blast"], always_earthquake), 4),
-      "on accuracy and", always_f1, "on F1")
+assert always_recall == 0 and blast_recall == 1, "recall answers 'of the real blasts, how many \
+did you catch?' — a rule that never says blast catches none of them and a rule that always says \
+blast catches every one, so those two recalls have to come out 0 and 1. If yours did not, check \
+which score you put in which name"
+print("✓ the two ways to cheat — never saying blast scores accuracy",
+      round(accuracy_score(events["is_blast"], always_earthquake), 4), "and F1", always_f1,
+      "; always saying blast scores recall", blast_recall, "and F1", round(blast_f1, 4))
 """)
 
 # --- section 3 -------------------------------------------------------------
@@ -529,16 +613,22 @@ plt.show()
 
 md("""
 The earthquakes are spread over the whole box, in broad belts hundreds of kilometres long: those
-are the region's active belts, and they are not all the same kind of belt. The long one down the
-coast is the boundary where the Pacific and North American plates grind past each other. The
-scatter filling the right-hand side of the map is not: that is the Walker Lane and the Basin and
-Range, where the crust is pulling apart rather than sliding past itself. The dense knot at about
-37.6 N, -118.9 is the volcanic swarm under Long Valley, and the tight cluster on the coast near
-40.3 N, -124.5 is the Mendocino triple junction, where three plates meet at once. The blasts are
-not spread at all. They sit in small tight clumps, because a quarry is a fixed hole
-in the ground that gets blasted again and again for decades. That is already a usable clue, and
-also a warning — a model that learns *where* the quarries are has learned a list of addresses,
-not a piece of physics.
+are the region's active belts. The long one down the coast is the boundary where the Pacific and
+North American plates grind past each other — and the first thing this map tells you is that the
+boundary is not a line. The scatter filling the right-hand side belongs to it too: the belts
+running up the eastern side of the map, inland of the Sierra Nevada, are the same two plates
+sliding past each other in the same direction, a few hundred kilometres further east, and a
+large share of the motion is taken up out there rather than on the coastal faults. The densest
+knot on the whole map sits near 35.8 N, -117.6 — one earthquake sequence, from 2019, that you
+meet again later in this notebook — and the tight cluster in the bottom right corner, below the
+Salton Sea, is where the boundary itself comes ashore. Only the sparse north-eastern corner of
+the box, beyond those belts, is crust that is genuinely pulling apart rather than sliding past
+itself, and you can see how few events it holds. The dense knot at about 37.6 N, -118.9 is the
+volcanic swarm under Long Valley, and the tight cluster on the coast near 40.3 N, -124.5 is the
+Mendocino triple junction, where three plates meet at once. The blasts are not spread at all.
+They sit in small tight clumps, because a quarry is a fixed hole in the ground that gets blasted
+again and again for decades. That is already a usable clue, and also a warning — a model that
+learns *where* the quarries are has learned a list of addresses, not a piece of physics.
 
 Now *how deep*. The two labels are wildly different in number, so `density=True` scales each
 histogram to the same total area; without it the blasts would be invisible.
@@ -579,28 +669,35 @@ print(blast_rows["depth"].value_counts().head(5))
 print("distinct depth values, blasts:     ", blast_rows["depth"].nunique())
 print("distinct depth values, earthquakes:", quake_rows["depth"].nunique())
 
-# How far apart are the blasts that share one repeated depth? Ask in BOTH directions: one
-# direction on its own can only tell you about the direction you happened to ask about.
+# How far apart are the blasts that share one repeated depth? Ask in BOTH directions, and in
+# kilometres rather than degrees: a degree of latitude is 111.32 km anywhere on Earth, but a
+# degree of longitude is that times the cosine of the latitude you are standing at — about 0.8
+# of it here — so the two spans cannot be compared until they are converted.
 for repeated in blast_rows["depth"].value_counts().index[:2]:
     same_depth = blast_rows[blast_rows["depth"] == repeated]
+    lat_span = same_depth["latitude"].max() - same_depth["latitude"].min()
+    lon_span = same_depth["longitude"].max() - same_depth["longitude"].min()
+    lon_km = lon_span * 111.32 * np.cos(np.deg2rad(same_depth["latitude"].mean()))
     print(repeated, "km:", len(same_depth), "blasts spanning",
-          round(same_depth["latitude"].max() - same_depth["latitude"].min(), 2), "deg latitude",
-          "and", round(same_depth["longitude"].max() - same_depth["longitude"].min(), 2),
-          "deg longitude")
+          round(lat_span, 2), "deg latitude =", int(round(lat_span * 111.32)), "km, and",
+          round(lon_span, 2), "deg longitude =", int(round(lon_km)), "km")
 """)
 
 code("""
 top_depth = blast_rows["depth"].value_counts().index[0]
 second_depth = blast_rows["depth"].value_counts().index[1]
-top_depth_rows = blasts_all[blasts_all["depth"] == top_depth]
-print(top_depth_rows["longitude"].round(1).value_counts())
 
 # `place` and `depthError` arrived with the blasts and were dropped when we cut down to COLUMNS.
-print("the two clumps at", top_depth, "km:")
-print(top_depth_rows[top_depth_rows["longitude"] > -118]["place"].value_counts().head(2))
-print(top_depth_rows[top_depth_rows["longitude"] < -118]["place"].value_counts().head(2))
-print("and at", second_depth, "km:")
-print(blasts_all[blasts_all["depth"] == second_depth]["place"].value_counts().head(2))
+# `place` reads like "5km NNW of Boron, CA" — but the distance, the bearing, the space after the
+# number and even the state's name change from row to row, so counting that text as it stands
+# scatters one quarry over dozens of rows. Keep only what sits between " of " and the comma and
+# each site is counted once.
+blasts_all["site"] = blasts_all["place"].str.split(" of ").str[-1].str.split(",").str[0]
+
+print("the", (blasts_all["depth"] == top_depth).sum(), "blasts at", top_depth, "km:")
+print(blasts_all[blasts_all["depth"] == top_depth]["site"].value_counts())
+print("the", (blasts_all["depth"] == second_depth).sum(), "blasts at", second_depth, "km:")
+print(blasts_all[blasts_all["depth"] == second_depth]["site"].value_counts().head(3))
 print(blasts_all["depthError"].value_counts().head(3))
 """)
 
@@ -608,28 +705,31 @@ md(f"""
 {M['top_depth_n']} separate blasts share the depth {M['top_depth']} km — the same value to the
 nearest 10 metres, which is as fine as this catalogue quotes a blast depth at all
 ({M['depth_grid_share'] * 100:.0f}% of them sit on that 10 m grid). The obvious reading is that
-they are one quarry. Asking in both directions says otherwise: those {M['top_depth_n']} events
-fall within {M['top_depth_lat_span']:.2f} degrees of latitude of each other, about
-{M['top_depth_lat_km']:.0f} km, but {M['top_depth_lon_span']:.2f} degrees of longitude apart,
-about {M['top_depth_lon_km']:.0f} km. Latitude is the narrow one only because this quarry
-district runs east–west along 35 N, so a latitude span on its own is the single statistic that
-was always going to look tight. The longitudes come in two clumps, and `place` — one of the
-columns the archive sent and we dropped — names them: {M['top_site_a_n']} of the blasts are at
-{M['top_site_a']} and {M['top_site_b_n']} at {M['top_site_b']}. **Two quarries, one number.**
+they are one quarry, and asking in both directions already strains it. Those {M['top_depth_n']}
+events sit within {M['top_depth_lat_km']:.0f} km of each other north to south — the district runs
+east–west, so the latitude span was always going to look tight — but
+{M['top_depth_lon_km']:.0f} km apart east to west, and `place`, one of the columns the archive
+sent and we dropped, names two towns: {M['top_site_a_n']} of the blasts at {M['top_site_a']} and
+{M['top_site_b_n']} at {M['top_site_b']}. Two quarries, one number. You could still argue that
+away, though. Two pits {M['top_depth_lon_km']:.0f} km apart on the same desert plateau might
+genuinely sit at the same height to the nearest 10 metres; that would be a coincidence, not an
+impossibility.
 
-The row below is worse. {M['second_depth_n']} blasts share {M['second_depth']} km while spanning
-{M['second_depth_lat_span']:.1f} degrees of latitude — {M['second_depth_lat_km']:.0f} km — and
-most of them are back at {M['top_site_a']}. So one quarry has been handed two different depths,
-and one depth has been handed to quarries hundreds of kilometres apart. Whatever that column holds, it is not each site's own elevation.
+The next row down cannot be argued away. {M['second_depth_n']} blasts share
+{M['second_depth']} km, and {M['second_site_a_n']} of them —
+{M['second_site_share'] * 100:.0f}% — are at {M['second_site_a']}: the same quarry that has
+already been handed {M['top_depth']} km. One site, two different depths, so neither of them can
+be its elevation. The rest of that row is scattered over {M['second_depth_lat_km']:.0f} km of
+latitude, from {M['second_site_a']} in the southern desert to {M['second_site_b']} in the far
+north of the state. And `depthError` settles it. On {M['depth_err_n']:,} of the
+{M['n_blasts']:,} blasts — {M['depth_err_share'] * 100:.0f}% — it is the single constant
+{M['depth_err_top']} km. An uncertainty of {M['depth_err_top']} km attached to an event placed
+{abs(M['top_depth']) * 1000:.0f} metres above sea level is not a statement about that event; it
+is what a fixed depth looks like when the routine that would have solved for one never ran.
 
-`depthError` says it outright. On {M['depth_err_n']:,} of the {M['n_blasts']:,} blasts —
-{M['depth_err_share'] * 100:.0f}% — it is the single constant {M['depth_err_top']} km. An
-uncertainty of {M['depth_err_top']} km attached to an event placed {abs(M['top_depth']) * 1000:.0f}
-metres above sea level is not a statement about that event; it is what a fixed depth looks like
-when the routine that would have solved for one never ran. So the depth was not measured, it was
-**set** — once an analyst recognises an event as a quarry blast, they hold its depth at a value
-they choose. The column is not a property of the ground shaking at all. It is a note about a
-decision the analyst had already made.
+**The depth was not measured. It was set** — once an analyst recognises an event as a quarry
+blast, they hold its depth at a value they choose. The column is not a property of the ground
+shaking at all. It is a note about a decision the analyst had already made.
 
 That is what **leakage** looks like, and it comes with a plain-language test.
 
@@ -933,7 +1033,14 @@ for year in range({FIRST_YEAR}, {LAST_YEAR + 1}):
 
 md(f"""
 The baseline holds: every year between {M['f1_worst']:.3f} and {M['f1_best']:.3f}, no drift, no
-year where it falls apart. The two lowest are {M['year_worst']} and {M['year_second']}, and the
+year where it falls apart. Read the last row as what it is, though: the catalogue is cut off at
+the end of August, so the {M['last_year']} row covers only the first {M['last_year_months']}
+months of that year, and its {M['last_year_blasts']} blasts are not a fall in blasting — a full
+year here runs {M['full_year_blasts_lo']} to {M['full_year_blasts_hi']}. Its F1 is comparable
+with the rest, because a score is a rate and a rate does not care how long you watched. Its
+counts are not.
+
+The two lowest F1 scores are {M['year_worst']} and {M['year_second']}, and the
 same printout says why. Those are the two years the catalogue swells — {M['n_worst_year']:,} and
 {M['n_second_year']:,} events against {M['n_year_before']:,} the year before — and the two years
 holding the biggest earthquakes in the file, M{M['mag_worst_year']} and M{M['mag_second_year']}. A
@@ -949,19 +1056,33 @@ scores — hand rule, logistic regression, naive Bayes — all came out of one r
 catalogue into two halves, and `random_state=42` is nothing more than the number that decided
 which rows went which way. Change it, refit, rescore, and see how much of the difference between
 the three was ever there.
+
+Keep the difference itself as you go, in a column of its own. Every split scores the rule and the
+model on **the same** held-out events, so subtracting one score from the other on each split is a
+fair, like-for-like comparison — which the two columns read separately are not. You have met the
+question *is this difference real?* before, and it is a question about this column: how big it
+is on average and whether it keeps its sign, not how wide either of the other two columns is.
 """)
 
 code(f"""
+gaps = []
 for seed in range({M['seed_n']}):
     X_fit, X_held, y_fit, y_held = train_test_split(X, y, test_size=0.3, random_state=seed,
                                                     stratify=y)
     rule = (X_held["depth"] <= 0) & (X_held["hour"] >= 10) & (X_held["hour"] < 17)
     pred_lr = LogisticRegression(max_iter=1000).fit(X_fit, y_fit).predict(X_held)
     pred_nb = GaussianNB().fit(X_fit, y_fit).predict(X_held)
-    print("split", seed,
-          " hand rule", round(f1_score(y_held, rule), 4),
-          " logistic", round(f1_score(y_held, pred_lr), 4),
-          " naive Bayes", round(f1_score(y_held, pred_nb), 4))
+
+    f1_rule = f1_score(y_held, rule)
+    f1_lr = f1_score(y_held, pred_lr)
+    gaps.append(f1_rule - f1_lr)
+    print("split", seed, " hand rule", round(f1_rule, 4), " logistic", round(f1_lr, 4),
+          " naive Bayes", round(f1_score(y_held, pred_nb), 4),
+          " gap", round(f1_rule - f1_lr, 4))
+
+print("the gap column — average", round(sum(gaps) / len(gaps), 4),
+      " in the rule's favour on", sum(1 for gap in gaps if gap > 0), "of", len(gaps),
+      "splits, against it on", sum(1 for gap in gaps if gap < 0))
 """)
 
 # --- the question, answered ------------------------------------------------
@@ -970,17 +1091,22 @@ md(f"""
 
 **Not from a catalogue.** On the {M['n_test']:,} held-out events of the pinned split, two
 hand-written conditions scored F1 {M['hand_f1']:.4f}, logistic regression on six columns scored
-{M['lr_f1']:.4f} and naive Bayes {M['nb_f1']:.4f}. Read alone, those three look like an ordering.
-The re-splits say they are not one: across {M['seed_n']} cuts the hand rule ran
-{M['seed_hand_lo']:.4f} to {M['seed_hand_hi']:.4f} and logistic regression
-{M['seed_lr_lo']:.4f} to {M['seed_lr_hi']:.4f}, the gap between the two swung from
-{M['seed_gap_lo']:+.4f} to {M['seed_gap_hi']:+.4f}, and logistic regression finished ahead on
-{M['seed_lr_ahead']} of them. The {M['pinned_gap']:.4f} separating rule from model on this split
-is far less than either number moves when nothing changes but the shuffle. So the models did not
-beat the baseline and the baseline did not beat them: they **tie**. Six columns,
-{M['n_train']:,} labelled examples and two fitted classifiers bought you nothing over two lines
-you wrote before any of it — and that, not a ranking, is the result. None of the three is good
-enough to hand a decision that matters.
+{M['lr_f1']:.4f} and naive Bayes {M['nb_f1']:.4f}. Read alone, those three look like an ordering,
+and they are not one: the {M['pinned_gap']:.4f} separating rule from model on this split is far
+less than either number moves when nothing changes but the shuffle. Across {M['seed_n']} cuts the
+hand rule ran {M['seed_hand_lo']:.4f} to {M['seed_hand_hi']:.4f} and logistic regression
+{M['seed_lr_lo']:.4f} to {M['seed_lr_hi']:.4f}, which between them cover that gap several times
+over. Nothing in this notebook says a fitted model beat the baseline.
+
+It does not say the two are level either, and the gap column is why. The rule finished ahead on
+{M['seed_hand_ahead']} of the {M['seed_n']} splits, level on {M['seed_level']} and behind on
+{M['seed_lr_ahead']}, averaging {M['seed_gap_mean']:+.4f}. Read the two ranges and you see them
+overlap; read the paired difference and you see it keep its sign in {M['seed_hand_ahead']} draws
+out of {M['seed_n']}, which is not what a coin flip looks like. So the honest verdict is neither
+a victory nor a tie: **two lines of Python are consistently ahead of both fitted models, by an
+amount too small to be worth having.** Six columns, {M['n_train']:,} labelled examples and two
+fitted classifiers bought you nothing over two conditions you wrote before any of it — and that,
+not a ranking, is the result. None of the three is good enough to hand a decision that matters.
 
 The reason is what the clues are made of. Real discrimination of an explosion from an earthquake
 is done on the waveform, not on a catalogue row. An explosion is a sudden push outward from a
@@ -1067,9 +1193,8 @@ one is yours. Take **one** of these, not both:
 
 Set `my_low` and `my_high` to the window you chose, build `my_rule` on `X_test` the same way you
 built `hand_rule` but with your two numbers in place of 10 and 17, and print its precision, its
-recall and its F1. Then print the same three for the 10-to-17 window, so you can see which of them
-your choice moved and in which direction. Class got precision {M['hand_prec']:.4f}, recall
-{M['hand_rec']:.4f} and F1 {M['hand_f1']:.4f}.
+recall and its F1. Then compute the same three for the 10-to-17 window class used, and print them
+underneath, so you can see which of them your choice moved and in which direction.
 
 **Use these names**, because the self-check looks for them: `my_low`, `my_high` and `my_rule`.
 """)
