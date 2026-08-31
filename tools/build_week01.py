@@ -116,6 +116,7 @@ columns(...)` gives six names their values in one go, in the order they are writ
 """)
 
 code(weekkit.SETUP_CELL.format(
+    imports="",   # week 1 needs no library beyond the two the template already brings
     figsize="(7, 4)",
     cache_base=PLATFORM["cache_base"],
     signature="start, end, minmag",
@@ -626,21 +627,26 @@ assert min(all_mags) < 4.5, "the floor is still on — pass -10 as the magnitude
 ''')
 
 md("""
-✏️ **Part 2 — what the ten-to-one rule predicts, and how wrong it is.**
+✏️ **Part 2 — run the ten-to-one rule downwards.**
 
 Class measured about nine earthquakes at M4.5 and above for every one at M5.5 and above, and the
-rule of thumb rounds that to ten per step. Run the rule the other way — downwards — and it predicts
-how many small earthquakes your day should have had.
+rule of thumb rounds that to ten per step. That was the rule read upwards. Turn it round, and it
+predicts how many *small* earthquakes your one day should have had.
 
-Here is the decision, and it is yours to make. **How far down do you extrapolate?**
+Here is the decision, and it is yours to make. **How far down do you run it?**
 
 - **Two steps**, from M4.5 down to M2.5: multiply your M4.5+ count by 10, and then by 10 again.
 - **Four steps**, from M4.5 down to M0.5: multiply it by 10 four times.
 
-Both are defensible — the day you loaded in part 1 does have earthquakes below magnitude 1 in it.
-Pick one, say which in a comment, and print three things: the prediction, the number you actually
-counted (`all_mags`), and how many times too big the prediction turned out to be. Your M4.5+ count
-is `len(my_mags)`, from part 1.
+Then compare like with like, which is the part that is easy to get wrong. A prediction for M2.5 and
+above has to be checked against a **count at M2.5 and above** — not against part 1's no-floor
+total, which reaches further down and is a different quantity altogether. So load your day once
+more at whichever floor you chose, count that, and print three things: the prediction, the count,
+and how many times one is bigger than the other.
+
+Say which fork you took in a comment. Your M4.5+ count is `len(my_mags)`, from part 1. And keep
+section 6 in mind while you look at your answer: a catalogue lists what somebody's instruments
+recorded.
 
 **Use these names**: `predicted` and `actual`.
 """)
@@ -648,17 +654,21 @@ is `len(my_mags)`, from part 1.
 answer_code('''
 # two steps down, from M4.5 to M2.5
 predicted = len(my_mags) * 10 * 10
-actual = len(all_mags)
-print("the ten-to-one rule predicts:", predicted)
-print("the catalogue actually lists:", actual)
-print("too big by a factor of:", round(predicted / actual, 1))
+
+low_day = load_yours("2008-03-12", "2008-03-13", 2.5)
+low_times, low_lats, low_lons, low_depths, low_mags, low_places = columns(low_day)
+actual = len(low_mags)
+
+print("the rule predicts, at M2.5 and above:", predicted)
+print("the catalogue lists, at M2.5 and above:", actual)
+print("times more predicted than listed:", round(predicted / actual, 1))
 ''')
 
 code(f'''
-assert predicted != actual, "predicted is the rule's number, not the one you counted"
+assert actual > len(my_mags), "actual is the count at your lower floor, not the M4.5+ count"
 {check_print("Homework 2",
-             "the rule predicts {predicted}, the catalogue lists {actual}:",
-             "out by a factor of {round(predicted / actual, 1)}")}
+             "rule predicts {predicted}, catalogue lists {actual}",
+             "at the same floor: {round(predicted / actual, 1)}x over")}
 ''')
 
 md("""

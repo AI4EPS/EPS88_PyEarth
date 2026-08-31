@@ -34,9 +34,6 @@ The class/homework split is about **when**, not whose work it is:
 | **Class questions** | in the room, with you | you have just shown them the move |
 | **Homework questions** | alone, afterwards | class built the machinery; the question is new |
 
-State the count near the top — *"12 places where you write something: 7 in class, 5 at home"* — so
-nobody finds an unfinished cell the night before it is due.
-
 ### Sections, in order
 
 0. **The opening** — `weekkit.OPENING`, with only `{question}` and `{hook}` filled in. The
@@ -67,17 +64,14 @@ nobody finds an unfinished cell the night before it is due.
 
 ### Two devices that must appear
 
-The first has a required heading, `### Predict before you run`, exactly as a question is marked
-with ✏️. Without a convention nothing can find it: the rule said "the predict-before-you-run cell"
-while one week used a heading and another put the ask in prose, and no two reviewers would have
-graded the same cell.
-
 **Predict before you run.** Before any surprising result, a cell asking them to commit to a number
-first. Committing to a wrong answer beats being shown the right one.
+first — committing to a wrong answer beats being shown the right one. The heading is exactly
+`### Predict before you run`, a convention like the ✏️ on a question: without one, two weeks used
+two forms and no two reviewers graded the same cell.
 
-**Checkpoints.** Each section opens with a cell rebuilding the state it needs
-(`# ── Checkpoint 3 ── run this if you're behind ──`). The difference between a student losing ten
-minutes and losing the day.
+**Checkpoints.** A section that needs state from an earlier one opens with `weekkit.CHECKPOINT`,
+rebuilding it — including the scalars, not just the dataframes. The difference between a student
+losing ten minutes and losing the day.
 
 They collide: a checkpoint that **prints** a count gives away a prediction later in the same
 section. Rebuild state silently, or put the prediction first.
@@ -381,15 +375,7 @@ harvest is familiar and the changes are the only new thing.
 
 ---
 
-## 10. What `tools/check_course.py` enforces
+## 10. What the checkers enforce
 
-The plan only: every scheduled module exists and is scheduled once · every prerequisite is taught,
-and taught earlier · nothing taught live depends on a module that is not · every session with
-modules has an exercise · no duplicate YAML keys, which silently discard content · `modules.yml`
-names no week numbers · every project track except T6 has an open question and an evidence file
-that exists · grading and rubric each sum to 100 · a warning above 100 session minutes.
-
-**It does not open a notebook.** `tools/check_notebook.py` does that, and
-`tools/check_prior_knowledge.py` checks nothing arrives before its week — both run in the build
-gate. The science, the figures and whether the week teaches are checked by an independent
-reviewer, not by you.
+`tools/check_all.py` runs them all; `tools/README.md` says what each one is for. Anything they
+catch is not yours to check by hand — that is the point of their existing.

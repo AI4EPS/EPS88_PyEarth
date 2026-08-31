@@ -34,7 +34,8 @@ STANDARDS = [
         "windows", False),
     (1, "every literature constant is cited with its value and the date it was read, and named as "
         "a convention", False),
-    (1, "every network read goes through the same cached fallback", False),
+    (1, "every LIVE read goes through the same cached fallback — an asset that lives only in the "
+        "repo has nothing to fall back from and is read directly", False),
     (1, "every cached fallback URL this week reads actually resolves", False),
     (1, "every question has a complete model answer in the solution, prose questions included",
         False),
@@ -45,6 +46,8 @@ STANDARDS = [
     (1, "the week summary sits before the homework, and the opening cells carry the DataHub link",
         True),
     (1, "every self-check uses only names the prompt gave, and can fail", True),
+    (1, "and it fails for the mistake a student will actually make, not merely for some input",
+        False),
     (1, "the solution executes clean on a fresh kernel", True),
     (1, "only the six libraries", True),
     (1, "nothing arrives before its week except in a setup cell flagged 'Coming later'", True),
@@ -61,7 +64,7 @@ STANDARDS = [
         "cell", False),
     (2, "the axis labels carry units, and every figure title carries its sample size", False),
     (2, "built to the target of 50 cells and 8 questions, not to the 60/9 ceiling", False),
-    (2, "every map draws data/coastlines.csv", True),
+    (2, "every map OF EARTH draws data/coastlines.csv", True),
     (2, "every figure has axis labels", True),
     (2, "nothing dead: no commented-out code, no unused import, no block said three times", True),
 
@@ -73,7 +76,8 @@ STANDARDS = [
     (3, "the week's question is answered FOR THE STUDENT, on their own data or their own choice",
         False),
     (3, "no worked cell prints the answer to the question below it", False),
-    (3, "no answer is stated in the prose under its own question", False),
+    (3, "no answer is stated in the prose under its own question — a later section may restate "
+        "a number the argument needs, but not before the question that produces it", False),
     (3, "a section heading names the territory, never the finding", False),
     (3, "the week contains a genuine surprise", False),
     (3, "each method arrives only after something simpler has visibly failed — N/A if the week "

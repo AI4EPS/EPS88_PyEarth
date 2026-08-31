@@ -101,6 +101,9 @@ schedule:
       # Never the demo day, and never a date the class already loaded.
       homework_example_day: 2008-03-12   # 15 at M4.5+, 301 with no floor, smallest M-0.5,
                                          # birthquake M6.4 52 km S of Lakatoro, Vanuatu
+      # The spans homework part 3 maps, and the counts its model answer quotes. These were in the
+      # notebook and nowhere in the plan, so a rebuild would have had to re-measure them.
+      homework_example_spans: {day: 15, week: 100, month: 546}
       # Section 6 asks whether one year can carry a ratio, and answers it by widening the window.
       # Every span it queries is pinned here: a rebuild from this file must reproduce the same
       # numbers, and these were missing until a reviewer went looking for them.
