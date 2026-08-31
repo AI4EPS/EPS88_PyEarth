@@ -12,6 +12,9 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import check_notebook as C
 
 MD = lambda s: {"cell_type": "markdown", "source": [s]}
+SP = ("## What you'll be able to do\n\nsome prose.\n\n"
+      "**The four questions this week works through:**\n\n"
+      "1. Where do the earthquakes go?\n2. Why there?\n3. How deep?\n")
 REPEAT = 'quakes = load("2019-07-01", "2019-12-31")\nscaled = StandardScaler().fit_transform(quakes[COLS])\nquakes["cluster"] = DBSCAN(eps=0.15).fit_predict(scaled)'
 CODE = lambda s: {"cell_type": "code", "source": [s]}
 
@@ -124,10 +127,10 @@ CASES = [
      [MD(SP), MD("## Where do the earthquakes go?"), MD("## Homework")], True),
     ("...but not one where every question is a heading", C.check_spine,
      [MD(SP), MD("## Where do the earthquakes go?"), MD("## Why there?"),
-      MD("## Homework")], False),
+      MD("## How deep?"), MD("## Homework")], False),
     ("a section heading that is a topic rather than a question", C.check_spine,
-     [MD(SP), MD("## Where do the earthquakes go?"), MD("## Plate boundaries"),
-      MD("## Homework")], True),
+     [MD(SP), MD("## Where do the earthquakes go?"), MD("## Why there?"),
+      MD("## Plate boundaries"), MD("## Homework")], True),
     ("a notebook with no spine at all", C.check_spine,
      [MD("## What you'll be able to do\n\nprose only."), MD("## Homework")], True),
 
