@@ -57,6 +57,7 @@ DATA_URL = ("https://github.com/AI4EPS/EPS88_PyEarth/releases/download/"
 # copies onto 46 student accounts.
 LOCAL = pathlib.Path(tempfile.gettempdir()) / "eps88_wk13_phasenet_ncedc.npz"
 
+DEFAULT_THREADS = torch.get_num_threads()   # what a student's DataHub kernel actually uses
 torch.set_num_threads(4)
 
 
@@ -71,6 +72,7 @@ waveform = np.clip(data["waveform"], -10, 10)
 p_index = data["p_index"].astype(int)
 s_index = data["s_index"].astype(int)
 distance_km = data["distance_km"]
+depth_km = data["depth_km"]
 event_id = data["event_id"]
 SAMPLE_RATE = 100
 
@@ -87,6 +89,15 @@ M["mag_max"] = round(float(data["magnitude"].max()), 2)
 M["mag_med"] = round(float(np.median(data["magnitude"])), 2)
 M["dist_med"] = round(float(np.median(distance_km)), 1)
 M["dist_max"] = round(float(distance_km.max()), 1)
+M["depth_min"] = round(float(depth_km.min()), 1)
+M["depth_max"] = round(float(depth_km.max()), 1)
+
+# The release asset is ALREADY clipped at write time, so the np.clip in the setup cell is a
+# guard and not a cleaning step. These two numbers are what stops the notebook calling it one:
+# the bound is saturated, which censors any median taken above it and rails a few dead channels.
+M["clip_frac"] = round(float((np.abs(waveform) >= 10).mean()), 3)
+flat = (waveform.std(axis=2) == 0).all(axis=1)
+M["n_flat"] = int(flat.sum())
 
 rng = np.random.default_rng(0)
 events = np.unique(event_id)
@@ -117,10 +128,21 @@ sp_time = (s_index - p_index) / SAMPLE_RATE
 M["sp_min"] = round(float(sp_time.min()), 2)
 M["sp_max"] = round(float(sp_time.max()), 2)
 M["sp_med"] = round(float(np.median(sp_time)), 2)
-line = LinearRegression(fit_intercept=False)
+# NOT through the origin. distance_km is EPICENTRAL — measured along the surface to the point
+# above the earthquake — while the earthquake is kilometres down, so a station standing on the
+# epicentre still has the whole depth between it and the source and still sees a gap. Measured
+# below: nothing in this file has a gap anywhere near zero, and forcing the line through a point
+# no recording occupies costs R squared as well as being false.
+line = LinearRegression()
 line.fit(sp_time.reshape(-1, 1), distance_km)
 M["sp_slope"] = round(float(line.coef_[0]), 2)
+M["sp_intercept"] = round(float(line.intercept_), 1)
 M["sp_r2"] = round(float(line.score(sp_time.reshape(-1, 1), distance_km)), 3)
+origin = LinearRegression(fit_intercept=False).fit(sp_time.reshape(-1, 1), distance_km)
+M["sp_r2_origin"] = round(float(origin.score(sp_time.reshape(-1, 1), distance_km)), 3)
+near_epicentre = distance_km < 2
+M["n_near2"] = int(near_epicentre.sum())
+M["sp_near2_med"] = round(float(np.median(sp_time[near_epicentre])), 2)
 
 # --- section 2: was there an earthquake at all?
 WINDOW = 256
@@ -134,6 +156,10 @@ loud_shaken = np.abs(shaken).max(axis=(1, 2))
 M["window_s"] = round(WINDOW / SAMPLE_RATE, 2)
 M["quiet_med"] = round(float(np.median(loud_quiet[is_train])), 2)
 M["shaken_med"] = round(float(np.median(loud_shaken[is_train])), 2)
+# The after-P median sits ON the clip bound, so it is censored: more than half of these windows
+# were cut off at 10 when the file was written and the median only reports where we cut.
+M["shaken_railed"] = round(float((loud_shaken[is_train] == 10).mean()), 3)
+M["quiet_railed"] = round(float((loud_quiet[is_train] == 10).mean()), 3)
 THRESHOLD = 2.5
 M["threshold"] = THRESHOLD
 M["detect_right"] = int((loud_quiet[~is_train] < THRESHOLD).sum()
@@ -180,15 +206,26 @@ SWEEP = [(30, 300, 3), (20, 200, 3), (50, 500, 5)]
 M["stalta_sweep"] = {f"{a}, {b}, {c}": round(sta_lta_score(a, b, c), 3) for a, b, c in SWEEP}
 M["stalta_best_setting"], M["stalta_best"] = max(M["stalta_sweep"].items(), key=lambda kv: kv[1])
 
-near_s = never = 0
+# WHERE the textbook setting's misses are, which is the whole lesson of this section: with
+# long=500 the ratio is pinned at zero for the first five seconds, so a P arriving before 4.5 s
+# cannot be found however strong it is. Split the held-out set on that and score each half.
+textbook_ok, on_the_s, never = [], [], 0
 for i in np.nonzero(~is_train)[0]:
     pick = first_trigger(sta_lta(strength[i], 50, 500), 3)
     if pick is None:
         never = never + 1
-    elif abs(pick - s_index[i]) <= 50:
-        near_s = near_s + 1
+    textbook_ok.append(pick is not None and abs(pick - p_index[i]) <= 50)
+    on_the_s.append(pick is not None and abs(pick - s_index[i]) <= 50)
+textbook_ok = np.array(textbook_ok)
+on_the_s = np.array(on_the_s)
+early = p_test < 450                    # the long window has not filled until sample 500
 M["stalta_never"] = round(never / M["n_test"], 3)
-M["stalta_near_s"] = round(near_s / M["n_test"], 3)
+M["stalta_near_s"] = round(float(on_the_s.mean()), 3)
+M["n_early"] = int(early.sum())
+M["early_frac"] = round(float(early.mean()), 3)
+M["textbook_early"] = round(float(textbook_ok[early].mean()), 3)
+M["textbook_late"] = round(float(textbook_ok[~early].mean()), 3)
+M["s_in_dead_zone"] = round(float(early[on_the_s].mean()), 3)
 
 # --- section 4: a pattern-detector made by hand
 
@@ -198,13 +235,21 @@ def onset_filter(width):
     return np.concatenate([np.ones(width) / width, -np.ones(width) / width])
 
 
-hand_hits = hand_near_s = 0
+# Scored TWO ways on the same responses, because the difference between them is the point.
+# First crossing is the rule STA/LTA was scored by; argmax is the rule the network will be
+# scored by. Twenty fixed weights read one way are a fair rival; read the other way they are
+# a detector for the S. Scoring the two methods under different rules and calling the gap
+# evidence about the weights is the mistake this section used to make.
+hand_hits = hand_argmax_hits = hand_argmax_near_s = 0
 for i in np.nonzero(~is_train)[0]:
     response = np.convolve(strength[i] ** 2, onset_filter(10), mode="same")
-    hand_hits += abs(response.argmax() - p_index[i]) <= 50
-    hand_near_s += abs(response.argmax() - s_index[i]) <= 50
+    pick = first_trigger(response, 3)
+    hand_hits += pick is not None and abs(pick - p_index[i]) <= 50
+    hand_argmax_hits += abs(response.argmax() - p_index[i]) <= 50
+    hand_argmax_near_s += abs(response.argmax() - s_index[i]) <= 50
 M["hand_acc"] = round(float(hand_hits / M["n_test"]), 3)
-M["hand_near_s"] = round(float(hand_near_s / M["n_test"]), 3)
+M["hand_argmax_acc"] = round(float(hand_argmax_hits / M["n_test"]), 3)
+M["hand_argmax_near_s"] = round(float(hand_argmax_near_s / M["n_test"]), 3)
 
 # --- section 5: the network
 
@@ -270,6 +315,8 @@ M["n_weights"] = int(sum(w.numel() for w in make_picker().parameters()))
 t0 = time.time()
 picker, losses, scores = train_picker()
 M["train_seconds"] = round(time.time() - t0, 1)
+M["threads"] = 4
+M["seconds_per_epoch"] = round(M["train_seconds"] / len(losses), 2)
 net_picks = picks_from(picker, x_test)
 M["net_acc"] = round(float(within_half_second(net_picks, p_test)), 3)
 M["net_med_err"] = round(float(np.median(np.abs(net_picks - p_test)) / SAMPLE_RATE), 3)
@@ -282,6 +329,14 @@ M["acc_ep10"] = round(float(scores[9]), 3)
 M["acc_late_low"] = round(float(min(scores[10:])), 3)
 M["acc_late_high"] = round(float(max(scores[10:])), 3)
 M["acc_wobble"] = round(float(max(scores[10:]) - min(scores[10:])), 3)
+
+# The lower panel of the closest/furthest figure. The prose says the recording is DEAD, so the
+# claim is measured rather than assumed: three zero standard deviations, and every sample of all
+# three rows sitting on the clip bound our own write step put there.
+worst = int(np.abs(net_picks - p_test).argmax())
+M["worst_std"] = [round(float(v), 3) for v in x_test[worst].numpy().std(axis=1)]
+M["worst_values"] = sorted(round(float(v), 1) for v in np.unique(x_test[worst].numpy()))
+M["worst_is_flat"] = bool(max(M["worst_std"]) == 0)
 
 # --- homework: does the network fail where the classical picker fails?
 best = tuple(int(x) for x in M["stalta_best_setting"].split(", "))
@@ -313,6 +368,15 @@ for sigma in (5, 40):
     M[f"sigma{sigma}_acc"] = round(float(hw_scores[-1]), 3)
     M[f"sigma{sigma}_loss"] = round(float(hw_losses[-1]), 5)
     M[f"sigma{sigma}_med"] = round(float(np.median(np.abs(hw_picks - p_test)) / SAMPLE_RATE), 3)
+
+# --- how long this actually takes on a CPU, at the thread count a student's kernel uses.
+# modules.yml carried 1.2 s/epoch, which was measured on a different and much larger network.
+torch.set_num_threads(DEFAULT_THREADS)
+t0 = time.time()
+train_picker(epochs=2)
+M["default_threads"] = int(DEFAULT_THREADS)
+M["seconds_per_epoch_default"] = round((time.time() - t0) / 2, 1)
+torch.set_num_threads(4)
 
 # --- homework: does more training help?
 _, long_losses, long_scores = train_picker(epochs=60)
@@ -353,6 +417,97 @@ def answer(model, check=""):
 def answer_prose(model):
     CELLS.append(("markdown", model.strip("\n"),
                   "*(Double-click this cell and replace this line with your answer.)*"))
+
+
+# Code that appears BOTH in a class cell and in the homework checkpoint, written once here so the
+# two copies cannot drift. check_notebook's checkpoint rule wants the homework to run on a cold
+# kernel; this week's homework needs the split, the classical picker and the whole training
+# apparatus, and hand-copying nine definitions into a checkpoint is how they go stale.
+SRC_SPLIT = """rng = np.random.default_rng(0)
+events = np.unique(event_id)
+rng.shuffle(events)
+train_events = events[:int(0.7 * len(events))]
+is_train = np.isin(event_id, train_events)      # True for a recording of a training earthquake"""
+
+SRC_STRENGTH = ("strength = np.abs(waveform).max(axis=1)"
+                "     # one number per sample: the biggest of the three rows")
+
+SRC_STALTA = '''def sta_lta(trace, short, long):
+    """How much louder the last `short` samples are than the last `long` samples."""
+    power = trace ** 2
+    ratio = np.zeros(len(power))
+    for i in range(long, len(power)):
+        ratio[i] = power[i - short:i].mean() / power[i - long:i].mean()
+    return ratio
+
+
+def first_trigger(ratio, threshold):
+    """The first sample where the ratio crosses the threshold, or None if it never does."""
+    above = np.nonzero(ratio > threshold)[0]
+    if len(above) == 0:
+        return None
+    return int(above[0])'''
+
+SRC_TARGET = f'''def make_target(pick_index, sigma):
+    """A bump centred on each trace's P arrival: what we want the network to output."""
+    sample = np.arange({M['n_samples']})
+    target = np.zeros((len(pick_index), {M['n_samples']}), dtype="float32")
+    for i in range(len(pick_index)):
+        target[i] = np.exp(-(sample - pick_index[i]) ** 2 / (2 * sigma ** 2))
+    return target'''
+
+SRC_MODEL = '''def make_picker():
+    """Five convolution layers: squeeze the trace down to a summary, then stretch it back out."""
+    return nn.Sequential(
+        nn.Conv1d(3, 8, 7, stride=4, padding=3), nn.ReLU(),
+        nn.Conv1d(8, 16, 7, stride=4, padding=3), nn.ReLU(),
+        nn.Conv1d(16, 16, 7, padding=3), nn.ReLU(),
+        nn.Upsample(scale_factor=4), nn.Conv1d(16, 8, 7, padding=3), nn.ReLU(),
+        nn.Upsample(scale_factor=4), nn.Conv1d(8, 1, 7, padding=3))
+
+
+x_train = torch.tensor(waveform[is_train])
+x_test = torch.tensor(waveform[~is_train])
+p_test = p_index[~is_train]'''
+
+SRC_TRAIN = '''def picks_from(model, x):
+    """Where the network says the P is: the sample with the highest output."""
+    return model(x).squeeze(1).detach().numpy().argmax(axis=1)
+
+
+def within_half_second(picks, truth):
+    """Fraction of picks landing within half a second of the analyst's pick."""
+    return (np.abs(picks - truth) <= 50).mean()
+
+
+def train_picker(sigma=20, epochs=25):
+    """Train the picker; hand back the model, and the loss and test score after every epoch."""
+    torch.manual_seed(0)
+    model = make_picker()
+    optimiser = torch.optim.Adam(model.parameters(), lr=0.005)
+    loss_function = nn.MSELoss()
+    y_train = torch.tensor(make_target(p_index[is_train], sigma))
+    losses, scores = [], []
+    for epoch in range(epochs):
+        order = torch.randperm(len(x_train))
+        total = 0.0
+        for start in range(0, len(x_train), 32):
+            batch = order[start:start + 32]
+            loss = loss_function(model(x_train[batch]).squeeze(1), y_train[batch])
+            optimiser.zero_grad()
+            loss.backward()
+            optimiser.step()
+            total = total + loss.item() * len(batch)
+        losses.append(total / len(x_train))
+        scores.append(within_half_second(picks_from(model, x_test), p_test))
+    return model, losses, scores'''
+
+# The checkpoint rebuilds everything the homework touches, silently: the split, the classical
+# picker, the network apparatus and the trained model itself.
+SRC_CHECKPOINT = "\n\n".join([SRC_SPLIT, SRC_STRENGTH, SRC_STALTA, SRC_TARGET, SRC_MODEL,
+                              SRC_TRAIN,
+                              "picker, losses, scores = train_picker()\n"
+                              "net_picks = picks_from(picker, x_test)"])
 
 
 datahub = (f"{PLATFORM['datahub']}/hub/user-redirect/git-pull"
@@ -421,10 +576,11 @@ def load():
 # 42 MB of waveforms — too big to keep beside the notebook, so it arrives from a release of the
 # course repository rather than from the repository itself, and is kept once it has arrived.
 data = load()
-waveform = np.clip(data["waveform"], -10, 10)   # instrument spikes, cut off at 10 times normal
+waveform = np.clip(data["waveform"], -10, 10)   # a guard: the file is already cut off here
 p_index = data["p_index"].astype(int)           # sample number of the analyst's P pick
 s_index = data["s_index"].astype(int)           # sample number of the analyst's S pick
-distance_km = data["distance_km"]
+distance_km = data["distance_km"]               # station to epicentre, along the surface
+depth_km = data["depth_km"]                     # how far below the epicentre the quake was
 event_id = data["event_id"]
 station = data["station"]
 magnitude = data["magnitude"]
@@ -437,6 +593,7 @@ print("magnitudes:      ", round(magnitude.min(), 2), "to", round(magnitude.max(
       " median", round(np.median(magnitude), 2))
 print("distance (km):   ", round(np.median(distance_km), 1), "median,",
       round(distance_km.max(), 1), "furthest")
+print("depth (km):      ", round(depth_km.min(), 1), "to", round(depth_km.max(), 1))
 print("P arrives between", round(p_index.min() / SAMPLE_RATE, 2), "and",
       round(p_index.max() / SAMPLE_RATE, 2), "seconds in")
 '''.strip("\n"))
@@ -456,6 +613,12 @@ sample {M['n_samples'] // 2} means {M['n_samples'] // 2 / SAMPLE_RATE:.2f} secon
 window. Each row has been divided by its own typical size, so a "1" in `waveform` means *one
 typical wiggle for this instrument on this recording*, not a fixed number of nanometres —
 loudness here is always relative to the same trace's own background.
+
+It was then cut off at ±10, and that bound is worth remembering, because you will meet it twice
+more. **The file already carries the cut**, so the `np.clip` in the setup cell changes nothing —
+it is a guard, not a cleaning step. What the cut does do is throw away the tops of the big
+arrivals: {M['clip_frac']:.1%} of all the samples in the file sit exactly on ±10. Any "biggest
+swing" you measure is therefore a number with a ceiling on it, and the ceiling is ours.
 
 One thing was done deliberately when the file was built: the window was cut at a **random** offset
 before each P, so the arrival lands anywhere from {M['p_min_s']} to {M['p_max_s']} seconds in.
@@ -526,29 +689,52 @@ That gap is the whole reason anyone cares about the exact arrival time. The P an
 earthquake together and travel at different speeds, so the further you are from it, the further
 apart they arrive — the gap is a distance measurement, taken at a single station.
 
-Which means we can check it. Fit a straight line through the origin (through the origin because a
-station standing on top of the earthquake must see a gap of zero) and the slope is how many
-kilometres each second of gap is worth.
+Which means we can check it. Fit a straight line and the slope is how many kilometres each second
+of gap is worth.
+
+It is tempting to force that line through the origin — a station standing on top of the
+earthquake ought to see no gap at all. Do not. `distance_km` is measured **along the surface**,
+from the station to the point above the earthquake, and the earthquake itself is kilometres
+down: the depths in this file run from {M['depth_min']} to {M['depth_max']} km. A station
+directly above an event 8 km deep still has 8 km of rock between it and the source, and still
+sees a gap.
+
+The cell below checks that, and prints both fits so you can see what forcing the line costs.
+Nothing in this file has a gap near zero: the smallest anywhere is {M['sp_min']} s, and even the
+{M['n_near2']} recordings taken within 2 km of the epicentre have a median gap of
+{M['sp_near2_med']} s. The origin is not a point this data set knows anything about, and the line
+that is allowed its own intercept fits better for it — R squared {M['sp_r2']} against
+{M['sp_r2_origin']}. Notice where the orange line stops, too: at the smallest and largest gaps
+actually measured, because a fitted line says nothing outside the range you fitted it on.
 """)
 
 code(f"""
 sp_all = (s_index - p_index) / SAMPLE_RATE
+near_epicentre = distance_km < 2            # stations practically on top of the epicentre
 
-line = LinearRegression(fit_intercept=False)
+line = LinearRegression()                   # with an intercept: the line need not reach (0, 0)
 line.fit(sp_all.reshape(-1, 1), distance_km)
+origin = LinearRegression(fit_intercept=False)
+origin.fit(sp_all.reshape(-1, 1), distance_km)
 
-ends = np.array([0, sp_all.max()]).reshape(-1, 1)   # a straight line needs only its two ends
+ends = np.array([sp_all.min(), sp_all.max()]).reshape(-1, 1)   # only where there is data
 
 plt.scatter(sp_all, distance_km, s=3, alpha=0.3)
 plt.plot(ends, line.predict(ends), color="C1")
 plt.xlabel("S minus P (s)")
-plt.ylabel("distance to the earthquake (km)")
+plt.ylabel("distance to the epicentre (km)")
 plt.title("{M['n_traces']:,} recordings: the gap is a distance measurement")
 plt.show()
 
 print("kilometres per second of gap:", round(line.coef_[0], 2))
-print("R squared:", round(line.score(sp_all.reshape(-1, 1), distance_km), 3))
+print("R squared, with an intercept: ", round(line.score(sp_all.reshape(-1, 1), distance_km), 3))
+print("R squared, forced through 0:  ",
+      round(origin.score(sp_all.reshape(-1, 1), distance_km), 3))
+print("smallest gap in the file:", round(sp_all.min(), 2), "s;",
+      near_epicentre.sum(), "recordings within 2 km, median gap",
+      round(np.median(sp_all[near_epicentre]), 2), "s")
 """)
+
 
 # --- section 2 -------------------------------------------------------------
 md(f"""
@@ -566,11 +752,7 @@ held out at all. That is leakage, and grouping by `event_id` is the fix.
 """)
 
 code(f"""
-rng = np.random.default_rng(0)
-events = np.unique(event_id)
-rng.shuffle(events)
-train_events = events[:int(0.7 * len(events))]
-is_train = np.isin(event_id, train_events)      # True for a recording of a training earthquake
+{SRC_SPLIT}
 
 print("training on", is_train.sum(), "recordings from", len(train_events), "earthquakes")
 print("testing on ", (~is_train).sum(), "recordings from",
@@ -590,14 +772,23 @@ loud_shaken = np.abs(shaken).max(axis=(1, 2))   # biggest swing in each after-wi
 
 print("typical biggest swing before the P:", round(np.median(loud_quiet[is_train]), 2))
 print("typical biggest swing after the P: ", round(np.median(loud_shaken[is_train]), 2))
+print("after-windows sitting exactly on the cut-off:",
+      round((loud_shaken[is_train] == 10).mean(), 3))
 """)
 
 md(f"""
-Those two medians came from the training recordings only, so we are allowed to look at them.
+Those two medians came from the training recordings only, so we are allowed to look at them — but
+read the second one before you use it. **{M['shaken_med']} is the cut-off**, not a measurement:
+{M['shaken_railed']:.1%} of the after-windows are pinned exactly on ±10 by the clip the file was
+written with, so their median can only ever come back as the bound itself. All that number
+honestly says is *most of these earthquakes reach the ceiling*. The before-windows are barely
+censored — {M['quiet_railed']:.1%} of them touch the bound — so {M['quiet_med']} is a real
+number, and it is the one to build on.
+
 Now the rule. **Write the dumbest rule you can, first. Any model that cannot beat it is
 decoration.** The dumbest rule here is one number: call it an earthquake when the biggest swing
-in the window is above {M['threshold']}, which sits between the two typical values you just
-printed.
+in the window is above {M['threshold']}, which is more than twice a typical quiet window and far
+below where the shaken ones pile up.
 """)
 
 ask(f"""
@@ -637,7 +828,7 @@ of its P. Here is the same comparison, over all {M['n_traces']:,} recordings at 
 """)
 
 code(f"""
-strength = np.abs(waveform).max(axis=1)     # one number per sample: the biggest of the three rows
+{SRC_STRENGTH}
 loudest = strength.argmax(axis=1)           # sample number of the biggest swing in each recording
 near_p = np.abs(loudest - p_index) <= 50    # 50 samples is half a second
 near_s = np.abs(loudest - s_index) <= 50
@@ -683,21 +874,7 @@ long window behind it to average over — five seconds, at this setting.
 """)
 
 code(f"""
-def sta_lta(trace, short, long):
-    \"\"\"How much louder the last `short` samples are than the last `long` samples.\"\"\"
-    power = trace ** 2
-    ratio = np.zeros(len(power))
-    for i in range(long, len(power)):
-        ratio[i] = power[i - short:i].mean() / power[i - long:i].mean()
-    return ratio
-
-
-def first_trigger(ratio, threshold):
-    \"\"\"The first sample where the ratio crosses the threshold, or None if it never does.\"\"\"
-    above = np.nonzero(ratio > threshold)[0]
-    if len(above) == 0:
-        return None
-    return int(above[0])
+{SRC_STALTA}
 
 
 ratio = sta_lta(strength[{TRACE}], 50, 500)
@@ -733,20 +910,9 @@ def sta_lta_score(short, long, threshold):
     return hits / (~is_train).sum()
 
 
-never = 0
-on_the_s = 0
-for i in np.nonzero(~is_train)[0]:
-    pick = first_trigger(sta_lta(strength[i], 50, 500), 3)
-    if pick is None:
-        never = never + 1
-    elif abs(pick - s_index[i]) <= 50:
-        on_the_s = on_the_s + 1
-
 print("you guessed:", my_guess)
 print("textbook setting (0.5 s, 5 s, threshold 3):",
       round(sta_lta_score(50, 500, 3), 3))
-print("  fraction that never triggered:  ", round(never / (~is_train).sum(), 3))
-print("  fraction that hit the S instead:", round(on_the_s / (~is_train).sum(), 3))
 """)
 
 ask(f"""
@@ -788,17 +954,70 @@ print("✓ the sweep — STA/LTA's best of four settings is",
 
 md(f"""
 Tuned as well as four tries can tune it, the classical picker lands within half a second on
-{M['stalta_best']:.1%} of held-out traces. It is not doing something silly. At the textbook
-setting it never triggers at all on {M['stalta_never']:.1%} of them — the noise was too loud for
-the ratio to ever jump by three — and on another {M['stalta_near_s']:.1%} it triggers on the S
-instead of the P, having ignored a P that was too gentle to move the ratio.
+{M['stalta_best']:.1%} of held-out traces — at short {M['stalta_best_setting'].split(', ')[0]},
+long {M['stalta_best_setting'].split(', ')[1]}, threshold
+{M['stalta_best_setting'].split(', ')[2]}. Both scores are now on your screen —
+{M['stalta_textbook']:.3f} at the textbook setting, {M['stalta_best']:.3f} at the best — so before
+reading on, look at what changed between them. It is worth
+{100 * (M['stalta_best'] - M['stalta_textbook']):.1f} percentage points, which is a large amount
+of tuning for two numbers.
 
-The setting that came out best is also the one with the shortest windows, and that is not a
-coincidence: a five-second long window has nothing to compare against until five seconds in, and
-the setup cell told you some of these P arrivals come earlier than that.
+It is not tuning. Go back to the sentence above the first STA/LTA cell: *the ratio is left at
+zero until there is a full long window behind it to average over.* At the textbook setting the
+long window is 500 samples, so for the first **five seconds** of every recording the ratio is
+identically zero and cannot cross anything. And the setup cell told you the P lands anywhere from
+{M['p_min_s']} to {M['p_max_s']} seconds in. Split the held-out set on that.
+""")
 
-That is the number to beat. Anything we build now has to beat {M['stalta_best']:.3f}, or we have
-built decoration.
+code(f"""
+textbook_ok = []
+on_the_s = []
+never = 0
+for i in np.nonzero(~is_train)[0]:
+    pick = first_trigger(sta_lta(strength[i], 50, 500), 3)
+    if pick is None:
+        never = never + 1
+    textbook_ok.append(pick is not None and abs(pick - p_index[i]) <= 50)
+    on_the_s.append(pick is not None and abs(pick - s_index[i]) <= 50)
+
+textbook_ok = np.array(textbook_ok)
+on_the_s = np.array(on_the_s)
+early = p_index[~is_train] < 450        # a P this early is gone before the ratio starts moving
+
+print("never triggered at all:  ", round(never / len(textbook_ok), 3))
+print("triggered on the S:      ", round(on_the_s.mean(), 3))
+print("P earlier than 4.5 s:    ", early.sum(), "of", len(textbook_ok))
+print("  textbook setting there:", round(textbook_ok[early].mean(), 3))
+print("  textbook setting after:", round(textbook_ok[~early].mean(), 3))
+print("  share of the S triggers that are in there:", round(early[on_the_s].mean(), 3))
+""")
+
+md(f"""
+{M['n_early']} of the {M['n_test']} held-out recordings — {M['early_frac']:.1%} of them — have
+their P before 4.5 s, and on those the textbook setting scores **{M['textbook_early']:.3f}**. Not
+"badly": zero. However clear the arrival, it happened inside a window where the ratio was still
+zero, and no threshold can be crossed there. That is a **dead zone**, and we built it ourselves
+when we chose a five-second long window for recordings whose P can arrive as early as
+{M['p_min_s']} seconds.
+
+Now the other half. On the recordings whose P arrives after the dead zone, the textbook setting
+scores {M['textbook_late']:.3f} — which is, to three decimal places, the {M['stalta_best']:.3f}
+you got from the best of the four settings. So the {M['stalta_textbook']:.3f} → {M['stalta_best']:.3f}
+jump you just measured is not the shorter windows being better at finding P arrivals. It is the
+shorter windows having a shorter dead zone. Take the dead zone away and the two settings are the
+same picker.
+
+The other two numbers say the same thing from the other side. The {M['stalta_never']:.1%} that
+never triggered and the {M['stalta_near_s']:.1%} that triggered on the S are not all traces where
+the P was too gentle: {M['s_in_dead_zone']:.0%} of the S triggers are traces whose P was in the
+dead zone, so the S was simply the first arrival the ratio was awake for.
+
+The general lesson is worth more than the seismology. **A parameter sweep will happily hand you a
+winner without telling you what it won on.** Ours was not measuring how well the picker finds
+arrivals; it was measuring how much of each recording the picker was allowed to look at.
+
+That is still the number to beat. Anything we build now has to beat {M['stalta_best']:.3f}, or we
+have built decoration.
 """)
 
 # --- section 4 -------------------------------------------------------------
@@ -826,59 +1045,91 @@ def onset_filter(width):
 
 response = np.convolve(strength[{TRACE}] ** 2, onset_filter(10), mode="same")
 
-plt.plot(seconds, response / np.abs(response).max(), lw=0.8)
+plt.plot(seconds, response, lw=0.8)
+plt.axhline(3, color="C2")                      # the same trigger level STA/LTA used
 plt.axvline(p_index[{TRACE}] / SAMPLE_RATE, color="k")
 plt.axvline(s_index[{TRACE}] / SAMPLE_RATE, color="C1")
 plt.xlabel("time (s)")
-plt.ylabel("filter response (scaled to its own peak)")
-plt.title("a 20-sample onset detector on 1 trace — black P, orange S")
+plt.ylabel("filter response (energy jump)")
+plt.title("a 20-sample onset detector on 1 trace — black P, orange S, green trigger")
 plt.show()
+
+print("first crossing of 3:", first_trigger(response, 3), " biggest response:", response.argmax())
+print("the analyst's P:    ", p_index[{TRACE}], "        the analyst's S:", s_index[{TRACE}])
+""")
+
+md("""
+On this recording the filter answers the question twice, and the two answers are not the same
+place. Its response **first crosses 3** at the P, within a sample of the analyst's mark. Its
+**largest** value is at the S, where the biggest jump in energy in a seismogram always is.
+
+Which of those two is "the detector's pick" is a decision we make, not something the twenty
+weights decide, so score it both ways.
 """)
 
 ask(f"""
 ### ✏️ Your turn 4
 
-Score that hand-made detector the way you scored STA/LTA. Loop over the held-out traces, convolve
-`strength[i] ** 2` with `onset_filter(10)`, and collect `response.argmax()` — the sample where the
-detector responds most — into a list, one entry per held-out trace.
+Score that hand-made detector on the held-out traces, both ways, from the same responses.
 
-Then print two fractions: how often that pick lands within 50 samples of `p_index[i]`, and —
-because the last figure hints at where it actually goes — how often it lands within 50 samples of
-`s_index[i]`.
+Loop over the held-out traces and convolve `strength[i] ** 2` with `onset_filter(10)`. From each
+response take two picks: `first_trigger(response, 3)` — exactly the rule you scored STA/LTA with,
+same threshold — into `hand_picks`, and `response.argmax()` into `peak_picks`.
 
-**Use these names**, because the self-check looks for them: `hand_picks` for the list and
-`hand_accuracy` for the first fraction.
+Then print three fractions: how often `hand_picks` lands within 50 samples of `p_index[i]`, how
+often `peak_picks` does, and — because the figure above hints at where the peak actually goes —
+how often `peak_picks` lands within 50 samples of `s_index[i]`. Remember `first_trigger` can hand
+back `None`, which is never within 50 samples of anything.
+
+**Use these names**, because the self-check looks for them: `hand_picks`, `peak_picks` and
+`hand_accuracy` for the first of the three fractions.
 """)
 
 answer(f"""
 hand_picks = []
+peak_picks = []
 for i in np.nonzero(~is_train)[0]:
     response = np.convolve(strength[i] ** 2, onset_filter(10), mode="same")
-    hand_picks.append(response.argmax())
+    hand_picks.append(first_trigger(response, 3))
+    peak_picks.append(response.argmax())
 
-hits = 0
-near_s_hits = 0
-for pick, i in zip(hand_picks, np.nonzero(~is_train)[0]):
-    hits = hits + (abs(pick - p_index[i]) <= 50)
-    near_s_hits = near_s_hits + (abs(pick - s_index[i]) <= 50)
+crossing_hits = 0
+peak_hits = 0
+peak_near_s = 0
+for crossing, peak, i in zip(hand_picks, peak_picks, np.nonzero(~is_train)[0]):
+    crossing_hits = crossing_hits + (crossing is not None and abs(crossing - p_index[i]) <= 50)
+    peak_hits = peak_hits + (abs(peak - p_index[i]) <= 50)
+    peak_near_s = peak_near_s + (abs(peak - s_index[i]) <= 50)
 
-hand_accuracy = hits / len(hand_picks)
-print("within 0.5 s of the P:", round(hand_accuracy, 3))
-print("within 0.5 s of the S:", round(near_s_hits / len(hand_picks), 3))
+hand_accuracy = crossing_hits / len(hand_picks)
+print("first crossing, within 0.5 s of the P:", round(hand_accuracy, 3))
+print("biggest response, within 0.5 s of the P:", round(peak_hits / len(peak_picks), 3))
+print("biggest response, within 0.5 s of the S:", round(peak_near_s / len(peak_picks), 3))
 """, """
-assert len(hand_picks) == (~is_train).sum(), "one pick per held-out trace, and none of the rest"
-print("✓ the hand-made detector — it finds the P on",
+assert len(hand_picks) == len(peak_picks) == (~is_train).sum(), \
+    "one of each pick per held-out trace, and none of the rest"
+print("✓ the hand-made detector — read by first crossing it finds the P on",
       round(100 * hand_accuracy, 1), "% of held-out traces")
 """)
 
 md(f"""
-Worse than STA/LTA, and worse in an informative way: it lands near the **S** on
-{M['hand_near_s']:.1%} of traces. The numbers we chose describe *the biggest jump in energy*, and
-in a seismogram the biggest jump in energy is the S.
+Twenty weights, one set of responses, and a factor of {M['hand_acc'] / M['hand_argmax_acc']:.1f}
+between the two ways of reading them. Read by first crossing, the hand-made filter finds the P on
+{M['hand_acc']:.1%} of held-out traces — a real picker, and only a little behind STA/LTA's
+{M['stalta_best']:.1%}. Read by taking its largest value, the same responses find the P on
+{M['hand_argmax_acc']:.1%} and land on the **S** on {M['hand_argmax_near_s']:.1%}.
 
-We could keep guessing weights. A better detector might be longer, or shorter, or shaped
-differently, or three detectors combined; there is no reason to think a human is good at choosing
-twenty numbers. So stop choosing them.
+So the weights are not what separates a good picker from a bad one here. The decision rule is,
+and the reason is a property of every fixed filter of this kind: **it has no way to be quiet away
+from the arrival.** Its response is large wherever the signal is large, so its biggest value
+tracks the loudest wave rather than the first one. Only a threshold rescues it — and the
+threshold is one more number chosen by hand, for this dataset, at this normalisation.
+
+What we would rather have is something whose output is near zero everywhere except at the P, so
+that simply taking the largest value is the right thing to do and no threshold is needed at all.
+That is a much stronger requirement than "respond to onsets", and it is not a shape anyone should
+try to guess in twenty numbers. So stop guessing: hand the machine the shape we want back, and
+let it choose the numbers.
 """)
 
 # --- section 5 -------------------------------------------------------------
@@ -929,13 +1180,7 @@ pick we read back out is wherever the network's answer is highest.
 """)
 
 code(f"""
-def make_target(pick_index, sigma):
-    \"\"\"A bump centred on each trace's P arrival: what we want the network to output.\"\"\"
-    sample = np.arange({M['n_samples']})
-    target = np.zeros((len(pick_index), {M['n_samples']}), dtype="float32")
-    for i in range(len(pick_index)):
-        target[i] = np.exp(-(sample - pick_index[i]) ** 2 / (2 * sigma ** 2))
-    return target
+{SRC_TARGET}
 
 
 plt.plot(seconds, waveform[{TRACE}][2] / np.abs(waveform[{TRACE}][2]).max(), lw=0.6,
@@ -962,55 +1207,13 @@ order.
 """)
 
 code(f"""
-def make_picker():
-    \"\"\"Five convolution layers: squeeze the trace down to a summary, then stretch it back out.\"\"\"
-    return nn.Sequential(
-        nn.Conv1d(3, 8, 7, stride=4, padding=3), nn.ReLU(),
-        nn.Conv1d(8, 16, 7, stride=4, padding=3), nn.ReLU(),
-        nn.Conv1d(16, 16, 7, padding=3), nn.ReLU(),
-        nn.Upsample(scale_factor=4), nn.Conv1d(16, 8, 7, padding=3), nn.ReLU(),
-        nn.Upsample(scale_factor=4), nn.Conv1d(8, 1, 7, padding=3))
-
-
-x_train = torch.tensor(waveform[is_train])
-x_test = torch.tensor(waveform[~is_train])
-p_test = p_index[~is_train]
+{SRC_MODEL}
 
 print("weights to learn:", sum(w.numel() for w in make_picker().parameters()))
 """)
 
 code(f"""
-def picks_from(model, x):
-    \"\"\"Where the network says the P is: the sample with the highest output.\"\"\"
-    return model(x).squeeze(1).detach().numpy().argmax(axis=1)
-
-
-def within_half_second(picks, truth):
-    \"\"\"Fraction of picks landing within half a second of the analyst's pick.\"\"\"
-    return (np.abs(picks - truth) <= 50).mean()
-
-
-def train_picker(sigma=20, epochs=25):
-    \"\"\"Train the picker; hand back the model, and the loss and test score after every epoch.\"\"\"
-    torch.manual_seed(0)
-    model = make_picker()
-    optimiser = torch.optim.Adam(model.parameters(), lr=0.005)
-    loss_function = nn.MSELoss()
-    y_train = torch.tensor(make_target(p_index[is_train], sigma))
-    losses, scores = [], []
-    for epoch in range(epochs):
-        order = torch.randperm(len(x_train))
-        total = 0.0
-        for start in range(0, len(x_train), 32):
-            batch = order[start:start + 32]
-            loss = loss_function(model(x_train[batch]).squeeze(1), y_train[batch])
-            optimiser.zero_grad()
-            loss.backward()
-            optimiser.step()
-            total = total + loss.item() * len(batch)
-        losses.append(total / len(x_train))
-        scores.append(within_half_second(picks_from(model, x_test), p_test))
-    return model, losses, scores
+{SRC_TRAIN}
 
 
 picker, losses, scores = train_picker()
@@ -1023,11 +1226,16 @@ md("""
 
 Two lines, on two axes because they are in different units. On the left, the loss on the data the
 network trained on. On the right, the fraction of **held-out** traces it picks within half a
-second — recordings of earthquakes it has never seen. **Watch two lines. When training keeps
-falling and test turns up, stop.**
+second — recordings of earthquakes it has never seen.
 
 The left line is what gradient descent is directly pushing down, so it should fall smoothly. The
 right line is the one we actually care about, and nothing is pushing on it at all.
+
+**Read the two panels in opposite directions.** The left one is an error, so down is better; the
+right one is a score, so **up** is better. This pair is a *learning curve*, the same idea as when
+we chose how many bends a curve was allowed — and what it is for is the moment the two panels
+stop agreeing. Training error still falling while the held-out score has stopped climbing is the
+signal that more training is buying a closer fit to the training set and nothing else.
 """)
 
 code(f"""
@@ -1076,15 +1284,24 @@ print("✓ the network —", round(100 * net_accuracy, 1), "% of held-out traces
       "median error", round(np.median(np.abs(net_picks - p_test)) / SAMPLE_RATE, 3), "s")
 """)
 
-md("""
+md(f"""
 Two of the held-out recordings, drawn: the one the network places most accurately and the one it
 places worst. Behind the network's answer in each panel is the liveliest of that recording's three
 rows, and the black line is where the analyst put the P.
 
-The lower panel is not a plotting mistake. The cell prints the standard deviation of each of that
-recording's three rows, and all three are zero — every channel is stuck at the end of its range,
-so there is no ground motion in the file to find. An archive of real instruments contains records
-like that, and no picker can be blamed for them.
+The lower panel is not a plotting mistake, and it is worth reading the numbers under it carefully,
+because the obvious reading is the wrong one. All three of that recording's rows have a standard
+deviation of zero, and every sample on all three sits on ±10. That looks like an instrument driven
+off the end of its range by enormous shaking. It is the **opposite**: the instrument recorded
+nothing at all.
+
+Remember what ±10 is. It is not the instrument's range — it is the cut-off *we* wrote the file
+with. Each row was divided by its own typical size before the cut, and a row that never moves has
+a typical size of zero; dividing by that blows up, and the cut catches the result and parks the
+whole row on the bound. So ±10 here is the signature of a **dead channel**, not a saturated one,
+and there is no ground motion in the file to find. {M['n_flat']} of the {M['n_traces']:,}
+recordings are like this. An archive of real instruments contains records like that, and no picker
+can be blamed for them.
 """)
 
 code(f"""
@@ -1109,6 +1326,9 @@ plt.show()
 
 print("standard deviation of the three rows, worst recording:",
       x_test[furthest].numpy().std(axis=1).round(3))
+print("the only values on those three rows:", np.unique(x_test[furthest].numpy()))
+print("recordings this flat, in the whole file:",
+      (waveform.std(axis=2) == 0).all(axis=1).sum(), "of", len(waveform))
 """)
 
 # --- closing ----------------------------------------------------------------
@@ -1133,15 +1353,12 @@ asks you to decide something and defend the decision; the third settles an argum
 open.
 
 Two of the three train a network from scratch, so start them and let them run. If you restarted
-the kernel since class, run the checkpoint cell first — it rebuilds the trained picker without
-printing anything, and it is the slow cell rather than a free one.
+the kernel since class, run the checkpoint cell first: it rebuilds everything class built — the
+held-out split, the classical picker, the network and the trained model — and prints nothing.
+Because it retrains, it is the slow cell rather than a free one.
 """)
 
-code("""
-# ── Checkpoint ── run this if you restarted the kernel or fell behind ──
-picker, losses, scores = train_picker()
-net_picks = picks_from(picker, x_test)
-""")
+code(weekkit.CHECKPOINT.format(body=SRC_CHECKPOINT))
 
 ask(f"""
 ### ✏️ Your turn 6

@@ -558,7 +558,7 @@ modules:
     topic: "Neural networks"   # docs table label: AT MOST TWO items, and a week with two modules gets one each
     teaches: [perceptron, stacking, activation, loss, gradient descent, epochs, learning curves, 1-D convolution, PyTorch nn.Module]
     functions:
-      - {name: "np.clip(a, low, high)", does: "trim every value into a range — here, cutting off instrument spikes"}
+      - {name: "np.clip(a, low, high)", does: "trim every value into a range — here, a guard: the file already carries the same cut at ±10"}
       - {name: 'np.convolve(signal, weights, mode="same")', does: "slide a small pattern-detector along a signal"}
       - {name: "np.unique(a)",          does: "each different value in an array, once"}
       - {name: "array.std(axis=n)",     does: "the typical size of the wiggles, one number per row"}
@@ -610,7 +610,9 @@ modules:
       MEASURED, and it settles which task the week runs on.
       PICKING — the network is NECESSARY. STA/LTA, the classical picker, lands within 0.5 s on
       47-59% of traces depending on its two parameters (median error 0.14-0.70 s; 29% never
-      trigger at textbook settings). A small U-Net on the same data reaches 90.8%. That gap is
+      trigger at textbook settings). A small U-Net on the same data reaches 90.8% — that is the
+      AUDIT's 47k-parameter net; the shipped classroom net has 3,857 weights and reaches 88.9%.
+      That gap is
       real, it is large, and students watch the classical method fail before the network appears.
       DETECTION — decorative, and the week must say so rather than pretend. On raw windows a
       one-line amplitude threshold scores 84.8% and BEATS the CNN on normalised windows (83.9%).
@@ -620,14 +622,21 @@ modules:
       Median post-P/pre-P amplitude ratio is 7.1x (5.9x at 0.5 s, 8.8x full-window) — nothing like
       the 6,587x of the retired scrape, which is why detection is merely easy rather than trivial.
     runs_on_cpu: >
-      The picking U-Net trains at 1.2 s/epoch on CPU; 25 epochs is about 31 seconds, and np.load
-      of the 46 MB file takes 0.21 s. DataHub CPU is sufficient and Colab is NOT needed for this
-      week — only torch has to be in the image.
+      MEASURED 2026-08-31 ON THE SHIPPED 3,857-weight net. The earlier 1.2 s/epoch was the
+      audit's 47k-parameter U-Net and does not describe this notebook. The shipped net trains at
+      2.78 s/epoch at torch.set_num_threads(4) — 69.6 s for the 25-epoch class run — and 2.8
+      s/epoch at this machine's default of 8 threads; an independent measurement on other
+      hardware gave 5.8 s/epoch at the default, so budget 3-6 s/epoch and 1-2.5 min for the class
+      run. np.load of the 44 MB file takes 0.21 s. The homework trains three more times (the
+      checkpoint's 25 epochs, one sigma at 25, one run of 60), so it is another 110 epochs, 5-11
+      min. DataHub CPU is sufficient and Colab is NOT needed for this week — only torch has to be
+      in the image.
     data_trap: >
       CLIP THE WAVEFORMS. A handful of traces carry instrument glitches reaching 1e7 std after
       per-component normalisation. They raise nothing: the loss falls, the P channel collapses,
       argmax pins to the window edge, and the net converges to 0.0% within 0.5 s with no error.
-      np.clip(w, -10, 10) takes the same network to 90.8%. The builder now clips at write time,
+      np.clip(w, -10, 10) takes the same network to 90.8% (the audit's net, not the shipped
+      one). The builder now clips at write time,
       so a freshly built file is safe; any older copy is not.
     harvest: "offerings/2024-fall_zhu/docs/lectures/09_neural_networks1.ipynb"
 

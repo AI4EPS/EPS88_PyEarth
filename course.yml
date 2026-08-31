@@ -50,12 +50,18 @@ platform:
     scipy:   "curve_fit replaced by linearising and fitting with sklearn; scipy.stats replaced by np.random and counting."
   packages_needed_not_in_image: [torch]   # week 13, and tracks T1 and T8 (T7 is trees, no torch)
   gpu_note: >
-    The taught week-13 exercise does NOT need a GPU — the picking U-Net trains at 1.2 s/epoch on
-    DataHub CPU, about 31 s for 25 epochs, so nobody is blocked and no class time is lost waiting.
+    The taught week-13 exercise does NOT need a GPU, but budget more than the old note claimed.
+    It said 1.2 s/epoch and "about 31 s for 25 epochs"; that was measured on the audit's
+    47k-parameter U-Net, not on the 3,857-weight network the week actually ships. Measured on
+    the shipped one (2026-08-31): 2.76 s/epoch with torch.set_num_threads(4) — 2.4 s training
+    plus 0.35 s for the per-epoch held-out evaluation — so about 69 s for the class cell, and
+    5.8 s/epoch at the default thread count. Your turn 8 runs 60 epochs, so roughly 165 s more,
+    and about five minutes of compute across the homework. Nobody is blocked, but the class cell
+    is a minute rather than half a minute, and that is worth knowing before the room waits on it.
+    MEASURE IT ON DATAHUB before the class rather than trusting either number.
     Colab stays as the fallback for going FURTHER: a bigger network, more epochs, and the project
     tracks that train repeatedly rather than once (T8's window sweep alone is several runs).
     Plan the session for CPU; point students at Colab if they take a project further.
-
 calendar:
   instruction: [2026-08-26, 2026-12-04]
   no_class: [{date: 2026-09-07, reason: Labor Day}]
