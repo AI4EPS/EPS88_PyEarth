@@ -563,13 +563,28 @@ schedule:
 
     pinned:
       slice: "Vermeesch basalts — 51 columns; the ten major oxides are the comparison set"
+      # SINGLE STRATIFIED 70/30 SPLIT, which is what the course teaches. An earlier version pinned
+      # 96.06 / 90.89 / 79.8 from RepeatedStratifiedKFold — 50 fits — which CLAUDE.md excludes by
+      # name ("one held-out set is enough for freshmen"), so no student could reproduce them.
+      # Swept five seeds: the gap runs 0.009 to 0.062 and never reverses.
+      model: {n_estimators: 200, test_size: 0.3, random_state: 0, stratify: true, seeds: [0, 1, 2, 3, 4]}
       expect:
-        accuracy: {all_51_columns: 96.06, ten_major_oxides: 90.89}   # 50 fits, p = 8e-23
-        sparse_columns_alone: 79.8       # the 19 columns that are over half empty
+        accuracy: {all_51_columns: 0.965, ten_major_oxides: 0.921, majority_baseline: 0.343}
+        blanks_alone: 0.868              # a forest given ONLY the pattern of missingness
+        sparse_columns_alone: 0.811      # the 19 columns that are over half empty
         most_complete_column: "Sr, 6.5% missing — no column in the file is complete"
         dropna_on_all_51: 1              # rows left. The lesson is DELETION, not dimensionality.
-      verified: 2026-08-30
-    exercise: "Train a forest on the ten major oxides, then on all 51 columns. More columns wins — 96.1% against 90.9% — so the sparse trace elements are carrying real signal, not noise. Now delete the imputer and use dropna() instead: the ten oxides leave you 271 rows, and all 51 leave you exactly 1. Say which of your three numbers you would report to a geochemist, and what you would have concluded if dropna() were the only tool you knew."
+      verified: 2026-08-31
+    exercise: >
+      Train a forest on the ten major oxides, then on all 51 columns. More columns wins — 0.965
+      against 0.921 — and the obvious reading, that the sparse trace elements carry real signal,
+      is WRONG and measurably so: the 19 mostly-empty columns hold 0.097 of the forest's
+      importance and the best ranks 24th, while a forest handed ONLY the pattern of blanks, no
+      measurement at all, scores 0.868 against a 0.343 baseline. Much of the advantage is the
+      compilation remembering which study each sample came from — week 9's leakage, arriving in
+      a week that did not go looking for it. Then delete the imputer and use dropna() instead:
+      the ten oxides leave 271 rows, all 51 leave exactly 1. Say which number you would report
+      to a geochemist, and what you would have concluded from the win alone.
     note: >
       The old version of this exercise asked students to explain "why more data made it worse".
       It does not: all 51 columns beat the ten major oxides by 5.2 points (96.06 against 90.89,
