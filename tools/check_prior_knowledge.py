@@ -104,7 +104,8 @@ def check(week_n):
         return None
     calls, defined = used_in(nb)
     sol = nb.with_name(nb.stem + "_solution.ipynb")
-    if sol.exists():
+    have_sol = sol.exists()
+    if have_sol:
         # BOTH halves from the solution: a function the student must write is defined only there,
         # and so is any variable a model answer binds — model = make_picker() reads as an untaught
         # call otherwise, which is exactly what PyTorch requires a week to do.
@@ -124,6 +125,14 @@ def check(week_n):
     if empty and stray:
         print(f"    NOT A FAILURE: {', '.join(empty)} declare no functions: yet, so nothing can be"
               f"\n    checked. Report the list above for modules.yml and the orchestrator applies it.")
+        return []
+    if stray and not have_sol:
+        # A function the student is told to write is defined only in the solution, and the
+        # solution is gitignored until release. Without it the `defined` set is incomplete by
+        # construction, so a stray name here is unresolved, not untaught — week 9's
+        # `crossing_year` is exactly this, and failing on it made every CI run red.
+        print("    NOT A FAILURE: no solution in this checkout, so functions the student is asked"
+              "\n    to write cannot be resolved. Re-run where the solution exists to check this.")
         return []
     return stray
 

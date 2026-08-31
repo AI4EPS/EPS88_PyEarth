@@ -1,18 +1,21 @@
+# The student environment, generated to match course.yml's platform.libraries.
+#
+# This file was inherited from the Fall-2024 offering and still asked for cartopy, pygmt,
+# scipy, seaborn, geopy, fsspec and aiohttp. course.yml drops the first two BY NAME and the
+# course uses none of the rest, so the list promised students an environment the notebooks
+# contradict. Six libraries, and torch is the only one not already in the DataHub image.
+#
+# dropped — cartopy: Replaced by two pre-converted lon/lat CSVs read with pandas — data/coastlines.csv on every map, plus plate boundaries where a week needs them. Was the only package missing from the DataHub image.
+# dropped — scipy: curve_fit replaced by linearising and fitting with sklearn; scipy.stats replaced by np.random and counting.
+
+# Running the notebooks
+numpy
+pandas
+matplotlib
+scikit-learn
+torch
+
+# Running them as notebooks
 ipykernel
 notebook
 nbconvert
-pandas
-numpy
-matplotlib
-cartopy
-pygmt
-pykdtree
-fsspec
-scikit-learn
-requests
-aiohttp
-seaborn
-torch
-torchvision
-tqdm
-geopy

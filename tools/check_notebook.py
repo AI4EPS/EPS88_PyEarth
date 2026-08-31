@@ -26,13 +26,21 @@ def src(c):
 
 
 def load(n, variant):
+    """The solution may legitimately be absent.
+
+    Solutions are gitignored until the Wednesday after each due date, so a checkout of the
+    public repo — CI's, or a student's — has the student notebook and nothing else. Treating
+    that as `missing:` made every CI run fail from the day the repo was created: the checker
+    was demanding a file the release policy forbids. Absent solution means the solution-side
+    checks do not run; it does not mean the week is broken.
+    """
     w = next(s for s in course["schedule"] if s["n"] == n)
     d = ROOT / f"docs/notebooks{variant}"
     st, so = d / f"{w['slug']}.ipynb", d / f"{w['slug']}_solution.ipynb"
-    for f in (st, so):
-        if not f.exists():
-            sys.exit(f"missing: {f}")
-    return w, json.loads(st.read_text()), json.loads(so.read_text())
+    if not st.exists():
+        sys.exit(f"missing: {st}")
+    sol = json.loads(so.read_text()) if so.exists() else None
+    return w, json.loads(st.read_text()), sol
 
 
 # --- the two copies must be the same notebook ---------------------------------
@@ -427,23 +435,105 @@ def check_code_quality(cells):
                          f"them — say it once (`{blk.split(chr(10))[0].strip()[:44]}`)")
 
 
+# --- the homework must run on a cold kernel ------------------------------------
+def check_checkpoints_rebuild(cells, solution_cells):
+    """Every checkpoint rebuilds everything the section after it reads.
+
+    Weeks 2, 3 and 5 all shipped a homework that raised NameError on a fresh kernel, each in the
+    same way: the checkpoint rebuilt the constants and the function but not the DATA, and the
+    homework's first loop reached for a list built during class. Nobody notices while building,
+    because the builder's kernel has run the class cells; the student meets it days later, alone,
+    at the one moment they cannot ask. TEMPLATE §1 already requires the rebuild "including the
+    scalars" — this is what makes the requirement true rather than merely stated.
+
+    Static, not executed: collect what the homework READS, subtract what setup + the homework's
+    own checkpoint + the homework itself BIND. Anything left is a name that only class defined.
+    """
+    # The model answers are where names are actually bound; the student copy has stubs.
+    cs = solution_cells or cells
+    setup = [c for c in cs if c["cell_type"] == "code"][:1]
+
+    # Every checkpoint, plus the homework heading — which is a checkpoint in intent whether or
+    # not one was written, because it is the boundary a student crosses on a cold kernel.
+    starts = [i for i, c in enumerate(cs)
+              if c["cell_type"] == "code" and src(c).lstrip().startswith("# ── Checkpoint")]
+    hw = next((i for i, c in enumerate(cs)
+               if c["cell_type"] == "markdown" and src(c).startswith("## Homework")), None)
+    if hw is not None and not any(hw <= s <= hw + 3 for s in starts):
+        starts.append(hw)
+    if not starts:
+        return
+
+    for start in sorted(starts):
+        _one_checkpoint(cs, setup, start)
+
+
+def _one_checkpoint(cs, setup, start):
+    """A student who restarts, runs setup, then runs from `start`, must not get NameError."""
+    after = [c for c in cs[start:] if c["cell_type"] == "code"]
+    if not after:
+        return
+    bound, read = set(), set()
+    for c in setup + after:
+        try:
+            tree = ast.parse(src(c))
+        except SyntaxError:
+            return                      # a stub with a blank body; nothing to conclude
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                bound |= {(a.asname or a.name).split(".")[0] for a in node.names}
+            elif isinstance(node, ast.FunctionDef):
+                bound.add(node.name)
+                bound |= {a.arg for a in node.args.args}
+            elif isinstance(node, (ast.Assign, ast.AugAssign, ast.AnnAssign, ast.For,
+                                   ast.comprehension, ast.withitem)):
+                tgts = (node.targets if isinstance(node, ast.Assign) else
+                        [getattr(node, "target", None) or getattr(node, "optional_vars", None)])
+                for tg in tgts:
+                    if tg is not None:
+                        bound |= {x.id for x in ast.walk(tg) if isinstance(x, ast.Name)}
+    for c in after:
+        try:
+            tree = ast.parse(src(c))
+        except SyntaxError:
+            return
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
+                read.add(node.id)
+
+    safe = bound | set(dir(builtins)) | set(keyword.kwlist) | LIBS
+    missing = sorted(n for n in read - safe if not n.startswith("_"))
+    if missing:
+        errs.append(
+            f"the section from cell {start} reads {', '.join('`' + m + '`' for m in missing)}, "
+            f"which neither setup nor that checkpoint builds — a student who restarts and does "
+            f"what the checkpoint says gets NameError. Rebuild them in it.")
+
+
 def main():
     n = int(sys.argv[1])
     variant = sys.argv[3] if len(sys.argv) > 3 and sys.argv[2] == "--variant" else ""
     w, student, solution = load(n, variant)
     cells = student["cells"]
-    figs = check_pair(student, solution)
+    sol_cells = solution["cells"] if solution else []
+    figs = check_pair(student, solution) if solution else 0
     check_banned(cells); qs = check_questions(cells); check_order(cells)
     check_opening(cells)
     # both notebooks: a function taught only in the homework is stubbed out of the
     # student copy, so scanning that alone made it unlistable
-    check_summary_is_this_week(cells + solution['cells'], n); check_conventions(cells); check_predict(cells); check_plain_words(cells, n)
+    if solution:
+        # Needs BOTH: the summary legitimately lists functions a model answer calls but the
+        # student stub does not, so scanning the student copy alone flags every one of them.
+        check_summary_is_this_week(cells + sol_cells, n)
+    check_conventions(cells); check_predict(cells); check_plain_words(cells, n)
     check_asserts(cells); check_imports(cells)
     # Figures live in the SOLUTION too: a model answer that draws a map was never
     # checked for labels or coastlines, because only the student copy was passed in.
-    check_figures(cells); check_figures(solution['cells'])
+    check_figures(cells); check_figures(sol_cells)
     check_code_quality(cells); check_summary_is_generated(cells, n)
-    print(f"week {n} · {len(cells)} cells · {len(qs)} questions · {figs} figures")
+    check_checkpoints_rebuild(cells, sol_cells)
+    scope = "" if solution else " · student only (no solution in this checkout)"
+    print(f"week {n} · {len(cells)} cells · {len(qs)} questions · {figs} figures{scope}")
     for x in warns: print(f"  warn  {x}")
     for e in errs:  print(f"  ERROR {e}")
     print("OK" if not errs else f"{len(errs)} error(s)")

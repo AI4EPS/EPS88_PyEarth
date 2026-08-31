@@ -25,6 +25,14 @@ for s in course["schedule"]:
 site_name: "EPS 88 — PyEarth: A Python Introduction to Earth Science"
 site_author: "{course['instructor'].split('<')[0].strip()}"
 docs_dir: docs/
+
+# A solution notebook is NOT in the nav, but mkdocs publishes everything under docs_dir whether
+# it is navigable or not — a --strict build copied all thirteen into the site, at guessable
+# URLs. On CI they are absent (gitignored), so nothing leaked; the day one is released with
+# `git add -f`, or the day anyone runs gh-deploy from a laptop, every remaining solution goes
+# with it. Exclusion is the only thing standing between the release policy and the web.
+exclude_docs: |
+  notebooks/*_solution.ipynb
 repo_name: "{course['platform']['repo'].split('github.com/')[-1]}"
 repo_url: "{course['platform']['repo']}"
 

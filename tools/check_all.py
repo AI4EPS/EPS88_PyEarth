@@ -31,7 +31,6 @@ def generated_is_current():
     re-ran it when they came back. A generated file that is not regenerated is stale, and only a
     comparison catches it.
     """
-    import shutil, tempfile
     stale = []
     for gen, out in (("make_docs.py", "docs/README.md"),
                      ("make_mkdocs.py", "mkdocs.yml"),
@@ -40,6 +39,12 @@ def generated_is_current():
         subprocess.run([PY, str(ROOT / "tools" / gen)], capture_output=True, cwd=ROOT)
         if (ROOT / out).read_text() != before:
             stale.append(out)
+            # PUT IT BACK. This check regenerates in place to compare, so on a file someone has
+            # edited by hand it silently destroys the edit — which is exactly what it did to
+            # Weiqiang's changes to docs/README.md, before anyone could read what they were.
+            # Reporting "stale" is this function's whole job; overwriting is a side effect of
+            # how it measures, and the measurement must not cost the user their work.
+            (ROOT / out).write_text(before)
     print(f"  {'ok  ' if not stale else 'FAIL'}  {'generated files are current':<34} "
           f"{'' if not stale else 'stale: ' + ', '.join(stale)}")
     return 1 if stale else 0

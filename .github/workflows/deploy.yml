@@ -1,0 +1,44 @@
+name: deploy site
+
+# The site at ai4eps.github.io/EPS88_PyEarth was still serving the Fall 2024 course: Pages builds
+# from the gh-pages branch, and nothing in this repo had ever written to it. Students following
+# the link got last year's notebooks. This is what publishes docs/.
+#
+# Pages is configured (repos/AI4EPS/EPS88_PyEarth/pages) as build_type "legacy", source branch
+# gh-pages — so `mkdocs gh-deploy` is the right mechanism; do not switch to the Actions-based
+# Pages flow without changing that setting first, or deploys go somewhere nobody is serving.
+
+on:
+  push:
+    branches: [main]
+    # Only the site's own inputs. Editing tools/ or course.yml alone changes nothing published,
+    # and mkdocs.yml/docs/README.md are GENERATED from course.yml — check.yml proves they were
+    # regenerated, so a plan edit that matters always arrives with its generated files.
+    paths: ["docs/**", "mkdocs.yml", ".github/workflows/deploy.yml"]
+  workflow_dispatch:
+
+# Never two deploys writing gh-pages at once; let the newer one win.
+concurrency:
+  group: deploy-site
+  cancel-in-progress: true
+
+permissions:
+  contents: write        # gh-deploy pushes the built site to the gh-pages branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0        # gh-deploy commits onto gh-pages; it needs the branch history
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      # Site build only. These are not in requirements.txt because nothing
+      # outside CI builds the site, and a second requirements file for three
+      # pinned packages is a file to keep in sync for no gain.
+      - run: pip install mkdocs==1.6.1 mkdocs-material==9.5.44 mkdocs-jupyter==0.25.1
+      # Fail on a broken nav entry rather than publishing a site with dead links in it.
+      - run: mkdocs build --strict
+      - run: mkdocs gh-deploy --force --no-history

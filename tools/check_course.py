@@ -11,6 +11,12 @@ taught = [m for s in c['schedule'] for m in s['modules']]
 order = {m: i for i, m in enumerate(taught)}
 errs, warns = [], []
 
+# The dataset audits live in ../notes/, OUTSIDE this repo — they are the authoring evidence base,
+# not student material. A checkout that has only the repo (CI's, or anyone else's) cannot see
+# them, and demanding them there failed 25 sessions on a condition no CI run can ever satisfy.
+# The check is real where the notes are; where they are not, there is nothing to check.
+HAVE_NOTES = (ROOT.parent / 'notes' / 'dataset-audit').is_dir()
+
 for m in taught:
     if m not in mods: errs.append(f"{m} scheduled but not in the catalogue")
 if len(taught) != len(set(taught)): errs.append("a module is scheduled twice")
@@ -81,7 +87,7 @@ for tr in c['project']['tracks']:
     if tr['id'] != 'T6':
         if not ev:
             errs.append(f"project track {tr['id']} cites no evidence file")
-        elif not os.path.exists(os.path.join('..', ev)):
+        elif HAVE_NOTES and not os.path.exists(os.path.join('..', ev)):
             errs.append(f"project track {tr['id']} cites {ev}, which does not exist")
 
 # --- every scheduled week carries the keys the build pipeline reads -----------
@@ -101,7 +107,7 @@ for s in c['schedule']:
                     f"it walks characters one at a time")
     else:
         for e in (ev or []):
-            if not (ROOT.parent / e).exists():
+            if HAVE_NOTES and not (ROOT.parent / e).exists():
                 errs.append(f"session {s['n']} cites {e}, which does not exist")
 
 # --- the docs table stays scannable ------------------------------------------
@@ -126,7 +132,12 @@ for tr in c['project']['tracks']:
 
 # --- a file or tool named in the instructions must be on disk ----------------
 import re as _re
+# ROOT.parent/CLAUDE.md sits OUTSIDE the repo — it is the working-directory instruction file,
+# not a tracked one. Reading it unconditionally crashed check_course.py in every checkout that
+# is not Weiqiang's laptop, which is every CI run.
 for doc in (ROOT / 'TEMPLATE.md', ROOT.parent / 'CLAUDE.md'):
+    if not doc.exists():
+        continue
     for m in _re.finditer(r'`(tools/[\w./]+\.py|data/[\w./-]+\.csv|docs/[\w./-]+\.md)`',
                           doc.read_text()):
         ref = m.group(1)
@@ -151,7 +162,8 @@ if sum(c['grading'].values()) != 100:            errs.append("grading does not s
 if sum(c['project']['rubric'].values()) != 100:  errs.append("rubric does not sum to 100")
 
 print(f"{len(c['schedule'])} sessions · {len(taught)} modules taught · "
-      f"{len(mods)-len(taught)} not scheduled")
+      f"{len(mods)-len(taught)} not scheduled"
+      f"{'' if HAVE_NOTES else ' · evidence files not in this checkout, not checked'}")
 for w in warns: print(f"  warn  {w}")
 for e in errs:  print(f"  ERROR {e}")
 print("OK" if not errs else f"{len(errs)} error(s)")

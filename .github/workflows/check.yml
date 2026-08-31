@@ -4,17 +4,56 @@ on:
     branches: [main]
   pull_request:
 
-# The old repo built the site on push and that workflow was never carried over, so nothing has
-# validated a push since this repo was created. check_all.py exists; this is what runs it.
+# The old repo built the site on push and that workflow was never carried over, so nothing
+# validated a push for the first two days of this repo's life. check_all.py is what runs here.
+#
+# What CI can and cannot see: solutions are gitignored until the Wednesday after each due date,
+# and the dataset audits live outside the repo. The checkers degrade to what is present and say
+# which checks they skipped — they do NOT fail on an absent file the release policy forbids,
+# which is what made all eighteen of the first runs red.
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Install
         run: pip install --quiet pyyaml pandas numpy matplotlib nbformat
       - name: Validate the plan, the checkers, and every built week
         run: python tools/check_all.py
+
+      # A solution notebook must never be on main except by a deliberate `git add -f` on release
+      # day. Nothing else notices if one is committed by accident, and by then it is in the
+      # history and on the site.
+      - name: No unreleased solution notebooks are tracked
+        run: |
+          found=$(git ls-files 'docs/notebooks/*_solution.ipynb')
+          if [ -n "$found" ]; then
+            echo "tracked solution notebooks:"; echo "$found"
+            echo "Release one deliberately with 'git add -f' and delete this step's expectation"
+            echo "for that week; otherwise this is an accidental commit."
+            exit 1
+          fi
+          echo "none tracked, as expected"
+
+  site:
+    # The site is what students actually read. Building it here means a broken nav entry or a
+    # renamed notebook fails the pull request instead of the deploy.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      # Site build only. These are not in requirements.txt because nothing
+      # outside CI builds the site, and a second requirements file for three
+      # pinned packages is a file to keep in sync for no gain.
+      - run: pip install mkdocs==1.6.1 mkdocs-material==9.5.44 mkdocs-jupyter==0.25.1
+      - run: mkdocs build --strict
+      - name: The built site contains no solutions
+        run: |
+          n=$(find site -name '*_solution*' | wc -l)
+          test "$n" -eq 0 || { find site -name '*_solution*'; exit 1; }
+          echo "no solutions in the built site"
