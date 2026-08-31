@@ -236,13 +236,27 @@ schedule:
     question: "Earth's elevation has two peaks. So does Mars's. Same reason?"
 
     pinned:
-      slice: "the two elevation grids in notes/dataset-audit/elevation-grids.md"
+      # BOTH GRIDS ARE PRE-BUILT, and this is a decision the plan makes, not the builder.
+      # The sources are unusable as they ship: Earth is 15 MB of ASCII at a LOCAL path in
+      # offerings/ with no URL (TEMPLATE forbids local paths), Mars is big-endian int16 with a
+      # detached PDS label that no week-3 student could read with the six libraries — and its
+      # server fails certificate verification from Python. tools/make_elevation_grids.py
+      # resamples both to 1 degree and writes plain CSV; students never touch PDS.
+      slice: "data/earth_elevation.csv and data/mars_elevation.csv — (180, 360) each, 1 degree,
+        ~330 kB each, integer metres. Built by tools/make_elevation_grids.py."
+      resampling_note: >
+        1 degree costs nothing the week needs. The fraction of Earth below sea level is 0.662 on
+        the full 20-arcmin grid and 0.660 here; the bimodal shape is unchanged. 583,200 cells
+        become 64,800 — still far more than a histogram needs, and a legible map. The full grid
+        would put 15 MB into a repo that nbgitpuller clones onto 46 accounts.
       expect:
-        earth_peaks_m: [-4545, 413]      # second hump runs ~0 to +413
-        earth_below_sea_level: 0.661
-        earth_between_-5000_and_-3000: 0.348
-        mars_peaks_m: [-4235, -3870, 1240, 1605]
-      verified: 2026-08-29
+        # Measured on the SHIPPED grids, 250 m bins, this session.
+        earth_peaks_m: [-4375, 125]      # abyssal plain and continents
+        mars_peaks_m: [-4375, 1375]      # the hemispheric dichotomy
+        earth_below_sea_level: 0.660
+        earth_between_-5000_and_-3000: 0.347
+        ranges_m: {earth: [-9027, 5824], mars: [-7682, 20708]}
+      verified: 2026-08-31
     exercise: "How FEW bins before the two peaks merge into one? Find that number for Earth and for Mars, and say which planet holds its two peaks longer. Then weight every cell by cos(latitude) and re-run: the fraction of Earth below sea level moves by about five points. Say which number is the honest one, and what the lon-lat grid was doing to the poles. Then switch containers and group the earthquake catalogue by year."
     note: >
       RESTORED. This question was lost when arrays and tables were merged, leaving the week with a
