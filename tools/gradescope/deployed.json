@@ -1,0 +1,13 @@
+{
+  "course_url": "https://www.gradescope.com/courses/1379264",
+  "note": "sha is the hash of the bundle last uploaded to Gradescope; run tools/gradescope_deploy.py to see drift",
+  "weeks": {
+    "1": {
+      "assignment_id": "8530436",
+      "sha": "a4a6aaeddf8c09ab",
+      "contract": "593092c1f178631f",
+      "frozen_until": "2026-09-06 23:59 PDT (week 1 due date)",
+      "frozen_reason": "self-checks are a contract with students who have already pulled the notebook; changing them mid-week fails honest work either way"
+    }
+  }
+}

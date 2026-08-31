@@ -313,7 +313,12 @@ def main():
         return
 
     path, problem = find_notebook(SUBMISSION_DIR, spec["notebook_stem"])
-    if path and spec["notebook_stem"] not in os.path.basename(path):
+    base = os.path.basename(path) if path else ""
+    # Only when it is recognisably ANOTHER week. A file the student simply renamed
+    # ("EPS88 homework 1 FINAL.ipynb") matches no week at all, and find_notebook already
+    # decided it is the only notebook they sent — grade it rather than refusing it.
+    looks_like_another = any(base.startswith(o) for o in spec.get("other_stems", []))
+    if path and spec["notebook_stem"] not in base and looks_like_another:
         # Otherwise this reads as "every self-check is missing", which sounds like the student
         # deleted them rather than uploaded the wrong week — the likeliest mistake of all, on a
         # course where thirteen notebooks sit in one folder with near-identical names.

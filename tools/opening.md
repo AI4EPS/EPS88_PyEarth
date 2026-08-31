@@ -5,7 +5,11 @@
 {hook}
 
 Every place you write something opens with a pencil icon and the words *Your turn*, and is
-followed by an empty cell. Fill them all in, then export the notebook as a PDF and upload that.
+followed by an empty cell. Fill them all in, run every cell so your answers and figures are
+saved in the file, then **download this notebook itself — the `.ipynb` file — and upload it
+to Gradescope.** Not a PDF: the marking reads your notebook, and a PDF cannot be read.
+In JupyterLab: **File ▸ Download**, or right-click the file in the left-hand panel and choose
+**Download**.
 
 Two habits from the first minute. A cell runs when you press **Shift+Enter**, and the notebook
 remembers everything it has already run — so when something breaks and you cannot see why,
