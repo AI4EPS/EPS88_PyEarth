@@ -1,0 +1,111 @@
+#!/usr/bin/env python
+"""Does week N use anything the course has not taught by week N?
+
+`prior_knowledge.py` TELLS a builder what students already know. Nothing verified it afterwards —
+and thirteen weeks will be built in parallel by different agents, so a week quietly reaching for
+`groupby` six weeks before D2 teaches it would surface in December, in a classroom, and no
+single-week reviewer could catch it. This is the only check that can.
+
+    python tools/check_prior_knowledge.py 5      # one week
+    python tools/check_prior_knowledge.py all    # every week that exists
+"""
+import ast, builtins, json, pathlib, re, sys, yaml
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+course = yaml.safe_load((ROOT / "course.yml").read_text())
+mods = {m["id"]: m for m in yaml.safe_load((ROOT / "modules.yml").read_text())["modules"]}
+
+# Syntax and names that belong to no module because they are Python itself, plus the plotting
+# aliases. Anything here is allowed in every week.
+ALWAYS = set(dir(builtins)) | {
+    "plt", "pd", "np", "torch", "sklearn", "f", "self",
+    "rcParams", "update", "show", "format", "strip", "split", "join", "lower", "upper",
+    "read_csv", "figure", "subplots", "tight_layout",
+}
+
+
+def taught_by(week_n):
+    """Every function name the course has introduced up to and including week n."""
+    names = set()
+    for s in course["schedule"]:
+        if s["n"] > week_n or not s["modules"]:
+            continue
+        for mid in s["modules"]:
+            for f in mods.get(mid, {}).get("functions", []) or []:
+                # Take EVERY identifier in the entry, not just the head: an entry may chain
+                # (plt.gca().set_aspect) or list alternatives (max(list) / min(list)), and
+                # reading only the head silently lost set_aspect.
+                for ident in re.findall(r"[A-Za-z_][A-Za-z0-9_.]*", f["name"]):
+                    names.add(ident)
+                    names.add(ident.split(".")[-1])
+    return names
+
+
+def used_in(path, skip_setup=True):
+    """Every function called in the notebook, plus the ones it defines itself.
+
+    The setup cell is skipped: TEMPLATE 1.3 exempts it explicitly, flagging what arrives early
+    as "Coming later", so its pandas calls are sanctioned rather than a violation. Setup is
+    everything before the first question prompt.
+    """
+    nb = json.loads(path.read_text())
+    cells = nb["cells"]
+    if skip_setup:
+        first_q = next((i for i, c in enumerate(cells)
+                        if c["cell_type"] == "markdown" and "\u270f\ufe0f" in "".join(c["source"])),
+                       0)
+        cells = cells[first_q:]
+    # Collect DEFINITIONS from every cell but CALLS only from post-setup cells: the setup may
+    # legitimately define the week's helpers while also using syntax that arrives later.
+    calls, defined = set(), set()
+    for c in nb["cells"]:
+        if c["cell_type"] == "code":
+            try:
+                for node in ast.walk(ast.parse("".join(c["source"]))):
+                    if isinstance(node, ast.FunctionDef):
+                        defined.add(node.name)
+            except SyntaxError:
+                pass
+    for c in cells:
+        if c["cell_type"] != "code":
+            continue
+        try:
+            tree = ast.parse("".join(c["source"]))
+        except SyntaxError:
+            continue
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef):
+                defined.add(node.name)
+            elif isinstance(node, ast.Call):
+                f = node.func
+                if isinstance(f, ast.Name):
+                    calls.add(f.id)
+                elif isinstance(f, ast.Attribute):
+                    base = f.value.id if isinstance(f.value, ast.Name) else None
+                    calls.add(f"{base}.{f.attr}" if base in ("plt", "pd", "np") else f.attr)
+    return calls, defined
+
+
+def check(week_n):
+    s = next(x for x in course["schedule"] if x["n"] == week_n)
+    nb = ROOT / "docs/notebooks" / f"{s['slug']}.ipynb"
+    if not nb.exists():
+        return None
+    calls, defined = used_in(nb)
+    sol = nb.with_name(nb.stem + "_solution.ipynb")
+    if sol.exists():                      # a function the student must WRITE is defined only there
+        defined |= used_in(sol)[1]
+    allowed = taught_by(week_n) | ALWAYS | defined
+    stray = sorted(c for c in calls if c not in allowed and c.split(".")[-1] not in allowed)
+    print(f"week {week_n:>2} · {len(calls)} calls · {len(stray)} not taught by week {week_n}")
+    for x in stray:
+        print(f"    {x}")
+    return stray
+
+
+if __name__ == "__main__":
+    arg = sys.argv[1] if len(sys.argv) > 1 else "all"
+    weeks = [s["n"] for s in course["schedule"] if s["modules"]] if arg == "all" else [int(arg)]
+    bad = [n for n in weeks if check(n)]
+    print("OK" if not bad else f"weeks with untaught calls: {bad}")
+    sys.exit(1 if bad else 0)

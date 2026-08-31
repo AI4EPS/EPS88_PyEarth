@@ -40,8 +40,6 @@ CACHE_BASE = PLATFORM["cache_base"]
 
 ANSWER_STUB = "# ← your answer here\n"
 PROSE_STUB = "*(Double-click this cell and replace this line with your answer.)*"
-NUMBER = {n: w for n, w in enumerate(
-    "zero one two three four five six seven eight nine ten eleven twelve".split())}
 
 CACHE_FILE = "week02_exoplanets.csv"
 COLUMNS = "pl_name,st_teff,st_rad,pl_orbsmax,pl_rade,pl_eqt,discoverymethod"
@@ -166,7 +164,8 @@ week, all the same length and all in the same order.
 
 **If this cell is still spinning after half a minute**, the archive has stalled. It does that
 often, and it stalls silently rather than raising an error, so there is nothing to read. Press the
-■ (stop) button in the toolbar to interrupt it, then run the cell again.
+■ (stop) button in the toolbar to interrupt it, then run the cell again — each attempt is a fresh
+roll of the dice, and a second or third usually gets through.
 """)
 
 code(weekkit.SETUP_CELL.format(
@@ -571,8 +570,10 @@ md("""
 Two worlds have been missing from every list in this notebook. Earth is one of them; Venus is the
 other, and Venus is the only solar-system world your test has accepted so far.
 
-Both have had their albedo measured from orbit: **Earth 0.306**, **Venus 0.770** (NASA Planetary
-Fact Sheet). Earth orbits at 1.000 AU and Venus at 0.723332 AU.
+Both have had their albedo measured from orbit: **Earth 0.306**, **Venus 0.770**. Venus's is the
+NASA Planetary Fact Sheet value. Earth's is the long-standing NSSDC figure — that sheet now prints
+0.294 — and we use 0.306 throughout, because it is the one the sheet's own black-body temperature
+row still reproduces. Earth orbits at 1.000 AU and Venus at 0.723332 AU.
 
 Earth's average surface temperature is 288 K — 15 °C, the number you have known since school.
 Before you run anything, commit to a guess: set `guess_earth` to the temperature in kelvin you
@@ -589,6 +590,8 @@ whether it lands inside the 273–373 K window:
 
 - Earth with albedo `0.0`, then Earth with its measured `0.306`;
 - Venus with albedo `0.0`, then Venus with its measured `0.770`.
+
+Then print how far your `guess_earth` was from the answer at Earth's measured albedo.
 """)
 
 code("", answer=True)
@@ -601,10 +604,11 @@ at 278.3 K, five degrees above freezing. Use the albedos somebody actually measu
 **rejects both** — Venus at 226.6 K and Earth at 254.0 K, nineteen degrees below freezing.
 
 There is no third run where it gets the answer right. One of these two worlds has oceans and the
-other does not, and the test never separates them: it puts them 49 K apart at albedo 0 and 27 K
-apart at their measured albedos, either way with Venus the cooler of the two. Which way it is
-wrong turns on the albedo, a number that says nothing about whether anybody could live there. The
-next section measures how large the thing it is missing actually is.
+other does not, and the test never separates them: it puts them 49 K apart at albedo 0, with Venus
+the hotter, and 27 K apart at their measured albedos, with Venus the cooler. Which way it is wrong
+turns on the albedo, a number that says nothing about whether anybody could live there. And if you
+guessed Earth's real 288 K a moment ago, your miss was 34.0 K. Hold on to it. The next section
+measures how large the thing this test is missing actually is.
 """)
 
 # ── 7. the greenhouse effect ──────────────────────────────────────────────────────────────────
@@ -616,7 +620,8 @@ been and measured the temperature they do have. The difference is not an error t
 quantity, and one you can now put a size on.
 
 The mean surface temperatures and surface pressures below are measured values from the NASA
-Planetary Fact Sheet; the albedos are the Bond albedos from the same source. The plot after them
+Planetary Fact Sheet; the albedos are Bond albedos, Earth's the 0.306 discussed above. The plot
+after them
 uses one new drawing command, `plt.text(x, y, "Venus")`, which writes a word at a point on the
 axes — with three dots and no labels the figure would say nothing.
 """)
@@ -651,20 +656,28 @@ plt.show()
 ''')
 
 md("""
-All three should be on the grey line. All three are above it, and the plot makes the reason
-visible: along the bottom axis the three worlds sit between 209.8 K and 254.0 K, inside forty-five
-degrees of each other, while up the side they run from 210.0 K to 737.0 K. Whatever separates
+All three should be on the grey line. Venus is far above it, Earth is a little above it, and Mars
+sits on it — and that last one needs care in a moment. The plot makes the reason visible: along
+the bottom axis the three worlds sit between 209.8 K and 254.0 K, inside forty-five degrees of
+each other, while up the side they run from 210.0 K to 737.0 K. Whatever separates
 Venus from Mars, the starlight arithmetic cannot see it.
 
 The gap has a name. **The greenhouse effect is the difference between the temperature a world
 would have with no air and the temperature it actually has** — the atmosphere lets sunlight down
 and slows the infrared going back out. It is not a definition we imposed here; it is what is left
-over after the arithmetic, and it comes out at +34.0 K for Earth under 1.014 bar of air, +510.4 K
-for Venus under 92 bar, and +0.2 K for Mars under 0.006 bar. Mars's mean surface temperature is
-quoted to the nearest degree, so +0.2 K is indistinguishable from nothing at all: three
-thicknesses of air, and the more air a world carries the more it warms — but not in proportion.
-Venus has ninety times Earth's surface pressure and fifteen times its warming, so what the air is
-made of matters as much as how much of it there is.
+over after the arithmetic: +510.4 K for Venus under 92 bar of air and +34.0 K for Earth under
+1.014 bar. Venus has ninety times Earth's surface pressure and fifteen times its warming, so how
+much air a world carries is not the whole story — what the air is made of matters too.
+
+Mars needs a caveat, and it is the albedo's lesson over again. Our +0.2 K is not a measurement of
+anything: move the 210 K by two degrees and the sign flips, and NASA prints that 210 K with a tilde
+in front of it. It is also not quite the right subtraction. An equilibrium temperature balances the
+*fourth power* of temperature, and Mars's surface swings through tens of kelvin between day and
+night, so its average temperature sits several kelvin below the temperature that matches its
+average radiation — and it is the second one this formula is about. That correction is negligible
+for Venus, small for Earth and decisive for Mars. Estimates that handle it properly put Mars's
+greenhouse effect at a few kelvin rather than nothing (Haberle 2013, *Icarus* 223, 619). Read our
+Mars row as *too small for these inputs to resolve*, not as *zero*.
 
 That is why the test threw Earth away. It was never a test of habitability. It was a test of how
 much starlight arrives, and the 34 K that makes this planet habitable is not in it.
@@ -726,8 +739,8 @@ window whose size nobody has measured; but it rejects Earth, because equilibrium
 counts the starlight arriving and nothing else, and the 34.0 K that keeps this planet's oceans
 liquid comes from its air. Run the same test on Venus and Earth with an albedo of 0 and it accepts
 both; run it with the albedos we have measured and it rejects both. It never gets the answer right,
-and the size of how wrong it is — 34 K here, 510 K on Venus, nothing on Mars — is the greenhouse
-effect, measured.
+and the size of how wrong it is — 34 K here, 510 K on Venus, too small for our numbers to resolve
+on Mars — is the greenhouse effect, measured.
 """)
 
 md(weekkit.week_cheatsheet(2))
@@ -904,6 +917,9 @@ for i in range(len(labels)):
     else:
         verdict = "outside it"
     print(f"{labels[i]:22s} {round(answers[i], 1):6} K   {verdict}")
+
+print(f"You guessed {guess_earth} K; with its measured albedo Earth comes out at "
+      f"{round(answers[1], 1)} K, a miss of {round(answers[1] - guess_earth, 1)} K.")
 ''',
     # Q6
     '''
@@ -963,7 +979,7 @@ print(len(my_worlds), "worlds at albedo", my_albedo, "-", stayed, "stayed and", 
     '''
 I took **Venus's albedo, 0.770**, and the test came back with 59 worlds, not one of which was on
 class's list of twelve — 0 stayed, 59 are new. The first name on my list is **K2-415 b at 285.8 K**,
-and that is the one I do not believe, precisely because it is the most believable: 285.8 K is three
+and that is the one I do not believe, precisely because it is the most believable: 285.8 K is two
 degrees off the 288.0 K this planet actually sits at.
 
 What the test measured about K2-415 b is three numbers and a size: a star at 3173 K, an orbit at
@@ -991,21 +1007,6 @@ decides the entire membership of the list, the list is measuring my assumption a
 ]
 
 
-def check_write_count(stu):
-    """The front matter states how many places the student writes; check it against the cells."""
-    hw = next(i for i, c in enumerate(stu.cells)
-              if c.cell_type == "markdown" and c.source.lstrip().startswith("## Homework"))
-    blanks = [i for i, c in enumerate(stu.cells)
-              if c.source.strip() in (ANSWER_STUB.strip(), PROSE_STUB)]
-    total, at_home = len(blanks), sum(1 for i in blanks if i > hw)
-    stated = f"**{NUMBER[total].capitalize()} places where you write something: "\
-             f"{NUMBER[total - at_home]} in class, {NUMBER[at_home]} at home.**"
-    front = "".join(c.source for c in stu.cells[:6])
-    if stated not in front:
-        raise SystemExit(f"front matter must say: {stated}")
-    print(f"  write-places: {total} = {total - at_home} in class + {at_home} at home, as stated")
-
-
 def build():
     sol = nbf.v4.new_notebook()
     stu = nbf.v4.new_notebook()
@@ -1029,7 +1030,6 @@ def build():
                 stu.cells.append(nbf.v4.new_code_cell(c["src"]))
     if ai != len(ANSWERS):
         raise SystemExit(f"{ai} answer cells but {len(ANSWERS)} model answers")
-    check_write_count(stu)
     for nb in (sol, stu):
         nb.metadata["kernelspec"] = {"display_name": "Python 3", "language": "python",
                                      "name": "python3"}
@@ -1068,3 +1068,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# The two gates. A build that has not passed these is not a build.
+weekkit.gate(2)

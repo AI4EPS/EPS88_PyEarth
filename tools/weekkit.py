@@ -153,3 +153,55 @@ def week_cheatsheet(week_n, module_ids=None):
 if __name__ == "__main__":
     import sys
     print(tiers() if len(sys.argv) > 1 and sys.argv[1] == "tiers" else stop_list())
+
+
+def gate(week_n, variant=""):
+    """The two gates a build must pass. Called at the END of every build_weekNN.py.
+
+    A build that has not passed these is not a build, so this is not a step anyone can forget
+    to run: it lives in the build script and exits non-zero. Judging whether the notebook is
+    GOOD is a separate job, done by an agent that did not write it.
+    """
+    import json, pathlib, subprocess, sys
+    root = pathlib.Path(__file__).resolve().parent.parent
+    slug = next(s["slug"] for s in yaml.safe_load((root / "course.yml").read_text())["schedule"]
+                if s["n"] == week_n)
+    sol = root / f"docs/notebooks{variant}" / f"{slug}_solution.ipynb"
+    bad = []
+
+    cells = json.loads(sol.read_text())["cells"]
+    counts = [c["execution_count"] for c in cells
+              if c["cell_type"] == "code" and c.get("execution_count")]
+    if not counts:
+        bad.append("the solution has no execution counts — it was never executed")
+    elif counts[0] != 1:
+        bad.append(f"execution counts start at {counts[0]}, not 1 — a cell was run and deleted, "
+                   f"so these outputs are not what the shipped code produces")
+    elif counts != list(range(1, len(counts) + 1)):
+        bad.append("execution counts are not contiguous — the solution was executed piecemeal")
+    if any(o.get("output_type") == "error" for c in cells for o in c.get("outputs", [])):
+        bad.append("the solution contains an error output — it does not execute clean")
+
+    cmd = [sys.executable, str(root / "tools/check_notebook.py"), str(week_n)]
+    if variant:
+        cmd += ["--variant", variant]
+    r = subprocess.run(cmd, capture_output=True, text=True, cwd=root)
+    print(r.stdout.rstrip())
+    if r.returncode:
+        bad.append("check_notebook reported errors (above)")
+
+    # Nothing else can catch a week reaching forward: a single-week reviewer does not know what
+    # week 9 is supposed to introduce, and the weeks are built in parallel.
+    if not variant:
+        r2 = subprocess.run([sys.executable, str(root / "tools/check_prior_knowledge.py"),
+                             str(week_n)], capture_output=True, text=True, cwd=root)
+        print(r2.stdout.rstrip())
+        if r2.returncode:
+            bad.append("the week uses something the course has not taught yet (above)")
+
+    if bad:
+        print("\nBUILD REJECTED:")
+        for b in bad:
+            print(f"  - {b}")
+        sys.exit(1)
+    print("\ngates passed: executes clean, checker OK, nothing used before its week")

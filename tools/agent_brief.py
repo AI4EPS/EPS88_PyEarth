@@ -17,7 +17,7 @@ NOTES = str((ROOT.parent / "notes").resolve())
 SCRATCH = ("/private/tmp/claude-501/-Users-weiqiang-claude/"
            "87e4d8f5-3d10-44f3-ad9b-9137fd827f94/scratchpad")
 PY = "/Users/weiqiang/.venvs/base/bin/python"
-MAX_ROUNDS = 3   # the reviewer is the real gate; self-review past three is marking your own work
+MAX_ROUNDS = 2   # REVIEW cycles, not builder self-review rounds; a third means the spec is wrong
 
 course = yaml.safe_load((ROOT / "course.yml").read_text())
 
@@ -168,23 +168,27 @@ Not `course.yml`, not `modules.yml`, not `TEMPLATE.md`, not `CLAUDE.md`. Other a
 in those files right now. If a week needs a `functions:` list added to its module, or you believe
 a specification file is wrong, **put it in your report** and the orchestrator will apply it.
 
-## When to stop
+## When you are done
 
-Run TEMPLATE §7's loop until every line below is true, or until {MAX_ROUNDS} rounds have passed.
-This is the same list the reviewer grades you against — there is no second, stricter one.
+**Build it once.** You are not reviewing your own work — a separate reviewer does that, and does
+it better, because it did not write this. Your job ends at two gates, both objective:
+
+1. **The solution executes clean on a fresh kernel**, with no scaffolding cell, no redirect, and
+   execution counts contiguous from 1.
+2. **`{PY} tools/check_notebook.py {n}{' --variant ' + variant if variant else ''}` reports OK.**
+   Your build script must run it and refuse to finish if it fails.
+
+Then stop and report. Do not re-read your own prose looking for defects; that pass has been tried
+and it produced a notebook self-graded PASS on every standard which the reviewer then returned
+with two blocking defects. Spend the time on getting the science right the first time instead.
+
+The standards below are what the reviewer will grade you against. Build to them — but the check
+that they hold is not yours to make.
 
 {weekkit.stop_list()}
 
- Do not stop at the first build that executes without error — "it ran" is not the bar, and
-executing cleanly proves only that the code runs, not that the sentence beside it is true.
-
-If you hit {MAX_ROUNDS} rounds with something still failing, stop and report what and why. A
-reported failure is useful; a quiet one is not.
-
-Before you call a round done, run the artifact checker — it enforces the mechanical half of the
-list above, so anything it finds is a defect you did not have to think about:
-
-    {PY} tools/check_notebook.py {n}{' --variant ' + variant if variant else ''}
+If a gate will not pass, stop and report what and why. A reported failure is useful; a quiet one
+is not, and a fabricated PASS is worse than either.
 {past_defects()}
 **A separate reviewer will read your student notebook without seeing any of your reasoning.**
 Write for that reader.
@@ -195,16 +199,10 @@ Write for that reader.
 this session, not from the plan, not from an audit, not from memory. If a number in your prose has
 no printed source, that is a defect — fix it or report it.
 
-**2. The standards, one line each: PASS / FAIL / N/A, with the evidence.** Go through the list
-above and give a verdict per line, not a summary. "All standards met" is not a report.
-
-    every map draws coastlines            PASS  3 maps, all draw data/coastlines.csv
-    the first question is a win           FAIL  it is the hardest; I ran out of rounds
-    the cached CSV is written into data/  PASS  data/week07_gvp.csv, 41 kB
-
-**A FAIL you report is worth more than a FAIL you do not.** The reviewer reads the same list
-against your notebook and will find it anyway; the difference is whether we learn it from you in
-one line or from a review round. Do not mark PASS on anything you did not actually check.
+**2. Every FAIL, and nothing else.** Do not walk the standards list emitting PASS — you are not
+grading your own work, and a builder that did exactly that reported PASS on 27 of 27 standards for
+a notebook the reviewer returned with two blocking defects. List only what you know is wrong, weak
+or unfinished, with the evidence. An empty list is a fine answer if it is true.
 
 **3. Each question against the standard it serves.** Number, class or homework, and which takeaway
 or `teaches:` item it serves. A question serving neither is a drill and should not have shipped.
@@ -270,11 +268,14 @@ The tiers gate each other. A notebook that fails tier 1 is not ready to be judge
 saying so in one line is more useful than a long review of a file that has to be rebuilt anyway.
 
 {weekkit.tiers()}
-*A Tier 1 failure BLOCKS: list every one and stop reviewing. Whether the verdict is then FIX or
-REBUILD depends on the WORK, not the tier — the first reviewer to run this found two Tier 1
-failures that were each a two-cell edit, and reported that "REBUILD" overstated them. Judge by
-how much has to be rewritten. Tier 2 -> FIX. Tier 3 -> FIX if a question or claim can be
-rewritten, REBUILD if the week does not teach what it claims.*
+*Report EVERYTHING you find, then classify. Do not stop early, do not decide something is too
+minor to mention, and do not filter for severity as you go — filtering is a separate pass and it
+is not yours. A finding you withhold cannot be overruled; a finding you report costs one line.
+
+Then tag each: Tier 1 blocks release. The VERDICT follows the size of the fix, not the tier that
+blocked — the first reviewer to run this found two Tier 1 failures that were each a two-cell edit
+and said so, correctly, that "REBUILD" overstated them. FIX when the work is sentence-level or
+mechanical. REBUILD only when the week does not teach what it claims.*
 
 ## Report
 

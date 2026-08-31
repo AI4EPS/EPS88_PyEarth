@@ -216,12 +216,18 @@ def check_write_count(cells):
     it belongs to every week."""
     hw = next((k for k, c in enumerate(cells) if c["cell_type"] == "markdown"
                and re.search(r"(?im)^##\s*Homework\s*$", src(c))), len(cells))
-    # A write-place is the cell FOLLOWING a prompt. Matching on the stub phrase instead
-    # counted the front matter that NAMES the convention — an off-by-one on every week,
-    # found only by printing what each match actually was.
-    prompt = lambda s: "✏️" in s or re.search(r"(?im)^#{2,4}\s*Predict", s)
-    places = [i + 1 for i, c in enumerate(cells[:-1])
-              if c["cell_type"] == "markdown" and prompt(src(c))]
+    # Count the ANSWER STUBS themselves. Two earlier versions counted the phrase anywhere
+    # (which matched the front matter that NAMES the convention) and then counted prompt
+    # successors (which misses a part with two answer cells, e.g. code then a prose paragraph
+    # after the self-check). Two independent reviewers proved the notebooks right and this
+    # check wrong, both times. A code stub is a code cell carrying the marker; a prose stub is
+    # the short italic markdown line and nothing else.
+    def is_stub(c):
+        s = src(c)
+        if c["cell_type"] == "code":
+            return "your answer here" in s.lower()
+        return "Double-click" in s and len(s.strip()) < 200
+    places = [i for i, c in enumerate(cells) if is_stub(c)]
     n_class = sum(1 for i in places if i < hw)
     n_home = len(places) - n_class
     front = " ".join(src(c) for c in cells[:6]).lower()
@@ -237,11 +243,8 @@ def check_write_count(cells):
     said = (num(m.group(1)), num(m.group(2)), num(m.group(3)))
     real = (n_class + n_home, n_class, n_home)
     if said != real:
-        # WARN, not ERROR, and deliberately so: three versions of this count were written and
-        # all three disagreed with the file in a different way. Until one of them is right, a
-        # hard failure here would be a checker crying wolf, which is worse than no checker.
-        warns.append(f"front matter says {said[0]} write-places ({said[1]} class, {said[2]} home); "
-                     f"counting prompts gives {real[0]} ({real[1]}, {real[2]}) — check by hand")
+        errs.append(f"front matter says {said[0]} write-places ({said[1]} class, {said[2]} home); "
+                    f"the file has {real[0]} ({real[1]} class, {real[2]} home)")
 
 
 def check_code_quality(cells):

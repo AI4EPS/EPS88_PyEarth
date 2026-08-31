@@ -404,10 +404,11 @@ plt.show()
 ''')
 
 md("""
-Fourteen numbers spread over ten bars: four bars at the left hold thirteen of the earthquakes,
-five in the middle hold nothing at all, and one lone bar out on the right holds the 7.0. You can see that small ones
-are commoner than large ones, and that is all you can see — you certainly cannot read a ratio off
-it. **Hold that thought.**
+Fourteen numbers spread over ten bars: thirteen of the earthquakes sit in four bars below 5.5,
+five bars in the middle hold nothing at all, and one lone bar out on the right holds the 7.0. But
+notice that the tallest bar is not the leftmost one, which is not what you would expect if smaller
+always meant commoner. With fourteen numbers there is no way to tell whether that means anything,
+and no way to read a ratio off it at all. **Hold that thought.**
 
 Now the same day in space. Longitude runs −180 to 180 across the map, latitude −90 to 90 up it.
 `plt.plot(coast_lon, coast_lat)` draws the coastlines, so the dots have a world to sit on. Those
@@ -428,10 +429,14 @@ plt.show()
 ''')
 
 md("""
-Fourteen dots on a whole planet: Guatemala, Svalbard up in the Arctic, Iran, Ethiopia, Tonga at
-the very edge of the map, Indonesia, and a cluster in the middle of the Indian Ocean — with
-enormous empty spaces between them. If somebody handed you this map and told you earthquakes
-happen in narrow lines, you would be entitled to disbelieve them.
+Count the marks: there are seven. Guatemala, Svalbard up in the Arctic, Iran, Ethiopia, Tonga at
+the very edge of the map, Indonesia, and one in the middle of the Indian Ocean — with enormous
+empty spaces between them. Fourteen earthquakes in seven places, because the four off Guatemala
+land on top of each other at this dot size and so do the five in the Indian Ocean. That is the same
+thing the place names told you, drawn instead of printed.
+
+If somebody handed you this map and told you earthquakes happen in narrow lines, you would be
+entitled to disbelieve them.
 
 Both figures fail for the same reason, and it is not a coding mistake: **fourteen numbers.**
 """)
@@ -553,7 +558,7 @@ about ten. Before asking where that rule comes from, take one more step up the m
 because the top of a catalogue is where counting gets hard.
 
 The cell below does that, then widens the window: the two years either side of 1983, then four
-whole decades, then fifty years. It takes a few seconds; it is asking the catalogue eleven
+whole decades, then fifty years. It takes a few seconds; it is asking the catalogue thirteen
 questions.
 """)
 
@@ -611,11 +616,14 @@ and "about ten per magnitude step" is the statement that b is close to 1. We are
 convention, and your numbers are a check on how far it travels — from Richter's California to the
 whole world across fifty years, it travels well.
 
-**Which way your own ratios are likely to be wrong.** Question 5 gave numbers a little under nine,
-and the turnover at the left of the 1983 histogram says the catalogue is already missing some of
-its smallest earthquakes. Missing small earthquakes makes `n45` too small, which drags `n45 / n55`
-**down**. Nine is more likely a floor on the real ratio than a ceiling — and where those missing
-earthquakes went is the next section.
+**Which way your own two ratios are likely to be wrong** — and they are wrong in two different
+ways, which is worth keeping straight. Take `n45 / n55` first, the 9.1: the turnover at the left of
+the 1983 histogram says the catalogue is already missing earthquakes just above the 4.5 floor, and
+missing them makes `n45` too small, which drags that ratio **down** — so 9.1 is a floor on the real
+figure rather than a ceiling, and where those missing earthquakes went is the next section. The 8.5
+is a different problem, and section 6 has just handed you the tool for it: `n55 / n65` rests on only
+53 earthquakes at M6.5 and above, and a count that small carries a spread of roughly ±1.2 on the
+ratio, so 8.5 and ten are about one wobble apart and you should not read anything into the gap.
 """)
 
 # ── 7. what a catalogue is ────────────────────────────────────────────────────────────────────
@@ -649,7 +657,7 @@ and thirty-six in his birth year, against four thousand one hundred and twenty-f
 
 The planet did not get seventeen times busier between 1940 and 1983. Plate motion is measured in
 centimetres per year and does not change on that timescale. What changed is the listening, and the
-bookkeeping. Seismic stations in 1940 were sparse and clustered in Europe, Japan and North America,
+bookkeeping. Seismic stations in 1940 were sparse and clustered in Europe and North America,
 and their readings were collected and compared by hand long after the event; by 1983 there was a
 standardised global network reporting continuously. A magnitude 5 in the middle of the Pacific in
 1940 happened, and is simply not in the file.
@@ -1060,3 +1068,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# The two gates. A build that has not passed these is not a build.
+weekkit.gate(1)

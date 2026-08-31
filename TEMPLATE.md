@@ -270,36 +270,40 @@ even trivial syntax: the dot in `mags.index(...)` is a new idea in someone's fir
 
 ---
 
-## 7. Build, run, review, repeat
+## 7. Build once, then two gates
 
 **Write the solution first and derive the student version by deleting code — never the reverse.**
 Fall 2024's exercises were 41–86 % byte-identical to their lectures, with no marker showing which
 cells were the student's. Deriving from the solution makes that impossible.
 
-Then loop, several times:
+Building and reviewing are different jobs done by different agents. Yours is to build it once and
+prove it is not broken; judging whether it is *good* belongs to someone who did not write it. An
+earlier version of this section asked the builder to re-read its own work several times: it was
+where most of the build time went, and the notebook that came out was self-graded PASS on every
+standard and then returned by the reviewer with two blocking defects.
 
-1. `python tools/build_weekNN.py`
-2. **Execute the solution on a fresh kernel.**
-3. **Read every printed number.** Executing proves the code runs, not that the sentence beside it
-   is true.
-4. **Open every figure.**
-5. **Read the student version end to end, as a student**, not as its author. Most defects are only
-   visible from there: an answer cell with no hint of the variable names its own assert needs, a
-   summary that gives away the homework below it, a heading that spoils its own reveal.
-6. `python tools/check_notebook.py N` — the mechanical gate, and if you add a rule to it,
-   add the case to `tools/selftest_checks.py` that must trip the rule and the near-miss that
-   must not. Two rules there were DEAD when written and three had false positives; a check
-   nobody has watched fail is decoration that reads as coverage.
-   The mechanical gate It reads the built artifact and
-   enforces what a machine can see, so your attention goes to what it cannot.
-7. Fix, and go back to 1.
+So the build ends at two gates, and both are objective:
 
-**Stop when every line of the standards list is true**, and not before:
+1. **The solution executes clean on a fresh kernel** — no scaffolding cell, no redirect, no
+   `allow_errors`, execution counts contiguous from 1. Outputs existing is not the same as it
+   having run; a deleted setup cell leaves counts starting at 2, and that has happened.
+2. **`python tools/check_notebook.py N` reports OK**, and the build script runs it and refuses to
+   finish if it fails. A build that does not pass the checker is not a build.
+
+If you add a rule to the checker, add to `tools/selftest_checks.py` both the case that must trip
+it and the near-miss that must not. Two rules there were dead when written and three had false
+positives; a check nobody has watched fail is decoration that reads as coverage.
+
+**The standards list is what the reviewer grades against:**
 
     python tools/weekkit.py
 
-That is the same list the reviewer grades against — `agent_brief.py` renders it flat for the
-builder and as three gated tiers for the reviewer. There is no second, stricter list.
+Build to it. `agent_brief.py` renders it flat for the builder and as three gated tiers for the
+reviewer — one list, so a notebook cannot pass one and fail the other.
+
+**The loop is outside the builder**: build → check → review → fix → check → review. Two review
+cycles at most. A third means the specification is wrong rather than the notebook, and it goes to
+Weiqiang instead.
 
 ---
 
@@ -327,6 +331,15 @@ as the prose. Write it to be **copied**, not admired.
 
 - **Six libraries only**: python, numpy, pandas, matplotlib, scikit-learn, pytorch. A ceiling on
   the whole course; the standard library is not a loophole.
+- **A live query that feeds a number written into prose must be reproducible.** Pin what can be
+  pinned in `course.yml` — a date range, a magnitude floor, a version. Where the query has nothing
+  to pin (`where default_flag=1` returns whatever the archive holds today), say in `course.yml`
+  that **the cached CSV is authoritative for the prose**, and write the prose numbers from the
+  cache. A week whose markdown hardcodes eleven numbers off a query that can silently change is a
+  week that goes wrong quietly, months later, in front of students.
+- **A constant read off a web page is cited with the value AND the date you read it.** Earth's
+  Bond albedo on the NASA fact sheet changed from 0.306 to 0.294 during this course's own
+  lifetime, and a citation with no read-date cannot be checked or defended.
 - **No OFFERING dates in a notebook** — no term, no meeting date, no due date; those live in
   `course.yml` and the notebooks outlive the offering. Dates that are *data* are fine and often
   necessary: a pinned `starttime`/`endtime`, a demo birthday, the year a catalogue covers. Pin
