@@ -31,7 +31,9 @@
       "name": "Part 2 — the slab",
       "marker": "✓ the slab",
       "checks": [
-        "assert len(arc) > 0, \"no earthquakes in that box — check the four numbers\""
+        "assert len(arc) > 0, \"no earthquakes in that box — check the four numbers\"",
+        "assert section.get_offsets()[:, 1].max() <= 0, \\",
+        "assert 1 < abs(deep_lon - shallow_lon) < 15, \\"
       ],
       "check_points": 30,
       "code_points": 5
@@ -39,7 +41,7 @@
   ],
   "released": {
     "w04-q06-answer": "# ← your answer here\n\n\nassert counts.sum() == len(quakes), \"every earthquake should land in a bin — check your edges\"\nprint(\"✓ magnitudes on a log axis — the smallest bin holds\", counts[0],\n      \"earthquakes and the next one\", counts[1])",
-    "w04-q07-answer": "# ← your answer here\n\n\nassert len(arc) > 0, \"no earthquakes in that box — check the four numbers\"\nif deep_lon > shallow_lon:\n    side = \"east\"\nelse:\n    side = \"west\"\nprint(\"✓ the slab —\", len(arc), \"earthquakes; the deep ones sit\",\n      round(abs(deep_lon - shallow_lon), 1), \"degrees\", side, \"of the shallow ones\")"
+    "w04-q07-answer": "# ← your answer here\n\n\nassert len(arc) > 0, \"no earthquakes in that box — check the four numbers\"\nassert section.get_offsets()[:, 1].max() <= 0, \\\n    \"the deepest events are drawn at the TOP — plot -arc[\\\"depth\\\"], so that down the page is down\"\nassert 1 < abs(deep_lon - shallow_lon) < 15, \\\n    \"the two medians should be a few degrees apart; a gap of nearly nothing usually means both \" \\\n    \"were taken over the same depth class\"\nif deep_lon > shallow_lon:\n    side = \"east\"\nelse:\n    side = \"west\"\nprint(\"✓ the slab —\", len(arc), \"earthquakes; the deep ones sit\",\n      round(abs(deep_lon - shallow_lon), 1), \"degrees\", side, \"of the shallow ones\")"
   },
   "hygiene": {
     "points": 5

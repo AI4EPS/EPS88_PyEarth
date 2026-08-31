@@ -141,16 +141,24 @@ vei = eruptions["ExplosivityIndexMax"].value_counts().sort_index()
 M["n_with_vei"] = int(vei.sum())
 for k in range(8):
     M[f"vei{k}"] = int(vei.loc[k])
+M["n_no_vei"] = M["n_eruptions"] - M["n_with_vei"]
+M["pct_no_vei"] = round(100 * M["n_no_vei"] / M["n_eruptions"])
 M["vei_windows"] = []
 for first_year in [-60000, 1800, 1950]:
     window = eruptions[eruptions["StartDateYear"] >= first_year]
     counts = window["ExplosivityIndexMax"].value_counts()
     M["vei_windows"].append((first_year, len(window),
-                             round(float(counts.loc[1] / counts.loc[2]), 2)))
+                             round(float(counts.loc[1] / counts.loc[2]), 2),
+                             round(100 * (len(window) - int(counts.sum())) / len(window))))
+M["pct_no_vei_1800"] = M["vei_windows"][1][3]
+M["pct_no_vei_1950"] = M["vei_windows"][2][3]
 recent = eruptions[eruptions["StartDateYear"] >= 1950]
 recent_vei = recent["ExplosivityIndexMax"].value_counts().sort_index()
 M["n_recent"] = len(recent)
 M["n_recent_with_vei"] = int(recent_vei.sum())
+M["n_recent_no_vei"] = M["n_recent"] - M["n_recent_with_vei"]
+for k in range(3):
+    M[f"recent_vei{k}"] = int(recent_vei.loc[k])
 M["ratio_all"] = M["vei_windows"][0][2]
 M["ratio_recent"] = M["vei_windows"][2][2]
 M["n_vei7_all"] = M["vei7"]
@@ -183,8 +191,36 @@ for name, box in (("Chile", CHILE), ("Japan", JAPAN)):
                      "gap": round(deep_lon - shallow_lon, 1),
                      "side": "east" if deep_lon > shallow_lon else "west"}
 
-# how much this equirectangular map stretches high latitudes
-M["stretch"] = {lat: round(1 / float(np.cos(np.deg2rad(lat))), 1) for lat in (0, 30, 60, 72)}
+# How much this equirectangular map stretches high latitudes. 25 and 72 are in the ladder because
+# the prose compares Australia with Greenland: the mainland of one straddles latitude 25 and the
+# other straddles 72, and the claim is only as good as the two factors the cell prints.
+STRETCH_LATS = (0, 25, 60, 72)
+M["stretch"] = {lat: round(1 / float(np.cos(np.deg2rad(lat))), 1) for lat in STRETCH_LATS}
+M["stretch_ratio"] = round(M["stretch"][72] / M["stretch"][25])
+
+# Land areas, for the one comparison the map's distortion is worth making. Read from
+# en.wikipedia.org/wiki/Australia and en.wikipedia.org/wiki/Greenland on 2026-08-31; the notebook
+# cites both with that date, the same way it cites Earth's radius and the VEI thresholds.
+AREA_AUSTRALIA_KM2, AREA_GREENLAND_KM2 = 7_688_287, 2_166_086
+M["australia_over_greenland"] = round(AREA_AUSTRALIA_KM2 / AREA_GREENLAND_KM2, 1)
+
+# The ink each landmass actually costs on this map, by the shoelace area of its coastline polygon
+# in square degrees — the quantity "looks the size of" is about. Segment 132 is Greenland and 51 is
+# Australia; Africa is not separable, because the shipped coastline joins it to Eurasia at Suez.
+# Measured on data/coastlines.csv: Greenland 678, Australia 688. Equal ink, and the two stretch
+# factors above say why. Nothing in the prose quotes these, so they stay a comment rather than a
+# formatted-in number: the claim a student can check is the one their own figure shows.
+
+# The Alpine-Himalayan belt, for the caution about what "trench" means in the boundary file.
+BELT = (25, 45, 40, 100)
+belt = arc_box(quakes, BELT)
+M["n_belt"] = len(belt)
+M["n_belt_deep"] = int((belt["depth"] > 300).sum())
+hindu_kush = belt[belt["depth"] >= 200]
+M["n_hindu_kush"] = len(hindu_kush)
+M["hindu_kush_deepest"] = round(float(hindu_kush["depth"].max()))
+M["hindu_kush_lon"] = round(float(hindu_kush["longitude"].median()), 1)
+M["hindu_kush_lat"] = round(float(hindu_kush["latitude"].median()), 1)
 
 
 # ---------------------------------------------------------------------------
@@ -346,17 +382,31 @@ the equator — the same `cos(latitude)` that came up when you weighted grid cel
 map stretches everything away from the equator sideways, by a factor of `1 / cos(L)`.
 """)
 
-code("""
-for lat in [0, 30, 60, 72]:
+code(f"""
+for lat in {list(STRETCH_LATS)}:
     stretch = 1 / np.cos(np.deg2rad(lat))
     print("at latitude", lat, "this map stretches east-west by a factor of", round(stretch, 1))
 """)
 
 md(f"""
-At the latitude of Greenland that is a factor of {M['stretch'][72]}, which is most of why
-Greenland looks the size of Africa on maps like this one. Every flat map has to distort something;
-this one keeps latitude and longitude honest as *coordinates* and pays for it in shape and area.
-For finding out where things are, that is a fine trade, and it costs no extra library.
+Only the width is stretched — a degree of latitude is drawn the same length everywhere on this
+map — so whatever factor a place gets, its *area* on the page is inflated by that same factor.
+
+Look back at your map with that in mind, at Greenland and at Australia. They come out much the same
+size on it — and they are not. Australia covers {AREA_AUSTRALIA_KM2 / 1e6:.1f} million square
+kilometres and Greenland {AREA_GREENLAND_KM2 / 1e6:.1f} million, so Australia is
+{M['australia_over_greenland']} times the larger (both read from
+`en.wikipedia.org/wiki/Australia` and `en.wikipedia.org/wiki/Greenland` on 2026-08-31). Australia
+straddles latitude 25, where this map inflates area by {M['stretch'][25]}; Greenland straddles
+{STRETCH_LATS[3]}, where it inflates area by {M['stretch'][72]}, about {M['stretch_ratio']} times as
+much. The resemblance is the projection, and nothing else. (Greenland coming out the size of
+*Africa* is a different projection's story, not this one's: put those two side by side on your own
+map and Africa is still several times the larger, even with Greenland flattered by
+{M['stretch'][72]}.)
+
+Every flat map has to distort something; this one keeps latitude and longitude honest as
+*coordinates* and pays for it in shape and area. For finding out where things are, that is a fine
+trade, and it costs no extra library.
 """)
 
 ask("""
@@ -444,10 +494,13 @@ earthquakes drew on their own, and the black trenches trace the Ring of Fire. Th
 to the first half of today's question, and it is worth noticing how little work it took: two
 scatter plots and three `plt.plot` calls.
 
-One caution about the black line before we use it. The file calls seven of its features trenches
-that are really continental collisions — the run of black across Asia through the Zagros and the
-Himalaya is India and Arabia driving into Eurasia, not one plate sinking under another. Keep it in
-mind for the next section, where the difference will be visible.
+One caution about the black line before we use it. `trench` in this file is a label somebody
+applied to a boundary, not a measurement, and it has been stretched to cover a handful of features
+that are nothing of the sort: the run of black across Asia through the Zagros and the Himalaya is
+India and Arabia driving into Eurasia, and a few short pieces around Taiwan and the Philippines are
+plates sliding past each other. The file cannot tell you which is which — the names of the features
+were dropped when it was converted to a table of longitudes and latitudes. Keep it in mind for the
+next section, where the difference will be visible.
 
 The volcanoes have their own opinion about which boundary they like, and the table will say so
 directly. `Tectonic_Setting` is a text column, and `.str.startswith("Subduction")` asks the same
@@ -461,6 +514,8 @@ n_subduction = setting.str.startswith("Subduction", na=False).sum()
 
 print("subduction zone:", n_subduction)
 print("rift zone:      ", setting.str.startswith("Rift", na=False).sum())
+print("  of those, on oceanic crust:",
+      setting.str.startswith("Rift zone / Oceanic", na=False).sum())
 print("intraplate:     ", setting.str.startswith("Intraplate", na=False).sum())
 print("subduction share:", round(100 * n_subduction / len(volcanoes)), "percent of",
       len(volcanoes), "volcanoes")
@@ -472,8 +527,9 @@ the plate going down carries wet ocean-floor minerals with it, and once it is de
 minerals give their water up into the hot mantle above. Water lowers the melting temperature of
 rock, so mantle that would otherwise stay solid melts, and the melt rises and builds a line of
 volcanoes a hundred kilometres or so behind the trench. Ridges melt rock a different way — by
-letting it rise and decompress — and they are the longest boundary system on the planet, but only
-{M['n_rift_ocean']} of these volcanoes sit on oceanic rift. Most ridge volcanism happens two
+letting it rise and decompress — and they are the longest boundary system on the planet, but of the
+{M['n_rift']} volcanoes the table puts at a rift zone, only {M['n_rift_ocean']} are on oceanic
+crust, which is where the mid-ocean ridges are. Most ridge volcanism happens two
 kilometres under water, where an eruption leaves nothing for anybody to write down. *A catalogue
 lists what somebody's instruments recorded, not what happened. Where there are no seismometers
 there are no earthquakes in the file.* The same is true of eruptions, and it will matter again
@@ -555,13 +611,21 @@ print("✓ the depth map — the colours run from", round(quakes["depth"].min())
       "to", round(quakes["depth"].max()), "km")
 """)
 
-md("""
+md(f"""
 The ridges are uniformly pale: everything that happens at a spreading centre happens in the top
 few tens of kilometres. The dark dots — the deep ones — appear in only a handful of places, and
 every one of them is a place where the previous figure drew a trench: South America, Japan,
-Indonesia, Tonga. Notice also what is *not* dark. The black line across Asia has no dark dots
-anywhere along it, because the Himalaya and the Zagros are collisions with no plate going down —
-the caution from the last section, visible.
+Indonesia, Tonga.
+
+Notice also what is *not* dark. Nowhere along the black line across Asia is there a dot at the dark
+end of the scale: of the {M['n_belt']} earthquakes this catalogue puts in that belt, not one is
+deeper than 300 km. Through the Zagros and the Himalaya that is the caution from the last section
+made visible — two continents colliding, with nothing going down to break. But the belt is not all
+one thing, and the map does not claim it is: over northern Afghanistan, near
+{M['hindu_kush_lon']}°E, sits a knot of {M['n_hindu_kush']} mid-scale events between 200 km and
+{M['hindu_kush_deepest']} km down. That is the Hindu Kush, and something *is* descending under it.
+So a line labelled "trench" can be a collision, or a slab, or neither, and the colours can tell
+them apart where the label cannot.
 
 And in the places that do go dark, the dark dots are not on the trench line; they are set back
 from it. That offset is the whole point, and it is easier to measure on one arc than on the whole
@@ -617,10 +681,16 @@ shallow_lon = south[south["depth"] <= 70]["longitude"].median()
 deep_lon = south[south["depth"] > 300]["longitude"].median()
 print("shallow events, median longitude:", round(shallow_lon, 2))
 print("deep events, median longitude:   ", round(deep_lon, 2))
-""", """
+""", f"""
 assert len(south) > 0, "no earthquakes in the box — check the four limits"
-print("✓ South America —", len(south), "earthquakes; the deep ones are",
-      round(deep_lon - shallow_lon, 1), "degrees of longitude further east")
+assert south["latitude"].max() <= {SOUTH[1]} and south["longitude"].min() >= {SOUTH[2]}, \\
+    "south still reaches outside the box — the four conditions join with &, not |"
+assert deep_lon > shallow_lon, \\
+    "here the deep events lie east of the shallow ones, so this difference should be positive; " \\
+    "a negative one means the two depth classes have been taken the wrong way round"
+print("✓ South America —", len(south), "earthquakes; median longitude", round(shallow_lon, 1),
+      "shallow against", round(deep_lon, 1), "deep, a gap of",
+      round(deep_lon - shallow_lon, 1), "degrees")
 """)
 
 md(f"""
@@ -631,10 +701,15 @@ them into kilometres. One degree of longitude is the equator's circumference div
 of Geodesy and Geophysics publishes, read from `en.wikipedia.org/wiki/Earth_radius` on 2026-08-31.
 """)
 
-code(weekkit.CHECKPOINT.format(body=f"""south = quakes[(quakes["latitude"] >= {SOUTH[0]}) & (quakes["latitude"] <= {SOUTH[1]})
-               & (quakes["longitude"] >= {SOUTH[2]}) & (quakes["longitude"] <= {SOUTH[3]})]
-shallow_lon = south[south["depth"] <= 70]["longitude"].median()
-deep_lon = south[south["depth"] > 300]["longitude"].median()"""))
+# This checkpoint deliberately rebuilds LESS than the cell below it reads. `south`, `shallow_lon`
+# and `deep_lon` are Your turn 3's graded answer, three cells above; writing them out here would
+# hand the answer to anybody who scrolls. So it rebuilds the class cell they were built from and
+# names the three, telling the student to re-run their own cell — which is what
+# check_checkpoints_rebuild's re-run exemption is for.
+code(weekkit.CHECKPOINT.format(body="""quakes = quakes[quakes["type"] == "earthquake"]
+
+# The next cell works from your own Your turn 3 answer. Re-run that cell to rebuild `south`,
+# `shallow_lon` and `deep_lon`; they are not repeated here, because they are the answer."""))
 
 code(f"""
 deep_lat = south[south["depth"] > 300]["latitude"].median()
@@ -700,6 +775,13 @@ md(f"""
 Fewer, not more — {M['vei0']:,} against {M['vei2']:,}. Hold that; it is the second surprise of the
 day, and we come back to it before the section is out.
 
+One thing to notice about that table on the way past: it adds up to {M['n_with_vei']:,}, not the
+{M['n_eruptions']:,} eruptions in the file. `.value_counts()` counts the values it finds and says
+nothing about the rows where there is no value to count — and {M['n_no_vei']:,} of these eruptions,
+{M['pct_no_vei']}% of the record, carry no VEI at all, because nobody could say how big they were.
+That is why the charts below are titled with the number that carries a VEI rather than the length
+of the file. Keep the number; it comes back with something to say.
+
 First, what the index means. VEI is not a volume, it is an *index*: each whole step stands for
 roughly ten times more erupted rock. From VEI 2 upwards the convention is that VEI *n* means at
 least 10 to the power (*n* − 5) cubic kilometres — so VEI 5 is 1 km³ and VEI 7 is 100 km³.
@@ -763,10 +845,11 @@ plt.show()
 """)
 
 md(f"""
-On the left, everything from VEI 4 up is a flat line on the floor. There are {M['vei7']} VEI 7
-eruptions in the record and the chart cannot show you that there are any at all. On the right, the
-same numbers on a log axis: *when the values span factors of a thousand, plot the exponents
-instead and a curve becomes a line.* Every class is now readable, and the tops of the bars from
+On the left, the top of the scale is unreadable. The axis has to climb to {M['vei2']:,} to fit the
+tallest bar, so VEI 4 and VEI 5 are there but impossible to compare, VEI 6 is a hairline, and the
+{M['vei7']} eruptions at VEI 7 do not show at all. On the right, the same numbers on a log axis:
+*when the values span factors of a thousand, plot the exponents instead and a curve becomes a
+line.* Every class is now readable, and the tops of the bars from
 VEI 2 to VEI 6 come down in near-equal steps — which on a log axis means each class is a roughly
 constant factor rarer than the one below it.
 
@@ -787,8 +870,9 @@ log-axis bar chart for that window alone.
 
 Then, to compare the windows as numbers rather than pictures, loop over
 `first_years = [-60000, 1800, 1950]`. For each one, take the eruptions from that year onwards,
-count them by VEI with `.value_counts()`, and print how many VEI 1 eruptions there are for each
-VEI 2 — `counts.loc[1] / counts.loc[2]`, rounded to two decimals.
+count them by VEI with `.value_counts()`, and print three things: how many eruptions the window
+holds, how many of them carry a VEI at all (`counts.sum()`), and how many VEI 1 eruptions there are
+for each VEI 2 — `counts.loc[1] / counts.loc[2]`, rounded to two decimals.
 
 **Use these names**, because the self-check looks for them: `recent`, `recent_counts`.
 """)
@@ -808,20 +892,32 @@ first_years = [-60000, 1800, 1950]
 for first_year in first_years:
     window = eruptions[eruptions["StartDateYear"] >= first_year]
     counts = window["ExplosivityIndexMax"].value_counts()
-    print("from", first_year, "onwards:", len(window), "eruptions, VEI 1 per VEI 2 =",
-          round(counts.loc[1] / counts.loc[2], 2))
+    print("from", first_year, "onwards:", len(window), "eruptions,", int(counts.sum()),
+          "with a VEI, VEI 1 per VEI 2 =", round(counts.loc[1] / counts.loc[2], 2))
 """, """
-assert len(recent) < len(eruptions), "recent should be a slice of the table, not all of it"
+assert recent["StartDateYear"].min() >= 1950, \\
+    "recent holds eruptions from before 1950 — check which way round the comparison points"
+assert recent_counts.sum() <= len(recent), \\
+    "recent_counts should count the VEI column of `recent`, not of the whole table"
 print("✓ the modern window —", len(recent), "eruptions since 1950, of which",
-      int(recent_counts.sum()), "carry a VEI")
+      len(recent) - int(recent_counts.sum()), "carry no VEI at all")
 """)
 
 md(f"""
-The ratio climbs from {M['ratio_all']} over the whole record to {M['ratio_recent']} since 1950. As
-the recording gets better the small eruptions come back, which settles it: the missing bars are a
+Two numbers move the same way. The ratio of VEI 1 to VEI 2 climbs from {M['ratio_all']} over the
+whole record to {M['ratio_recent']} since 1950; and the share of eruptions with no VEI at all —
+where the record does not even say how big — falls from {M['pct_no_vei']}% over the whole record to
+{M['pct_no_vei_1800']}% since 1800 and {M['pct_no_vei_1950']}% since 1950. Improve the recording and
+the deficit shrinks. That is the argument: what is missing from the bottom of the chart is a
 property of the archive, not of the planet. A VEI 2 eruption a thousand years ago left a layer of
 ash somebody can still dig up. A VEI 0 eruption a thousand years ago left nothing, unless somebody
 was standing there.
+
+Shrinks, though, is not *gone*. Your own 1950 chart still has {M['recent_vei0']} eruptions at VEI 0
+against {M['recent_vei1']} at VEI 1 and {M['recent_vei2']:,} at VEI 2 — both of the smallest classes
+still below the class above them, in the best-recorded window the file has. Seventy years of
+instruments have made the record better, not complete — and the honest reading of the low end of
+that chart is still *we do not know*, rather than a count.
 
 Earthquake magnitude works the same way, and its constant is worth knowing. The energy an
 earthquake radiates as seismic waves goes as log₁₀ *E* = 1.5 *M* + 4.8, with *E* in joules — the
@@ -929,14 +1025,16 @@ put longitude on the bottom axis and depth up the side, and the sinking plate dr
 
 Filter `quakes` to your box and call it `arc`. Plot `arc["longitude"]` against `-arc["depth"]` —
 the minus sign turns a depth into a height, so the picture is the right way up and the axis label
-should say so. Label both axes and title the figure with the arc's name and how many earthquakes
-are in it. Then work out `shallow_lon` and
+should say so. Catch what `plt.scatter` hands back as `section`, as you did on the maps, so that
+the self-check can look at the points you drew. Label both axes and title the figure with the arc's
+name and how many earthquakes are in it. Then work out `shallow_lon` and
 `deep_lon`, the median longitudes of the events no deeper than 70 km and of those deeper than
 300 km — the same two numbers you printed for South America.
 
 The two boxes do not give the same answer, and both are right.
 
-**Use these names**, because the self-check looks for them: `arc`, `shallow_lon`, `deep_lon`.
+**Use these names**, because the self-check looks for them: `arc`, `section`, `shallow_lon`,
+`deep_lon`.
 """)
 
 # The payload of the fork, written into the solution as a comment so that a grader marking a Japan
@@ -961,7 +1059,7 @@ answer(f"""
 arc = quakes[(quakes["latitude"] >= {CHILE[0]}) & (quakes["latitude"] <= {CHILE[1]})
              & (quakes["longitude"] >= {CHILE[2]}) & (quakes["longitude"] <= {CHILE[3]})]
 
-plt.scatter(arc["longitude"], -arc["depth"], s=8, color="crimson")
+section = plt.scatter(arc["longitude"], -arc["depth"], s=8, color="crimson")
 plt.xlabel("longitude (degrees east)")
 plt.ylabel("height relative to the surface (km)")
 plt.title("Chile: " + str(len(arc)) + " earthquakes")
@@ -990,6 +1088,11 @@ print("Japan, deep events, median longitude:   ", round(japan_deep_lon, 2))
 {WHY_BOTH_ARE_RIGHT}
 """, """
 assert len(arc) > 0, "no earthquakes in that box — check the four numbers"
+assert section.get_offsets()[:, 1].max() <= 0, \\
+    "the deepest events are drawn at the TOP — plot -arc[\\"depth\\"], so that down the page is down"
+assert 1 < abs(deep_lon - shallow_lon) < 15, \\
+    "the two medians should be a few degrees apart; a gap of nearly nothing usually means both " \\
+    "were taken over the same depth class"
 if deep_lon > shallow_lon:
     side = "east"
 else:
