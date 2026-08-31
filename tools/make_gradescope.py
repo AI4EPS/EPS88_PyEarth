@@ -118,8 +118,12 @@ def build(n):
     pool = 100 - manual_points - HYGIENE_POINTS - (OWN_DATA_POINTS if own else 0)
     alloc = split_points(pool, len(parts), figs)
 
-    spec = {"week": n, "notebook_stem": w["slug"], "homework_heading": "## Homework",
-            "parts": []}
+    # Every other week's filename. Without it the grader cannot tell "they renamed the file"
+    # from "they uploaded the wrong week", and rejecting a rename costs a student their marks
+    # for something harmless — renaming is one of the commonest things students do.
+    others = [s["slug"] for s in course["schedule"] if s.get("slug") and s["n"] != n]
+    spec = {"week": n, "notebook_stem": w["slug"], "other_stems": others,
+            "homework_heading": "## Homework", "parts": []}
     for k, (marker, a) in enumerate(zip(marks, alloc), start=1):
         title = titles[k - 1] if k - 1 < len(titles) else ""
         generic = (not title) or re.fullmatch(r"Your turn \d+", title)

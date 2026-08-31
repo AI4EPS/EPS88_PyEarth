@@ -1,6 +1,21 @@
 {
   "week": 8,
   "notebook_stem": "08_wrong_or_unlucky",
+  "other_stems": [
+    "01_birthquake",
+    "02_liquid_water",
+    "03_two_peaks",
+    "04_where_and_why",
+    "05_clustered_or_random",
+    "06_age_of_the_universe",
+    "07_how_often_tambora",
+    "09_rising_faster",
+    "10_earthquake_or_explosion",
+    "11_where_magma",
+    "12_hidden_fault",
+    "13_machine_hears",
+    "14_project"
+  ],
   "homework_heading": "## Homework",
   "parts": [
     {

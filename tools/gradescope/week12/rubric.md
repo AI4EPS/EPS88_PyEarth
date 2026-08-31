@@ -32,10 +32,13 @@ I would draw the long northwest–southeast limb of cluster 0, and only that. Th
 4,670 events run 58 km end to end inside a band about
 10 km thick, with 95.9% of the spread on one horizontal
 axis, and it holds the magnitude 7.1 and the first event in the catalogue, so it is
-the thing that actually broke. I say "the limb" rather than "the cluster" because class showed
-that round the magnitude 6.4 the same test gives 53.7% on an
-axis pointing straight down: DBSCAN merged a second, crossing fault into the same group, and one
-polygon on a map cannot be both. I think the algorithm invented cluster 7: it holds
+the thing that actually broke. I say "the limb" rather than "the cluster" because of the map class
+drew of the 707 events between the two large earthquakes: two arms cross at the
+magnitude 6.4, so DBSCAN merged a second fault into the same group and one polygon
+cannot be both. I am careful not to offer the PCA of that neighbourhood as my reason — it gives
+53.7% on a near-vertical axis, but so does the magnitude 7.1's
+own epicentre, at 51.0%, where there is only one strand. I think the
+algorithm invented cluster 7: it holds
 12 events, exactly `min_samples`, and it is its own cluster at no other setting I
 tried — at `eps=0.075` all 12 of them become noise,
 and at `eps=0.3` they are absorbed into a group of

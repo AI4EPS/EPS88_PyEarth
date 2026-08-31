@@ -347,7 +347,9 @@ def main():
                    "Nothing here re-runs your code: it reads what your notebook recorded "
                    "when you ran it, so always submit a notebook you have just run."),
         "tests": tests,
-        "visibility": "visible",
+        # Results stay hidden until Weiqiang publishes grades for the assignment. Students are
+        # never handed a mark by the autograder itself; he reviews first and releases when ready.
+        "visibility": "after_published",
         "stdout_visibility": "hidden",
     })
 

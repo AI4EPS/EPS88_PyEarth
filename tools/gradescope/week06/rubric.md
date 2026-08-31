@@ -31,10 +31,10 @@ or several.
 
 | Points | A full-credit answer does this |
 |---:|---|
-| 6 | Quotes all four rates with the two conventions kept straight: class's 6.77 cm/yr for the whole Pacific-Antarctic ridge and 1.74 cm/yr for the Mid-Atlantic, plus their own two for the older half, 5.83 cm/yr free and 6.63 cm/yr forced. Says which three count both flanks and which one counts a single flank. |
+| 6 | Quotes all five rates with the two conventions kept straight: class's 6.77 cm/yr for the whole Pacific-Antarctic ridge and 1.74 cm/yr for the Mid-Atlantic, plus their own three windows — 5.83 cm/yr free and 6.63 cm/yr forced for 20 Ma and older, 7.30 cm/yr free for younger than 20 Ma. Says which four count both flanks and which one counts a single flank. |
 | 6 | Chooses one of the two fits to publish and defends the choice by what the fit is being asked, not by which line looks better: the free fit because age zero lies outside the 20-41 Ma window the question is about, or the forced fit on an explicit physical argument. Either choice earns full marks; picking one without a reason earns none. |
 | 6 | Deals with the free fit's intercept head on, as the question requires: says that 251 km is not a claim that 251 km of seafloor existed at age zero but simply where this segment's line happens to cross, and does not treat the non-zero intercept as evidence that the free fit is broken. |
-| 7 | Gives both ratios from their own numbers, the between-ridge one with the Pacific-Antarctic rate halved onto the Atlantic convention first (about 3.38 / 1.74 = 1.9) and the within-ridge one unhalved (about 6.77 / 5.83 = 1.16), says which is the bigger, and concludes that a ridge's rate is a fair summary but not a constant. |
+| 7 | Gives both ratios from their own numbers, the between-ridge one with the Pacific-Antarctic rate halved onto the Atlantic convention first (about 3.38 / 1.74 = 1.9) and the within-ridge one from the two windows, unhalved (about 7.30 / 5.83 = 1.25), says which is the bigger, and concludes that a ridge's rate is a fair summary but not a constant. |
 
 ## The model answer
 
@@ -66,7 +66,7 @@ needed: 7.30 / 5.83 =
 as much as I expected — a ridge is not one speed. My own numbers say the Pacific-Antarctic Ridge
 ran about 20 % slower before 20 Ma than after it, and about
 14 % slower than the single whole-ridge fit reports. So "the spreading
-rate of a ridge" is a fair summary for most purposes and not a constant, and either way it is
+rate of a ridge" is a fair summary for most purposes but it is not a constant — and the change is
 invisible to anyone who only ever fits one line.
 
 ## The week's takeaways, for context

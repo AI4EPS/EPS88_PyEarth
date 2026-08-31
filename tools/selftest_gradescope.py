@@ -104,6 +104,59 @@ if other.exists():
     check("the wrong week is named as the wrong week",
           got == 0 and "wrong notebook" in r.get("output", "").lower())
 
+print("\nhow students actually submit")
+
+def submit(files):
+    """files: {relative path: bytes}. Returns (points, payload)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        sub = pathlib.Path(tmp) / "sub"
+        for rel, data in files.items():
+            p = sub / rel
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_bytes(data)
+        sub.mkdir(exist_ok=True)
+        res = pathlib.Path(tmp) / "r" / "results.json"
+        subprocess.run([sys.executable, str(w1 / "grade.py")], capture_output=True,
+                       env={**os.environ, "GS_SUBMISSION": str(sub), "GS_RESULTS": str(res),
+                            "GS_SPEC": str(w1 / "spec.json")})
+        r = json.loads(res.read_text())
+        return (sum(x["score"] for x in r["tests"]) if "tests" in r else 0), r
+
+FULL = 100
+pts, _ = submit({f"EPS88_PyEarth/docs/notebooks/{stem}.ipynb": sol})
+check("a zipped folder, notebook nested inside it", pts == FULL, f"scored {pts}")
+
+pts, _ = submit({f"{stem}.ipynb": sol,
+                 f".ipynb_checkpoints/{stem}-checkpoint.ipynb": sol})
+check("a DataHub .ipynb_checkpoints copy sitting beside it", pts == FULL, f"scored {pts}")
+
+pts, _ = submit({"EPS88 homework 1 FINAL.ipynb": sol})
+check("a notebook the student renamed is still graded", pts == FULL, f"scored {pts}")
+
+other = ROOT / "docs/notebooks" / "05_clustered_or_random.ipynb"
+if other.exists():
+    pts, _ = submit({f"{stem}.ipynb": sol, "05_clustered_or_random.ipynb": other.read_bytes()})
+    check("this week plus another week: the named one wins", pts == FULL, f"scored {pts}")
+    pts, r = submit({"05_clustered_or_random.ipynb": other.read_bytes()})
+    check("...but a different week ALONE is refused by name",
+          pts == 0 and "wrong notebook" in r.get("output", "").lower())
+
+print("\nthe bundle is self-contained (Gradescope runs it with nothing else present)")
+with tempfile.TemporaryDirectory() as tmp:
+    box = pathlib.Path(tmp) / "source"; box.mkdir()
+    for name in ("grade.py", "run_autograder", "setup.sh", "spec.json"):
+        (box / name).write_bytes((w1 / name).read_bytes())
+    sub = pathlib.Path(tmp) / "submission"; sub.mkdir()
+    (sub / f"{stem}.ipynb").write_bytes(sol)
+    res = pathlib.Path(tmp) / "results" / "results.json"
+    # cwd inside the copied bundle, and nothing from this repo importable
+    p = subprocess.run([sys.executable, "grade.py"], capture_output=True, cwd=box,
+                       env={"PATH": os.environ["PATH"], "GS_SUBMISSION": str(sub),
+                            "GS_RESULTS": str(res)})
+    ok = res.exists() and sum(x["score"] for x in json.loads(res.read_text())["tests"]) == FULL
+    check("the bundle alone grades a full-marks submission", ok,
+          p.stderr.decode()[:160])
+
 with tempfile.TemporaryDirectory() as tmp:
     sub = pathlib.Path(tmp) / "sub"; sub.mkdir()
     (sub / f"{stem}.ipynb").write_bytes(sol)
