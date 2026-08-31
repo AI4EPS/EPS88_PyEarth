@@ -90,6 +90,9 @@ for s in c['schedule']:
         if not s.get(k):
             errs.append(f"session {s['n']} has no {k}: — the build script and the week summary "
                         f"both read it")
+    if s['modules'] and not s.get('pinned'):
+        errs.append(f"session {s['n']} has no pinned: — the data choices would live in prose, "
+                    f"where a builder re-decides them and nothing can check them")
     ev = s.get('evidence')
     if s['modules'] and not ev:
         warns.append(f"session {s['n']} cites no dataset audit (evidence:)")

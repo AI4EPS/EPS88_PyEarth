@@ -119,7 +119,7 @@ schedule:
           1976 is where the modern moment-magnitude catalogue is usable, and the notebook calls it
           "fifty years" without justifying the start. If a future build wants to justify it, that
           claim must be computed, not asserted.
-    note_dates: >
+    note_critical: >
       The demo person must be born after ~1973. Measured with the CUMULATIVE ratio this week
       teaches, N(M4.5+)/N(M5.5+): 1942 gives 1.12, 1964 gives 1.28, 1970 gives 1.41 — barely above
       one, because before the global network almost every small earthquake is missing and the
@@ -140,12 +140,14 @@ schedule:
 
     exercise: >
       Three parts, on the student's OWN birthday, each serving a different takeaway.
-      (1) FIRST, ANSWER THE WEEK'S TITLE QUESTION FOR YOURSELF: load your own birthday and print
-      your own birthquake — its magnitude, where it was, how deep — with the same max() and
-      .index() move class used on the demo day. The week is called "What was your birthquake?" and
-      a student must not finish it knowing only somebody else's. Then: how many earthquakes
-      happened that day, all of them, with the magnitude floor removed entirely, against a guess
-      committed before looking. Serves takeaway 2 and catalogue completeness.
+      (1) YOUR OWN BIRTHQUAKE, then your own count — ONE task, because it is one load of one day.
+      Load your birthday and print your birthquake (magnitude, place, depth) with the same max()
+      and .index() move class used on the demo day; the week is called "What was your birthquake?"
+      and a student must not finish it knowing only somebody else's. Then, from the SAME day with
+      the magnitude floor removed entirely, how many earthquakes there were, against a guess
+      committed before looking. The birthquake is the warm-up that proves the load worked; the
+      count is the question. TEMPLATE's "one task per part" is about not stacking unrelated asks,
+      and these are two prints off one dataframe. Serves takeaway 2 and catalogue completeness.
       (2) The fork: extrapolate the ten-to-one rule down from M4.5 to predict that total, and
       report how far off it is. Serves takeaway 2.
       (3) How many days of data do you need before the plate boundaries appear? Map your birthday,
@@ -164,6 +166,26 @@ schedule:
     modules: [P3, P4]
     field: planetary science
     question: "Which of these worlds could have liquid water — and why does your test reject Earth?"
+
+    pinned:
+      # From the week note and notes/dataset-audit/exoplanet.md. THE CACHE IS AUTHORITATIVE
+      # for prose numbers: `default_flag=1` returns whatever the archive holds that day.
+      slice: "NASA Exoplanet Archive TAP, select ... from ps where default_flag=1 — 6354 rows, of
+        which 3101 carry st_teff, st_rad and pl_orbsmax so T_eq can be DERIVED"
+      constants:
+        T_sun_K: 5772            # IAU 2015 nominal
+        R_sun_AU: 0.00465047
+        albedo: {earth: 0.306, venus: 0.770, mars: 0.250}
+        albedo_note: "Earth 0.306 read from the NSSDC fact sheet 2026-08-30; that sheet now prints
+          0.294, but its own black-body row still reproduces only from 0.306. Quote ONE albedo
+          per week and check every number that hangs off it moves with it."
+        surface_T_K: {earth: 288.0, venus: 737.0, mars: 210}
+      expect:
+        T_eq_at_measured_albedo: {earth: 254.0, venus: 226.6, mars: 209.8}
+        T_eq_at_albedo_zero: {earth: 278.3, venus: 327.3}
+        in_window_273_373: 189   # of which 12 rocky, 75 too big, 102 unknown radius
+        agree_with_pl_eqt: "median 2.56 K, mean 40.4 K, 62% within 10 K — quote the median"
+      verified: 2026-08-30
     exercise: "Run your function on every planet that has the numbers to support it. Then change the albedo to Venus's and widen the window, and report how many worlds move in and out. Then name one planet your test calls habitable that you do not believe, and say what the test is missing."
     note: >
       THE TEST NEVER GETS IT RIGHT, AND THAT IS THE WEEK. Equilibrium temperature ignores
@@ -212,6 +234,15 @@ schedule:
     modules: [D1, D2]
     field: planetary science / oceanography
     question: "Earth's elevation has two peaks. So does Mars's. Same reason?"
+
+    pinned:
+      slice: "the two elevation grids in notes/dataset-audit/elevation-grids.md"
+      expect:
+        earth_peaks_m: [-4545, 413]      # second hump runs ~0 to +413
+        earth_below_sea_level: 0.661
+        earth_between_-5000_and_-3000: 0.348
+        mars_peaks_m: [-4235, -3870, 1240, 1605]
+      verified: 2026-08-29
     exercise: "How FEW bins before the two peaks merge into one? Find that number for Earth and for Mars, and say which planet holds its two peaks longer. Then weight every cell by cos(latitude) and re-run: the fraction of Earth below sea level moves by about five points. Say which number is the honest one, and what the lon-lat grid was doing to the poles. Then switch containers and group the earthquake catalogue by year."
     note: >
       RESTORED. This question was lost when arrays and tables were merged, leaving the week with a
@@ -258,6 +289,13 @@ schedule:
     modules: [D4, D5]
     field: seismology / volcanology
     question: "Where do earthquakes and volcanoes happen — and why there?"
+
+    pinned:
+      slice: "Smithsonian GVP Holocene eruptions — 11,089 dated, VEI 0-7"
+      constants:
+        vei: {tambora: 7, st_helens: 5}   # logarithmic: a hundredfold in erupted volume
+        earthquake_energy: "log10 E = 1.5M + 4.8 — an M9 releases ~32,000x an M6"
+      verified: 2026-08-30
     exercise: "Colour the earthquakes by depth, then overlay the trenches. Say where the deep events are and why they sit where they do — you are looking at subducting slabs."
     note: >
       VEI is logarithmic like magnitude: Tambora is VEI 7, St Helens VEI 5 — a hundredfold in
@@ -277,6 +315,14 @@ schedule:
     modules: [S2]
     field: seismology
     question: "Do earthquakes cluster — or is that just what randomness looks like?"
+
+    pinned:
+      slice: "global M5.5+, starttime=2000-01-01 endtime=2026-01-01 — 12,849 events over 26 years"
+      expect:
+        busiest_real_day: {date: 2011-03-11, events: 128}    # Tohoku
+        busiest_simulated_day: {mean: 7.64, p95: 9}
+        excess_over_chance: 16.7
+      verified: 2026-08-30
     exercise: "Now the forecast: count M6+ near Berkeley, get a rate, and use Poisson for the chance of one during your four years here. Report a single number — week 8 will make you regret that."
     note: >
       REPLACES a forecast question that could not be answered yet: a rate for rare magnitudes
@@ -302,6 +348,14 @@ schedule:
     modules: [ML1]
     field: astronomy
     question: "How old is the universe?"
+
+    pinned:
+      slice: "Freedman 2000 — 36 Type-Ia supernovae, 1.1 kB; MAR 235 points and PAR 140 points"
+      expect:
+        free_fit: {slope: 67.5, intercept_km_s: 711.8}   # intercept must be zero: zero distance,
+        forced_through_origin: {H0: 70.7, age_Gyr: 13.84} # zero recession. Accepted age 13.8.
+      do_not_teach: "the radiometric-isochron half — no dataset has been located or checked"
+      verified: 2026-08-30
     exercise: "Now the seafloor. Fit distance against age for the Pacific-Antarctic Ridge — a free fit puts the ridge 181 km away from itself at age zero. Force it through the origin, and say why physics required that."
     note: >
       Two straight lines whose SLOPE is an age. 36 supernovae give H0 = 70.7 km/s/Mpc and
@@ -333,8 +387,18 @@ schedule:
     modules: [S3]
     field: volcanology
     question: "How often does a Tambora happen?"
+
+    pinned:
+      # The box is NOT optional: M7+ moves 4 -> 5 -> 7 across defensible 'California' boxes, and
+      # the cliffhanger's whole punchline is that FIVE occurred. It lived only in the audit.
+      slice: "USGS FDSN, minlatitude=32 maxlatitude=42 minlongitude=-125 maxlongitude=-114"
+      expect:
+        M3.5_to_6.9: 6282
+        M7_plus: 5
+        fits: {"M3.5-5.0": 1.18, "M4.0-5.5": 1.64, "M4.5-6.0": 1.54}   # predicted M7+ in 36 years
+      verified: 2026-08-30
     exercise: "Fit Gutenberg-Richter on M3.5-5.0 in California, predict how many M7+ to expect in 36 years, then count the real ones. Write down whether you think your model failed — you cannot settle it yet."
-    cliffhanger: >
+    note_critical: >
       VERIFIED: fitting M3.5-5.0 predicts 1.18 M7+ events in 36 years, M4.0-5.5 predicts 1.64,
       M4.5-6.0 predicts 1.54. FIVE occurred. The week ends without resolving whether that is a
       broken model or bad luck — which is exactly what next week's tool decides.
@@ -373,6 +437,16 @@ schedule:
     modules: [S4]
     field: seismology / oceanography
     question: "Was our earthquake forecast wrong — or were we just unlucky?"
+
+    pinned:
+      slice: "San Francisco sea level, 1,503 monthly means 1900-2025"
+      expect:
+        slope_mm_per_yr: 1.965
+        ci95_iid: [1.877, 2.050]
+        ci95_block_by_year: [1.80, 2.14]   # WIDER, because monthly sea level is autocorrelated
+        cm_per_century: 19.7
+        cm_now_to_2100: 14.7               # a DIFFERENT number; the notebook must not swap them
+      verified: 2026-08-30
     exercise: "Then go back to your week-5 answer. You counted events to get a rate, then computed a probability. Bootstrap the rate, and report that probability as an interval instead of a number."
     note: >
       Placed immediately after regression so there is a SLOPE to put an interval on, and well
@@ -396,6 +470,14 @@ schedule:
     modules: [ML2]
     field: climate
     question: "Is CO2 rising faster than it used to?"
+
+    pinned:
+      slice: "NOAA Mauna Loa monthly, 1958-03 to 2026-07, live"
+      expect:
+        holdout: "fit 1958-2000 only, then predict 2026"
+        predicted_2026_ppm: {linear: 400.8, quadratic: 426.6, cubic: 388.3}
+        observed_2026_ppm: 430.3           # cubic is WORSE than linear: too flexible extrapolates
+      verified: 2026-08-30
     exercise: "Fit degrees 1 to 9, plot train and test error against degree, and pick a degree with a reason."
     note: >
       The same failure twice: the Hubble line breaks at high z, which is the accelerating
@@ -422,6 +504,18 @@ schedule:
     modules: [ML3]
     field: seismology / policy
     question: "Earthquake or explosion — how does the world verify a nuclear test ban?"
+
+    pinned:
+      # The earthquake count GROWS DAILY. Re-measure and update the date rather than trusting it.
+      slice: "USGS FDSN M1.5+ 2015-01-01 onward, eventtype=earthquake vs eventtype=quarry blast"
+      expect:
+        blasts: 2802
+        earthquakes: 128736              # as of 2026-08-31; the audit's 128,717 is an older read
+        always_say_earthquake: 0.9787    # accuracy, and useless
+        f1: {hand_rule: 0.765, logistic: 0.760, naive_bayes: 0.755, random_forest: 0.975}
+        hand_rule: "depth <= 0 AND 10:00 <= local hour < 17:00 — students write it FIRST and it wins"
+        blast_depth: "median -0.519 km, 93.8% below zero, top 20 repeated values cover 53%"
+      verified: 2026-08-31
     exercise: "Retrain without depth. Explain why the score fell and why the second model is the honest one."
     note: >
       2,802 blasts against 128,707 earthquakes, so "always say earthquake" scores 97.87% and is
@@ -430,7 +524,7 @@ schedule:
       exactly one blast has depth 0. It is NEGATIVE: median -0.519 km, 93.8% below zero, because
       quarry benches sit above sea level, and the top 20 repeated values cover 53% of blasts, i.e.
       pinned to each QUARRY's elevation. Real leakage, different mechanism, and a better story.
-    critical_the_model_must_earn_its_place: >
+    note_critical: >
       MEASURED: the hand rule "depth <= 0 AND 10:00 <= local hour < 17:00" scores F1 0.765, which
       BEATS logistic regression (0.760) and Naive Bayes (0.755). As written the taught classifier
       is decorative — the exact failure the project spec forbids.
@@ -449,6 +543,15 @@ schedule:
     modules: [ML4]
     field: volcanology / petrology
     question: "Where does a volcano get its magma?"
+
+    pinned:
+      slice: "Vermeesch basalts — 51 columns; the ten major oxides are the comparison set"
+      expect:
+        accuracy: {all_51_columns: 96.06, ten_major_oxides: 90.89}   # 50 fits, p = 8e-23
+        sparse_columns_alone: 79.8       # the 19 columns that are over half empty
+        most_complete_column: "Sr, 6.5% missing — no column in the file is complete"
+        dropna_on_all_51: 1              # rows left. The lesson is DELETION, not dimensionality.
+      verified: 2026-08-30
     exercise: "Train a forest on the ten major oxides, then on all 51 columns. More columns wins — 96.1% against 90.9% — so the sparse trace elements are carrying real signal, not noise. Now delete the imputer and use dropna() instead: the ten oxides leave you 271 rows, and all 51 leave you exactly 1. Say which of your three numbers you would report to a geochemist, and what you would have concluded if dropna() were the only tool you knew."
     note: >
       The old version of this exercise asked students to explain "why more data made it worse".
@@ -472,6 +575,18 @@ schedule:
     modules: [ML5]
     field: seismology / tectonics
     question: "Can you find a fault that nobody mapped?"
+
+    pinned:
+      # NOT REPRODUCIBLE WITHOUT ALL THREE PARAMETERS. sklearn's default min_samples=5 gives 22
+      # clusters and 9.6% noise; raw unscaled lon/lat gives 4.
+      slice: "Ridgecrest M2+, 2019-07-01 to 2019-12-31, lat 35.0-36.5, lon -118.5 to -117.0 — 6,646"
+      constants:
+        scaler: "StandardScaler on lon, lat AND depth — three features, not two"
+        dbscan: {eps: 0.15, min_samples: 12}
+      expect:
+        dbscan: {clusters: 11, noise_fraction: 0.184, largest_cluster: 4670}
+        kmeans_k3: [2361, 2223, 2062]    # three equal blobs; it must assign every event
+      verified: 2026-08-30
     exercise: "Re-run DBSCAN with eps halved and then doubled. Report how many clusters each gives, pick the value you would defend, and then name one cluster you think is a real fault and one you think the algorithm invented. You cannot prove either — say what evidence would settle it."
     note: >
       CLUSTERING, promoted to a real week (it had none). k-means, PCA and DBSCAN together, because
@@ -485,7 +600,7 @@ schedule:
       equal blobs, because it must assign every event and cannot say "this one belongs to nothing".
       NB clustering needs none of the supervised machinery, so arriving after regression costs it
       nothing — it borrows only the scaling from S3.
-    calendar_warning: >
+    note_critical: >
       THANKSGIVING MONDAY (Thanksgiving is Thu 26 Nov 2026; campus break is Wed-Fri). Attendance
       will be thin, and this is the week that can least afford it: "is this cluster real?" is the
       hardest epistemic question in the course. It cannot be moved — ML5 requires ML4 (labels to
@@ -502,6 +617,16 @@ schedule:
     modules: [ML6]
     field: seismology
     question: "Can a machine hear an earthquake?"
+
+    pinned:
+      slice: "data/phasenet_ncedc.npz — 2,500-trace NCEDC subset, in the data-v1 release, 42 MB"
+      constants:
+        clipping: "np.clip(w, -10, 10) is REQUIRED — instrument glitches at 1.28e7 std silently
+          collapse U-Net training to 0.0% accuracy without it"
+      expect:
+        sta_lta_accuracy: "47-59%"
+        unet_accuracy: 0.908             # picking is necessary; detection is decorative
+      verified: 2026-08-30
     exercise: "Final project."
     takeaways:
       - "A network learns waveform shape once amplitude is taken away from it."

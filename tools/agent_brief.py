@@ -129,9 +129,11 @@ rules, because a summary of them would compete with the real thing. Read these i
 2. `{REPO}/TEMPLATE.md` — **read all of it.** §7 is the two gates your build must pass.
 3. `{REPO}/tools/_week{n:02d}_spec.md` — **week {n}'s entire specification**: its `course.yml`
    entry and its modules' `modules.yml` entries, copied verbatim, with the `plain_words` that
-   apply. Read every key on it, not a chosen few — a `pinned:` block is settled and must not be
-   re-chosen, and a `note:` records a decision already made rather than one to re-take. You do
-   NOT need to open course.yml or modules.yml; this file is those two files' week-{n} content.
+   apply. Four keys carry the week's design and you read all four: **`pinned:`** is settled data —
+   the slice, the constants, the results that must come out — and you neither re-choose it nor go
+   measuring for a better one; **`note:`** and **`note_critical:`** record decisions already made
+   rather than ones to re-take; **`flagship:`** designs the week's central problem. You do NOT
+   need to open course.yml or modules.yml; this file is those two files' week-{n} content.
 4. This week's dataset audit: {audits}
    **Its measured numbers and traps outrank your expectations.**
 
