@@ -280,7 +280,7 @@ schedule:
       AUDITED 2026-08-30, and two defects were fixed. (1) THE BIN QUESTION WAS BACKWARDS. Both
       grids hold ~0.6-1.0 million cells, so Poisson noise never erases a mode: Earth stays bimodal
       from 6 bins to ~1000, and MARS STAYS BIMODAL PAST 20,000 BINS with no upper limit at all.
-      The peaks merge only when bins are too FEW — Earth at 5, Mars at 8. Asked the old way,
+      The peaks merge only when bins are too FEW — Earth still shows two humps at 5 and merges at 4; Mars at 8. (Corrected 2026-08-31: this line read 'Earth at 5' as the merge point, which is off by one — measured, 5 bins give [159, 29036, 10627, 22351, 2627], which still has the dip. The notebook's answer of 5 as the FEWEST bins keeping two humps is right). Asked the old way,
       students hunt upward forever and conclude the exercise is broken.
       (2) "66% OF EARTH IS BELOW SEA LEVEL" IS A PROJECTION ARTIFACT. A lon-lat grid over-samples
       the poles, stretching Antarctica across many cells. Weighted by cos(latitude) the figure is

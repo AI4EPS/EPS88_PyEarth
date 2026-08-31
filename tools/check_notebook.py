@@ -306,6 +306,80 @@ def check_order(cells):
 
 
 # --- self-checks --------------------------------------------------------------
+def check_weak_asserts(cells, solution_cells=()):
+    """Flag the assert SHAPES that cannot fail for the answer a student would really write.
+
+    Reviewers found one of these in weeks 3, 4, 6, 7, 8, 9 and 12 — the single most common
+    defect in the course, and always the same handful of forms. It stays a warning because
+    only a human can say whether a given assert catches the realistic mistake; what a checker
+    can do is name the shapes that never do, so the builder has to look.
+
+      assert x in [3, 4, 5]     — membership in a list the prompt itself dictated
+      assert a != b             — detects only "did nothing at all"
+      assert len(x) == 3        — a length fixed by a constructor the prompt supplied
+      assert len(a) == len(b)   — two lengths the worked cell above set
+
+    Not flagged: comparisons against a measured value (`assert 0.5 < rate < 2`), which is what
+    these should become.
+    """
+    # Names bound to a list/tuple/set literal anywhere in the notebook. The real shape is
+    # `assert earth_fewest_bins in bin_counts`, where bin_counts is the list of candidates the
+    # prompt handed over two cells earlier — so testing only for a literal on the right missed
+    # the case the rule was written for. My own selftest caught that.
+    # Scan the SOLUTION too: the candidate list often lives in the answer the student writes,
+    # which the student copy stubs out, so scanning their copy alone cannot see it.
+    literal_lists = set()
+    for c in list(cells) + list(solution_cells or ()):
+        if c["cell_type"] != "code":
+            continue
+        try:
+            tr = ast.parse(src(c))
+        except SyntaxError:
+            continue
+        for nd in ast.walk(tr):
+            if (isinstance(nd, ast.Assign) and len(nd.targets) == 1
+                    and isinstance(nd.targets[0], ast.Name)
+                    and isinstance(nd.value, (ast.List, ast.Tuple, ast.Set))):
+                literal_lists.add(nd.targets[0].id)
+
+    for i, c in enumerate(cells):
+        if c["cell_type"] != "code":
+            continue
+        try:
+            tree = ast.parse(src(c))
+        except SyntaxError:
+            continue
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Assert):
+                continue
+            test = node.test
+            why = None
+            if (isinstance(test, ast.Compare) and len(test.ops) == 1
+                    and isinstance(test.ops[0], ast.In)
+                    and (isinstance(test.comparators[0], (ast.List, ast.Tuple, ast.Set))
+                         or getattr(test.comparators[0], "id", None) in literal_lists)):
+                why = "membership in a list of candidates the prompt offered — all of them pass"
+            elif (isinstance(test, ast.Compare) and len(test.ops) == 1
+                  and isinstance(test.ops[0], ast.NotEq)):
+                why = "`!=` only catches doing nothing at all, not doing it wrongly"
+            elif (isinstance(test, ast.Compare) and len(test.ops) == 1
+                  and isinstance(test.ops[0], ast.Eq)
+                  and isinstance(test.left, ast.Call)
+                  and getattr(test.left.func, "id", "") == "len"):
+                rhs = test.comparators[0]
+                # A CONSTANT only. `len(a) == len(b)` against an independent object is a real
+                # check — week 4's `len(triangles.get_offsets()) == len(volcanoes)` catches
+                # plotting the earthquakes instead of the volcanoes — and flagging it made the
+                # rule noisier than the defect it was written for.
+                if isinstance(rhs, ast.Constant):
+                    why = ("a length the prompt already fixed — it passes whatever the student "
+                           "put in the container")
+            if why:
+                line = src(c).splitlines()[node.lineno - 1].strip()[:56]
+                warns.append(f"cell {i}: this self-check probably cannot fail — {why} "
+                             f"(`{line}`). Assert a measured value instead.")
+
+
 def check_asserts(cells):
     """Every name an assert uses must be one the student was told to create, or one the
     notebook already defined. A NameError from the reassurance cell is the worst failure
@@ -589,7 +663,7 @@ def main():
         # student stub does not, so scanning the student copy alone flags every one of them.
         check_summary_is_this_week(cells + sol_cells, n)
     check_conventions(cells); check_predict(cells); check_plain_words(cells, n)
-    check_asserts(cells); check_imports(cells)
+    check_asserts(cells); check_weak_asserts(cells, sol_cells); check_imports(cells)
     # Figures live in the SOLUTION too: a model answer that draws a map was never
     # checked for labels or coastlines, because only the student copy was passed in.
     check_figures(cells); check_figures(sol_cells)
