@@ -199,7 +199,6 @@ modules:
       - {name: "plt.imshow(grid, extent=[...])", does: "draw a whole grid as a picture, one pixel per cell"}
       - {name: "plt.colorbar(label=...)", does: "the key that says what the colours mean"}
       - {name: "plt.legend()",          does: "name the things on a plot when there is more than one", remember: false}
-      - {name: "np.concatenate(grids, axis=1)", does: "join grids side by side, to move a map's left edge", remember: false}
     requires: [P3]
     harvest_gives: "harvest supplies the method and PART of the content"
     minutes: 40

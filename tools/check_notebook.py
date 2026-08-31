@@ -344,6 +344,15 @@ def check_code_quality(cells):
                    for x in ast.walk(tree)):
                 errs.append(f"cell {i}: commented-out code — `{body[:50]}`; delete it")
 
+    # the same import twice — it runs, and every other rule passed it
+    seen = {}
+    for i, src_ in code:
+        for m in re.finditer(r"(?m)^\s*import\s+([\w.]+)(?:\s+as\s+(\w+))?", src_):
+            name = m.group(2) or m.group(1)
+            if name in seen:
+                errs.append(f"cell {i}: imports `{name}` again — already imported in cell {seen[name]}")
+            seen[name] = i
+
     # imports nothing uses
     for i, s in code:
         for m in re.finditer(r"(?m)^\s*import\s+([\w.]+)(?:\s+as\s+(\w+))?", s):
