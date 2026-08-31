@@ -1,0 +1,20 @@
+name: check
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# The old repo built the site on push and that workflow was never carried over, so nothing has
+# validated a push since this repo was created. check_all.py exists; this is what runs it.
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install --quiet pyyaml pandas numpy matplotlib nbformat
+      - name: Validate the plan, the checkers, and every built week
+        run: python tools/check_all.py

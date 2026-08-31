@@ -47,6 +47,8 @@ STANDARDS = [
     (1, "the solution executes clean on a fresh kernel", True),
     (1, "only the six libraries", True),
     (1, "nothing arrives before its week except in a setup cell flagged 'Coming later'", True),
+    (1, "each plain_words idea this week introduces appears in its recorded wording, verbatim",
+        True),
     (1, "no AI-disclosure cell, buffer banner, marker comment or offering date", True),
 
     # --- tier 2: is it WELL MADE? -------------------------------------------------------------

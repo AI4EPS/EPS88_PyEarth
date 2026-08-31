@@ -132,6 +132,27 @@ def check_questions(cells):
 
 
 # --- the summary sits before the homework -------------------------------------
+def check_plain_words(cells, n):
+    """TEMPLATE 5 calls the plain_words table BINDING — the sentence a student meets must be the
+    sentence in the table — and nothing checked it.
+
+    This is the drift that scales: thirteen weeks written by thirteen agents, one calling it
+    "the accumulator pattern" and another "a running total", and a student meets two names for
+    one idea. Week 2's builder had already paraphrased three of four before being told.
+    """
+    mraw = yaml.safe_load((ROOT / "modules.yml").read_text())
+    wk = next(s for s in course["schedule"] if s["n"] == n)
+    text = re.sub(r"\s+", " ", " ".join(src(c) for c in cells))
+    for d in mraw.get("plain_words", []):
+        if d["module"] not in wk["modules"]:
+            continue
+        want = re.sub(r"\s+", " ", d["words"]).strip()
+        if want not in text:
+            errs.append(f"the recorded wording for '{d['idea']}' does not appear verbatim — "
+                        f"TEMPLATE 5 makes it binding, so paraphrasing it gives the course two "
+                        f"names for one idea")
+
+
 def check_predict(cells):
     """TEMPLATE 1: at least one cell headed exactly '### Predict before you run'."""
     if not any(c["cell_type"] == "markdown"
@@ -309,7 +330,7 @@ def main():
     cells = student["cells"]
     figs = check_pair(student, solution)
     check_banned(cells); qs = check_questions(cells); check_order(cells)
-    check_predict(cells)
+    check_predict(cells); check_plain_words(cells, n)
     check_asserts(cells); check_imports(cells)
     # Figures live in the SOLUTION too: a model answer that draws a map was never
     # checked for labels or coastlines, because only the student copy was passed in.
