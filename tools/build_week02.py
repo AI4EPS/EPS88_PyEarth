@@ -155,10 +155,22 @@ Before three thousand planets, three. Venus, Earth and Mars are the three rocky 
 measurements from, and they are the only planets anywhere whose surface temperature we know from
 having been there.
 
-The numbers below are from NASA's NSSDC planetary fact sheets, read 2026-08-30. **Bond albedo** is
-the fraction of sunlight a world reflects; the fact sheet's page for Earth now prints 0.294, and
-this notebook uses the 0.306 that was read on that date. Every temperature below moves if you
-change it, which is exactly why the value and the date it was read both have to be written down.
+The numbers below are from NASA's NSSDC planetary fact sheets. Those sheets are no longer on the
+live web — `nssdc.gsfc.nasa.gov/planetary/factsheet/` redirects to a NASA landing page that does
+not carry them — so what is cited here is the last archived copy: the Internet Archive's capture
+of [the Earth sheet](https://web.archive.org/web/20250820/https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html),
+[Venus](https://web.archive.org/web/20250820/https://nssdc.gsfc.nasa.gov/planetary/factsheet/venusfact.html)
+and [Mars](https://web.archive.org/web/20250820/https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html),
+taken **2025-08-20**, read 2026-08-31. Those links open; the original address does not.
+
+**Bond albedo** is the fraction of sunlight a world reflects, and Earth's is the one number here
+that needs an argument, because the sheet does not agree with itself. It prints a Bond albedo of
+0.294 — and, four rows down, a black-body temperature of 254.0 K. Those two cannot both be right:
+0.294 gives 255.1 K, and only 0.306 reproduces the 254.0 the sheet itself prints. This notebook
+takes 0.306, the value that makes the page self-consistent, and once you have the formula and the
+albedo term — section 4 — you can check that for yourself. Every temperature below moves if you
+change it, which is why the value, where it came from and when it was read all have to be written
+down.
 
 Five lists, in the same order — Venus, Earth, Mars, going outwards from the Sun. A **`for` loop**
 does the same thing once for each item in a list.
@@ -168,7 +180,7 @@ code('''
 worlds = ["Venus", "Earth", "Mars"]
 sun_distances = [0.723, 1.000, 1.524]      # width of the orbit, in AU
 bond_albedos = [0.770, 0.306, 0.250]       # fraction of sunlight reflected
-surface_temps = [737.0, 288.0, 210.0]      # measured surface temperature, in K
+surface_temps = [737.0, 288.0, 214.0]      # measured surface temperature, in K
 air_pressures = [92.0, 1.014, 0.006]       # atmospheric pressure at the surface, in bar
 
 for world in worlds:
@@ -371,7 +383,7 @@ for i in range(len(worlds)):
 ''')
 
 md("""
-Mars, 0.006 bar of air: the test is out by 0.2 K. Earth, 1.014 bar: out by 34.0 K. Venus, 92 bar:
+Mars, 0.006 bar of air: the test is out by 4.2 K. Earth, 1.014 bar: out by 34.0 K. Venus, 92 bar:
 out by 510.3 K.
 
 Same physics, same formula, three thicknesses of air, and the error tracks the air. That
@@ -382,13 +394,15 @@ actually has.**
 
 It is worth being clear about what just happened, because it is the opposite of how this usually
 gets taught. Nobody defined the greenhouse effect and then went looking for it. We computed what
-starlight alone would do, compared that with three thermometers, and the leftovers came out at 0.2,
-34.0 and 510.3 K — in the order of how much air each world has. The greenhouse effect is that
-leftover, measured.
+starlight alone would do, compared that with three thermometers, and the leftovers came out at 4.2,
+34.0 and 510.3 K — in the order of how much air each world has. Mars to Venus is four orders of
+magnitude in pressure, 0.006 bar to 92, and it comes out as two orders of magnitude in the
+leftover. The greenhouse effect is that leftover, measured.
 
 The figure below plots it. The diagonal is where a world with no air would sit, and each planet
-stands above it by exactly the amount its own air adds — Mars by an amount too small to see, Venus
-by half the height of the plot. All three sit to the left of the window.
+stands above it by exactly the amount its own air adds — Mars by 4.2 K, so close to the line you
+have to look for the gap, Venus by 510.3 K, which is almost the whole height of the plot. All
+three sit to the left of the window.
 """)
 
 code('''
@@ -527,6 +541,8 @@ code('''
 ours = []
 theirs = []
 close = 0
+above = 0
+below = 0
 worst_gap = 0
 worst_planet = ""
 worst_distance = 0
@@ -539,6 +555,10 @@ for i in range(len(usable_names)):
         theirs.append(usable_archive_temps[i])
         if gap < 10:
             close = close + 1
+        elif temperature > usable_archive_temps[i]:
+            above = above + 1
+        else:
+            below = below + 1
         if gap > worst_gap:
             worst_gap = gap
             worst_planet = usable_names[i]
@@ -546,6 +566,7 @@ for i in range(len(usable_names)):
 
 print("planets we can compare against:", len(ours))
 print("of those, within 10 K of the published value:", close)
+print("the rest, ours hotter than theirs:", above, " ours colder:", below)
 print("the largest disagreement:", round(worst_gap), "K, on", worst_planet, "-",
       worst_distance, "AU from its star")
 ''')
@@ -561,13 +582,15 @@ plt.show()
 
 md("""
 952 of 1525 agree within 10 K, and the cloud hugs the diagonal, so this is the calculation the
-field uses. Where points miss the line they mostly sit **above** it, and that is our own doing: we
-let every planet absorb all the light it catches, and the discovery papers each used an albedo of
-their own.
+field uses. The loop counted the rest rather than leaving it to the eye: of the 573 that miss by
+10 K or more, **456 sit above the line and 117 below**. The 456 are our own doing — we let every
+planet absorb all the light it catches, and the discovery papers each used an albedo of their own,
+so our answers run hot.
 
-The scattering of points far *below* the line is a different animal, and the worst of them says
-what it is. HD 284149 AB b orbits 431 AU out — four hundred times the width of Earth's orbit — and
-at that distance the starlight our formula is built on has almost nothing left in it, so our answer
+The 117 below the line are a different animal, and they are the ones your eye goes to, because they
+run far off the diagonal instead of crowding beside it. The worst of them says what they are.
+HD 284149 AB b orbits 431 AU out — four hundred times the width of Earth's orbit — and at that
+distance the starlight our formula is built on has almost nothing left in it, so our answer
 comes out near zero and the two disagree by 2379 K. The archive's number for that planet is not a
 response to its star at all: a young planet photographed that far out is still glowing with the
 heat of its own formation. The formula is not wrong about it. It is answering a question that does
@@ -659,7 +682,8 @@ code('''
 plt.hist(all_temps, bins=250)
 plt.axvline(273, color="0.4")
 plt.axvline(373, color="0.4")
-plt.text(400, 103, "liquid water window")
+plt.text(323, 105, "liquid water window", ha="center")   # ha= centres both on the band
+plt.text(323, 94, "↓", ha="center")
 plt.xlim(0, 2500)
 plt.ylim(0, 115)                       # room above the bars for the label
 plt.xlabel("equilibrium temperature at albedo 0 (K)")
@@ -690,10 +714,15 @@ for i in range(len(usable_names)):
 
 md("""
 It rejects almost all of them. TRAPPIST-1 e, f and g, Proxima Cen b, TOI-700 d, Kepler-186 f and
-Kepler-442 b all come out too cold, between 197.4 K and 267.8 K — which is the same failure as
-Earth's 254.0 K, on planets whose whole claim to interest is that they might have air. (Proxima
-Cen b prints its radius as `None`: it was found by watching its star wobble, and that method never
-measures a size.)
+Kepler-442 b all come out too cold, between 197.4 K and 267.8 K, on planets whose whole claim to
+interest is that they might have air. That is the same failure the test made on Earth — but not
+the same number, and the difference is worth being careful about. Every figure on that line is an
+albedo-0 figure, and Earth at albedo 0 is 278.3 K and *passes*; it was Earth's own albedo, 0.306,
+that pushed it down to 254.0 K. Two numbers computed at two different albedos are not comparable,
+and the temptation to line them up anyway is exactly what makes this test easy to misread. What
+does repeat, at either albedo, is the reason: a formula that knows nothing about air, asked about
+worlds whose whole interest is their air. (Proxima Cen b prints its radius as `None`: it was found
+by watching its star wobble, and that method never measures a size.)
 
 It accepts two. TRAPPIST-1 c comes out at 339.9 K, hotter than any of its siblings we looked at,
 and K2-18 b at 282.7 K — and K2-18 b is 2.37 Earth radii, a size our own radius branch had already
@@ -769,16 +798,30 @@ Class asked which planets could hold liquid water and never asked what they orbi
 temperature is the first number the formula takes, and it has been sitting in `usable_star_temps`
 all along.
 
+It carries more than it looks. A star much cooler than the Sun is also much smaller and fainter,
+so a planet warm enough for liquid water has to sit very close in — close enough to be locked with
+one face to its star for good, and close enough that a stellar flare arrives at full strength.
+Whether these candidates orbit Sun-like stars or cool ones is the most consequential thing about
+the list, and nobody has looked yet.
+
 Loop over the usable planets and, for every one that the albedo-0 test calls a rocky candidate —
 inside the 273–373 K window **and** with a radius that is not `None` **and** below 1.6 — append its
 name to `candidate_names` and its star's temperature to `candidate_star_temps`. Two lists growing
 together inside the same `if`.
 
-Then print three things: how many candidates there are; how many of them orbit a star cooler than
-the Sun's 5772 K, counted into `cooler_than_sun` with a second loop; and the value of the coolest
-star in the set, `coolest`, together with the planet it belongs to. `min(candidate_star_temps)`
-gives you the coolest value and `.index(...)` gives you its position, exactly as last week's
-`max` and `.index` found the largest earthquake and then its place name.
+Then print: how many candidates there are; how many of them orbit a star cooler than the Sun's
+5772 K, counted into `cooler_than_sun` with a second loop; and the value of the coolest star in
+the set, `coolest`, together with the planet it belongs to. `min(candidate_star_temps)` gives you
+the coolest value and `.index(...)` gives you its position, exactly as last week's `max` and
+`.index` found the largest earthquake and then its place name.
+
+One thing about `.index` that last week never made you face: it hands back the **first** position
+holding that value and stops looking. Two planets of the same system orbit the same star, so they
+carry the same star temperature to the last decimal — and if that star is the coolest one, `.index`
+will name one of those planets and say nothing about the other. So finish by looping once more over
+the candidates and printing each name beside its star's temperature, one per line. That printout is
+what tells you whether the planet `.index` picked was alone, and it is the one to read before you
+believe any single line above it.
 
 **Use these names**, because the self-check looks for them: `candidate_names`,
 `candidate_star_temps`, `cooler_than_sun` and `coolest`.
@@ -804,6 +847,10 @@ print("rocky candidates:", len(candidate_names))
 print("of those, orbiting a star cooler than the Sun:", cooler_than_sun)
 print("the coolest star of the set:", coolest, "K, around",
       candidate_names[candidate_star_temps.index(coolest)])
+
+# .index stopped at the first match, so print them all and see what it passed over
+for i in range(len(candidate_names)):
+    print(f"  {candidate_names[i]}: star at {candidate_star_temps[i]} K")
 ''')
 
 code(f'''
@@ -897,7 +944,14 @@ before it goes the way of Venus.
 
 What the test does not know is how much air TRAPPIST-1 c has. Its answer would be identical for a
 bare rock, for something Earth-like under 1.014 bar, and for something under 92 bar the way Venus
-is — and those three would sit hundreds of degrees apart.
+is — and those three would sit hundreds of degrees apart. It knows nothing about the star either,
+and part 1 is where that shows. All twelve candidates orbit stars cooler than the Sun's 5772 K,
+but that count flatters the pattern: Kepler-1126 c's star is 5678 K, which is barely cooler at all.
+The other eleven run from 2566 K to 4262 K, and TRAPPIST-1's 2566 K is less than half the Sun's. A
+star that cool is small and faint, so the only way TRAPPIST-1 c reaches 339.9 K is by orbiting very
+close in — close enough to be tidally locked and to take its star's flares at full strength. My
+part-1 printout also shows TRAPPIST-1 d sharing that same 2566 K, which is `.index` reporting one
+planet where there were two. None of that is a number the formula ever asks for.
 """)
 
 

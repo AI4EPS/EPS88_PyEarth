@@ -188,9 +188,10 @@ the record: 5 of my 8 fall between 1903 and
 3 events in 96 years and gives 12% rather
 than 22% — nearly a factor of 2, out of a choice
 about the start date that nothing in the data makes for me. Neither window is obviously the right
-one, because the early events are also the ones whose magnitudes were reconstructed from written
-accounts. It is a single number with nothing attached to say how firm it is, and putting an
-interval around a number like this one is the next thing this course has to learn to do.
+one, because the early events are also the ones whose magnitudes were assigned decades later from
+historical seismograms and felt reports, so they carry the most uncertainty. It is a single number
+with nothing attached to say how firm it is, and putting an interval around a number like this one
+is the next thing this course has to learn to do.
 
 ## The week's takeaways, for context
 

@@ -215,7 +215,7 @@ schedule:
       Earth's measured albedo with Venus at zero, and it was in this file for a while. Run both
       passes in sequence; the reveal is stronger honest.
       The gaps are the greenhouse effect, measured: Earth +34.0 K at 1.014 bar, Venus +510.3 K at
-      92 bar, Mars +0.2 K at 0.006 bar. Same physics, three thicknesses of air. It also rejects the famous habitable-zone candidates — TRAPPIST-1 e,
+      92 bar, Mars +4.2 K at 0.006 bar (was +0.2 K while Mars was mispinned at 210 K). Same physics, three thicknesses of air. It also rejects the famous habitable-zone candidates — TRAPPIST-1 e,
       f and g, Proxima Cen b, TOI-700 d, Kepler-186 f, Kepler-442 b — and accepts TRAPPIST-1 c,
       a 340 K Venus analogue, and K2-18 b, a sub-Neptune.
       Build toward that reveal: they write the test, trust it, then run it on Earth. The 34.0 K
@@ -674,6 +674,22 @@ schedule:
         sparse_columns_alone: 0.811      # the 19 columns that are over half empty
         most_complete_column: "Sr, 6.5% missing — no column in the file is complete"
         dropna_on_all_51: 1              # rows left. The lesson is DELETION, not dimensionality.
+        # The Ti-V pair, dropna against median-filled. ONE SEED IS NOT ENOUGH HERE, and the first
+        # build said it was: seed 0 gives 0.832 against 0.727, but over ten splits the dropna tree
+        # averages 0.780 and the filled tree 0.726 — a mean gap of 0.054 that falls to 0.001 on
+        # split 8 and reverses on seed 11. Of seed 0's 0.105, only 0.028 is the filled-in rows
+        # (the 80 median-filled test rocks score 0.675, the 147 measured ones 0.755); the other
+        # 0.077 is the split. Refitting on the complete training rows only and scoring the same
+        # 147 measured test rocks gives 0.762 against 0.755 — training on filled rows is not the
+        # cause of anything.
+        ti_v_dropna_vs_filled:
+          seed0: {dropna: 0.832, filled: 0.727}
+          ten_splits: {dropna_mean: 0.780, filled_mean: 0.726, gap_mean: 0.054, gap_min: 0.001}
+          filled_model_test_set: {measured: [147, 0.755], median_filled: [80, 0.675]}
+        # TiO2 alone on those same 514 rows and the same split scores 0.735 and V alone 0.303:
+        # vanadium buys 0.097, so "vanadium adds very little" is false, however it looks on the
+        # scatter (the three class medians of V sit within 18.5 ppm of each other).
+        ti_v_one_element_at_a_time: {TiO2_only: 0.735, V_only: 0.303, both: 0.832}
       verified: 2026-08-31
     exercise: >
       Train a forest on the ten major oxides, then on all 51 columns. More columns wins — 0.965
@@ -698,7 +714,7 @@ schedule:
     evidence: [notes/dataset-audit/vermeesch-basalts.md]
     takeaways:
       - "A rock's chemistry carries the tectonic setting it formed in."
-      - "Missing data is not useless data — half-empty columns can carry more signal than complete ones."
+      - "Missing data is not useless data — a half-empty column can still carry real signal, and even the pattern of the blanks predicts the setting."
       - "Deleting rows to avoid missing values can destroy a dataset entirely."
   - n: 12
     date: 2026-11-23
