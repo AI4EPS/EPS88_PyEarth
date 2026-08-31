@@ -1,0 +1,6 @@
+time,latitude,longitude,depth,mag,magType,nst,gap,dmin,rms,net,id,updated,place,type,horizontalError,depthError,magError,magNst,status,locationSource,magSource
+1990-03-03T12:16:27.960Z,-22.122,175.163,33.2,7.6,mw,,,,1.3,us,usp000464d,2022-04-28T19:54:06.232Z,south of the Fiji Islands,earthquake,,,,,reviewed,us,hrv
+1990-04-05T21:12:35.550Z,15.125,147.596,11.4,7.6,mw,,,,1.2,us,usp00047gj,2022-04-28T19:51:12.196Z,"198 km E of Saipan, Northern Mariana Islands",earthquake,,,,,reviewed,us,par
+1990-04-18T13:39:19.010Z,1.186,122.857,25.7,7.8,mw,,,,1.2,us,usp000482z,2022-04-28T19:52:05.247Z,"75 km NNW of Gorontalo, Indonesia",earthquake,,,,,reviewed,us,par
+1990-07-16T07:26:34.610Z,15.679,121.172,25.1,7.7,mw,,,,1.1,us,usp0004bxs,2022-04-28T19:42:58.516Z,"4 km E of Macapsing, Philippines",earthquake,,,,,reviewed,us,hrv
+1990-12-30T19:14:18.930Z,-5.097,150.967,178.6,7.5,mw,,,,1.2,us,usp0004k00,2022-04-28T19:32:53.354Z,"104 km ENE of Kimbe, Papua New Guinea",earthquake,,,,,reviewed,us,hrv

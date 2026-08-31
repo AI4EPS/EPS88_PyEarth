@@ -1,0 +1,4 @@
+time,latitude,longitude,depth,mag,magType,nst,gap,dmin,rms,net,id,updated,place,type,horizontalError,depthError,magError,magNst,status,locationSource,magSource
+1991-04-22T21:56:51.820Z,9.685,-83.073,10.0,7.6,mw,,,,1.2,us,usp0004qpg,2022-04-28T19:18:34.851Z,"34 km S of Limón, Costa Rica",earthquake,,,,,reviewed,us,hrv
+1991-06-20T05:18:52.510Z,1.196,122.787,31.4,7.5,mw,,,,1.2,us,usp0004t6g,2022-04-28T19:11:04.409Z,"79 km NNW of Gorontalo, Indonesia",earthquake,,,,,reviewed,us,hrv
+1991-12-22T08:43:13.410Z,45.533,151.021,24.7,7.6,mw,,,,0.9,us,usp00050sq,2022-04-28T18:58:08.037Z,"248 km E of Kuril’sk, Russia",earthquake,,,,,reviewed,us,hrv

@@ -1,0 +1,13 @@
+time,latitude,longitude,depth,mag,magType,nst,gap,dmin,rms,net,id,updated,place,type,horizontalError,depthError,magError,magNst,status,locationSource,magSource
+1990-12-31T00:08:23.950Z,-3.427,140.561,37.9,4.9,mb,,,,1.1,us,usp0004k0a,2014-11-07T00:47:40.734Z,"92 km S of Abepura, Indonesia",earthquake,,13.1,,10.0,reviewed,us,us
+1990-12-31T02:38:43.160Z,6.807,-72.984,154.9,5.2,mb,,,,0.9,us,usp0004k0d,2014-11-07T00:47:40.743Z,"5 km N of Cepitá, Colombia",earthquake,,3.3,,53.0,reviewed,us,us
+1990-12-31T03:33:50.700Z,-28.672,-112.577,10.0,5.1,mb,,,,1.0,us,usp0004k0f,2014-11-07T00:47:40.762Z,Easter Island region,earthquake,,,,4.0,reviewed,us,us
+1990-12-31T08:26:37.370Z,-34.853,178.971,170.3,5.1,mb,,,,1.3,us,usp0004k0q,2014-11-07T00:47:40.779Z,south of the Kermadec Islands,earthquake,,58.8,,2.0,reviewed,us,us
+1990-12-31T09:00:06.580Z,10.832,141.144,33.0,4.6,mb,,,,1.2,us,usp0004k0t,2014-11-07T00:47:40.783Z,"136 km NNE of Fais, Micronesia",earthquake,,,,4.0,reviewed,us,us
+1990-12-31T11:01:02.920Z,37.222,138.556,30.8,4.7,mb,,,,1.4,us,usp0004k0y,2014-11-07T00:47:40.793Z,"16 km S of Kashiwazaki, Japan",earthquake,,6.9,,9.0,reviewed,us,us
+1990-12-31T12:23:08.820Z,-14.28,167.366,218.7,5.0,mb,,,,1.0,us,usp0004k10,2014-11-07T00:47:40.797Z,"48 km SSW of Sola, Vanuatu",earthquake,,7.6,,16.0,reviewed,us,us
+1990-12-31T16:30:23.670Z,-17.248,-174.361,33.0,5.1,mb,,,,1.2,us,usp0004k17,2014-11-07T00:47:40.823Z,"155 km SSW of Hihifo, Tonga",earthquake,,,,14.0,reviewed,us,us
+1990-12-31T17:57:03.200Z,0.857,126.689,70.5,5.5,mb,,,,1.2,us,usp0004k19,2022-04-28T19:32:54.705Z,"77 km W of Ternate, Indonesia",earthquake,,12.4,,29.0,reviewed,us,us
+1990-12-31T20:33:06.330Z,24.189,126.296,33.0,4.6,mb,,,,0.8,us,usp0004k1g,2014-11-07T00:47:40.850Z,"121 km SE of Hirara, Japan",earthquake,,,,11.0,reviewed,us,us
+1990-12-31T21:47:21.840Z,0.45,126.422,33.0,5.0,mb,,,,0.3,us,usp0004k1k,2014-11-07T00:47:40.854Z,"113 km WSW of Ternate, Indonesia",earthquake,,,,1.0,reviewed,us,us
+1990-12-31T22:11:30.330Z,-21.953,174.818,10.2,5.6,mw,,,,1.2,us,usp0004k1p,2022-04-28T19:32:55.876Z,Vanuatu region,earthquake,,,,,reviewed,us,hrv

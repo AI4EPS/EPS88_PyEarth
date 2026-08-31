@@ -87,19 +87,23 @@ modules:
       kept: the birthquake question itself, the live USGS query, and the day-one tour of what a
       cell and a kernel are. What changed, and why:
       (1) ADDED PLOTS. The harvest ends with a printed table, so a beginner finishes hour one with
-      no way to see whether anything worked. Two histograms and two maps now carry the week.
+      no way to see whether anything worked. One histogram and three maps now carry the week.
       (2) ADDED A YEAR OF DATA. The harvest only ever loads one day. A day is a dozen or two events
       and shows nothing; a year is several thousand and draws the plate boundaries outright. The
       contrast is now the closing lesson — same code, more data, a planetary pattern appears.
       THE DEMO DAY IS PINNED in the term's course.yml, chosen for whose birthday it is. Do not
       re-choose it. Before writing the lists section, CHECK WHERE THE MAXIMUM FALLS and build the
       section around the answer: an earlier version of this note demanded the maximum sit at
-      neither end, which the pinned day violates — its largest event is also its first, and the
-      three that follow are its aftershocks. That turned out to be better material than the rule
-      was protecting.
+      neither end, and neither demo day it has had obeys that. The current one's largest event is
+      the LAST of twelve, and being 31 December it is the last of the year — so the section says
+      that, and reads `depths` with the same max/.index move to find a 218.7 km earthquake, rather
+      than hand-listing an aftershock sequence the day does not contain.
       (3) LISTS INSTEAD OF DATAFRAMES. The harvest indexes a DataFrame from the first minute.
-      Here pandas loads the file in a WATCH cell and hands back six plain lists, because P1
-      teaches lists and pandas properly belongs to D2.
+      Here pandas loads the file in a WATCH cell, because P1 teaches lists and pandas properly
+      belongs to D2. ONE COLUMN AT A TIME, though: an earlier build handed back six parallel lists
+      from one call, which forced a six-name unpacking at every call site and cost this module
+      forty-two names for one idea. `column(name, start, end, minmag)` returns ONE list, so no call site
+      unpacks and the notebook only ever asks for the two or three columns a cell actually uses.
       (4) ONE WORKED PASS, NOT TWO. The harvest finds the instructor's birthquake and then the
       student's, in full, twice. The second pass is now the homework, which halves class time and
       turns repetition into practice.
@@ -107,7 +111,14 @@ modules:
       order of magnitude more earthquakes with the floor removed (measured factors of 15-19 on the
       dates tried), which is where catalogue completeness enters the course. Compute the factor for
       whichever date you use; do not quote one from here.
-      (6) ADDED SELF-CHECKS after each homework part.
+      (6) ADDED SELF-CHECKS after each homework part, each asserting a MEASURED relation rather
+      than a shape the code makes true — part 2's checks that the count is below part 1's no-floor
+      total, which is the comparison the prompt warns against, and part 3's that day < week <
+      month with the month in the hundreds.
+      (7) THREE HELPERS, ONE CALL SHAPE EACH — column, count, report_window — and all three are
+      used in class before the homework. The harvest has none, and an earlier build had five with
+      one (load_yours) defined in the first cell every student reads and called zero times before
+      the homework.
 
   - id: P2
     title: "Dictionaries"
