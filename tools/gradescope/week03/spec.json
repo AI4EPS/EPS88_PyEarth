@@ -22,8 +22,10 @@
       "name": "Part 1 — where the peaks merge",
       "marker": "✓ where the peaks merge",
       "checks": [
-        "assert earth_fewest_bins == fewest_bins(earth), \\",
-        "assert mars_fewest_bins == fewest_bins(mars), \\"
+        "assert still_two_humps(earth, earth_fewest_bins), \\",
+        "assert not still_two_humps(earth, bin_counts[bin_counts.index(earth_fewest_bins) - 1]), \\",
+        "assert still_two_humps(mars, mars_fewest_bins), \\",
+        "assert not still_two_humps(mars, bin_counts[bin_counts.index(mars_fewest_bins) - 1]), \\"
       ],
       "check_points": 28,
       "code_points": 5
@@ -49,7 +51,7 @@
   ],
   "released": {
     "w03-c046": "# ── Checkpoint ── run this if you restarted the kernel or fell behind ──\nearth = elevation(\"earth\")\nmars = elevation(\"mars\")\nbelow = earth < 0\nfraction_below = below.sum() / earth.size\n\nquakes = load(\"2000-01-01\", \"2026-01-01\", 5.5)\nquakes[\"year\"] = quakes[\"time\"].str[:4]\nquakes = quakes[[\"year\", \"depth\", \"mag\", \"type\", \"place\"]]",
-    "w03-q06-answer": "# ← your answer here\n\n\ndef fewest_bins(grid):\n    \"\"\"The smallest count in bin_counts whose histogram still dips between two humps.\"\"\"\n    for n in bin_counts:\n        counts, edges = np.histogram(grid.ravel(), bins=n)\n        for i in range(1, len(counts) - 1):\n            if counts[i] < counts[:i].max() and counts[i] < counts[i + 1:].max():\n                return n\n\n\nassert earth_fewest_bins == fewest_bins(earth), \\\n    \"that is not where Earth's dip disappears — read the counts again\"\nassert mars_fewest_bins == fewest_bins(mars), \\\n    \"that is not where Mars's dip disappears — read the counts again\"\nprint(\"✓ where the peaks merge — Earth keeps two humps down to\", earth_fewest_bins,\n      \"bins, Mars down to\", mars_fewest_bins)",
+    "w03-q06-answer": "# ← your answer here\n\n\n# This CHECKS an answer; it does not find one. The searching is the question, and it is yours.\ndef still_two_humps(grid, n_bins):\n    \"\"\"Does this grid's histogram still dip between two humps at this many bins?\"\"\"\n    counts, edges = np.histogram(grid.ravel(), bins=n_bins)\n    for i in range(1, len(counts) - 1):\n        if counts[i] < counts[:i].max() and counts[i] < counts[i + 1:].max():\n            return True\n    return False\n\n\nassert still_two_humps(earth, earth_fewest_bins), \\\n    \"Earth's dip has already gone at that many bins — read the counts again\"\nassert not still_two_humps(earth, bin_counts[bin_counts.index(earth_fewest_bins) - 1]), \\\n    \"the next coarser binning in the sweep still dips, so that is not the SMALLEST that does\"\nassert still_two_humps(mars, mars_fewest_bins), \\\n    \"Mars's dip has already gone at that many bins — read the counts again\"\nassert not still_two_humps(mars, bin_counts[bin_counts.index(mars_fewest_bins) - 1]), \\\n    \"the next coarser binning in the sweep still dips, so that is not the SMALLEST that does\"\nprint(\"✓ where the peaks merge — Earth keeps two humps down to\", earth_fewest_bins,\n      \"bins, Mars down to\", mars_fewest_bins)",
     "w03-q07-answer": "# ← your answer here\n\n\nassert earth_weighted > fraction_below, \\\n    \"the weighted fraction should be the bigger one — check what you divided by\"\nprint(\"✓ area weighting — the fraction below sea level moved from\",\n      f\"{fraction_below:.3f}\", \"to\", f\"{earth_weighted:.3f}\")",
     "w03-q08-answer": "# ← your answer here\n\n\nassert per_year.sum() == len(quakes), \\\n    \"the yearly counts should add up to every row in the catalogue\"\nprint(\"✓ earthquakes by year — busiest is\",\n      per_year.sort_values(ascending=False).index[0], \"with\", per_year.max(),\n      \"against a median of\", per_year.median())"
   },

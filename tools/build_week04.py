@@ -293,7 +293,13 @@ and `cmap=`, and label the colours with `plt.colorbar`. Put two panels side by s
 without which the figure hides most of its own data.
 
 **Eight places where you write something: five in class, three at home.** Each one is headed
-*Your turn*, with an empty cell under it.
+*Your turn*, with an empty cell under it. The first two homework parts ask for numbers and then
+for a sentence about them, so those have a second cell as well.
+
+1. Where on the planet are they?
+2. What draws those lines?
+3. Why are the deep earthquakes not where you'd guess?
+4. Why does a count of eruptions need a log axis — and what is missing from the bottom of it?
 """)
 
 setup = weekkit.setup_cell(
@@ -326,7 +332,7 @@ code(setup)
 
 # --- section 1 -------------------------------------------------------------
 md("""
-## Longitude across, latitude up
+## 1. Where on the planet are they?
 
 The earthquake catalogue has a `longitude` column and a `latitude` column. Longitude runs from
 -180 to 180 across the world and latitude from -90 to 90 up it, so putting one on the bottom axis
@@ -447,7 +453,7 @@ print("✓ the volcano map —", len(triangles.get_offsets()), "volcanoes, betwe
 
 # --- section 2 -------------------------------------------------------------
 md("""
-## Which lines
+## 2. What draws those lines?
 
 The volcanoes fall on lines too, and mostly the same ones: the Andes, the Cascades, the Aleutians,
 Japan, Indonesia. So both maps are drawing something neither file contains. That something is the
@@ -538,7 +544,7 @@ before the end of the notebook.
 
 # --- section 3 -------------------------------------------------------------
 md("""
-## How deep
+## 3. Why are the deep earthquakes not where you'd guess?
 
 Every earthquake in the catalogue has a `depth` in kilometres as well as a position. Deep
 earthquakes are strange: at a few hundred kilometres down the rock is hot enough and squeezed hard
@@ -632,10 +638,8 @@ from it. That offset is the whole point, and it is easier to measure on one arc 
 world.
 """)
 
-# --- section 4 -------------------------------------------------------------
+# --- section 3b: one arc, close up ------------------------------------------
 md("""
-## One arc, close up
-
 Zooming a map means changing `plt.xlim` and `plt.ylim` and nothing else — the data is the same
 data. To keep only the earthquakes inside the box, filter on latitude and longitude the way you
 filtered on magnitude in the tables week, joining the four conditions with `&`, one bracketed
@@ -745,9 +749,9 @@ Your figure cannot tell you the mechanism. It tells you the geometry, which is t
 settled: whatever is breaking down there, it is breaking inside a sinking plate.
 """)
 
-# --- section 5 -------------------------------------------------------------
+# --- section 4 -------------------------------------------------------------
 md(f"""
-## How big is big
+## 4. Why does a count of eruptions need a log axis — and what is missing from the bottom of it?
 
 That is where; the rest of the notebook is how big. Volcanologists score an eruption on the
 **Volcanic Explosivity Index**, a whole number from 0 to 8, and the eruption table carries it in
@@ -990,6 +994,10 @@ Then draw `counts` against `centres` as a bar chart with `width=0.45`, put the c
 scale, label both axes, title it with the sample size, and print `counts` so you can read the
 numbers off.
 
+Then answer the question in one sentence in the cell after: do your two smallest magnitude bins
+fall below the bin above them, the way VEI 0 and VEI 1 fell below VEI 2 in class? Quote
+`counts[0]` and `counts[1]` from your own printout.
+
 **Use these names**, because the self-check looks for them: `counts`, `centres`.
 """)
 
@@ -1012,6 +1020,14 @@ print("✓ magnitudes on a log axis — the smallest bin holds", counts[0],
       "earthquakes and the next one", counts[1])
 """)
 
+answer_prose(f"""
+No — mine do the opposite. `counts[0]` is {M['mag_lowest']:,} earthquakes in the 5.5–6.0 bin and
+`counts[1]` is {M['mag_second']:,} in the 6.0–6.5 bin, so the smallest bin is the tallest bar on
+the chart and the counts keep climbing all the way down to the left edge. The eruption record does
+the reverse — VEI 0 and VEI 1 both sit below VEI 2 — so whatever is eating the small eruptions is
+not eating the small earthquakes.
+""")
+
 ask(f"""
 ### ✏️ Your turn 7
 
@@ -1032,6 +1048,11 @@ name and how many earthquakes are in it. Then work out `shallow_lon` and
 300 km — the same two numbers you printed for South America.
 
 The two boxes do not give the same answer, and both are right.
+
+Then, in one sentence in the cell after, worked out from your own two medians rather than from the
+figure: which side of the shallow events do the deep ones sit on, and which way is the plate going
+down under the arc you chose? The self-check under your answer prints the gap between the two
+medians but not its direction, so this one is yours to read off the sign.
 
 **Use these names**, because the self-check looks for them: `arc`, `section`, `shallow_lon`,
 `deep_lon`.
@@ -1093,12 +1114,19 @@ assert section.get_offsets()[:, 1].max() <= 0, \\
 assert 1 < abs(deep_lon - shallow_lon) < 15, \\
     "the two medians should be a few degrees apart; a gap of nearly nothing usually means both " \\
     "were taken over the same depth class"
-if deep_lon > shallow_lon:
-    side = "east"
-else:
-    side = "west"
-print("✓ the slab —", len(arc), "earthquakes; the deep ones sit",
-      round(abs(deep_lon - shallow_lon), 1), "degrees", side, "of the shallow ones")
+print("✓ the slab —", len(arc), "earthquakes; deep median longitude minus shallow is",
+      round(deep_lon - shallow_lon, 1), "degrees")
+""")
+
+answer_prose(f"""
+I took Chile. My deep events have a median longitude of {M['hw']['Chile']['deep_lon']} and my
+shallow ones {M['hw']['Chile']['shallow_lon']}, so deep minus shallow is
+{M['hw']['Chile']['gap']} degrees — a positive number, which means the deep earthquakes sit
+{M['hw']['Chile']['gap']} degrees **{M['hw']['Chile']['side']}** of the shallow ones, inland of the
+trench. The slab therefore dips {M['hw']['Chile']['side']}wards: the Nazca plate goes down under
+South America, getting deeper the further inland you follow it. (Japan gives
+{M['hw']['Japan']['gap']} degrees, a negative number, because there the Pacific plate is sinking
+{M['hw']['Japan']['side']}wards under the arc — the mirror image, and just as right.)
 """)
 
 ask("""

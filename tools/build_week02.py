@@ -98,6 +98,15 @@ the real one, on the three worlds where we have both. And say what that differen
 and why you cannot compare it with a number · `abs` · writing your own functions with `def`,
 arguments, `return` and a docstring · `help` · and marking a plot up with `plt.axvline` and
 `plt.text`.
+
+**Eight places where you write something: five in class, three at home.** Each one is headed
+*Your turn*, with an empty cell under it. The first two homework parts ask for numbers and then
+for a sentence about them, so those have a second cell as well.
+
+1. What temperature would starlight alone hold a world at?
+2. Does that test say Venus could have liquid water?
+3. How much of a world's warmth comes from its air, not its star?
+4. Which of three thousand real planets pass — and what does the archive not know about them?
 """)
 
 # ---------------------------------------------------------------- setup
@@ -147,9 +156,9 @@ archive_temps = column("pl_eqt")     # the archive's own equilibrium temperature
 print("planets in the archive:", len(planet_names))
 '''.strip("\n")))
 
-# ---------------------------------------------------------------- 1. loops
+# ---------------------------------------------------------------- 1a. loops
 md("""
-## 1. Doing the same thing to every world
+## 1. What temperature would starlight alone hold a world at?
 
 Before three thousand planets, three. Venus, Earth and Mars are the three rocky worlds we have
 measurements from, and they are the only planets anywhere whose surface temperature we know from
@@ -168,7 +177,7 @@ that needs an argument, because the sheet does not agree with itself. It prints 
 0.294 — and, four rows down, a black-body temperature of 254.0 K. Those two cannot both be right:
 0.294 gives 255.1 K, and only 0.306 reproduces the 254.0 the sheet itself prints. This notebook
 takes 0.306, the value that makes the page self-consistent, and once you have the formula and the
-albedo term — section 4 — you can check that for yourself. Every temperature below moves if you
+albedo term — section 3 — you can check that for yourself. Every temperature below moves if you
 change it, which is why the value, where it came from and when it was read all have to be written
 down.
 
@@ -213,7 +222,9 @@ it empty and append inside.** `results.append(x)` adds one item to the end of th
 """)
 
 md("""
-✏️ **Your turn.** Sunlight thins out with distance: a planet twice as far from its star catches a
+### ✏️ Your turn 1
+
+Sunlight thins out with distance: a planet twice as far from its star catches a
 quarter as much. So the sunlight reaching a world, compared with Earth, is `1 / distance ** 2` —
 where `**` means "to the power of", so `distance ** 2` is the distance squared.
 
@@ -232,10 +243,8 @@ for i in range(len(worlds)):
 print("sunlight compared with Earth, for", worlds, "-", sunlight)
 ''')
 
-# ---------------------------------------------------------------- 2. equilibrium temperature
+# ---------------------------------------------------------------- 1b. equilibrium temperature
 md("""
-## 2. The temperature starlight alone would give
-
 A planet sits in a rain of starlight. Some of that light bounces straight off; the rest is absorbed
 and warms the planet up. A warm planet glows — in the infrared, not visibly — and the warmer it
 gets the harder it glows, until it is losing exactly as much heat as it is catching. The
@@ -274,7 +283,9 @@ print("Earth, reflecting nothing and with no air:", round(earth_temp, 1), "K")
 ''')
 
 md("""
-✏️ **Your turn.** Do the same for all three worlds. Loop over the positions in `worlds`, compute
+### ✏️ Your turn 2
+
+Do the same for all three worlds. Loop over the positions in `worlds`, compute
 each one's temperature the way the cell above did — reflecting nothing, `sun_distances[i]` in place
 of the `1.000` — and print the world's name and its temperature rounded to one decimal place.
 
@@ -288,9 +299,9 @@ for i in range(len(worlds)):
     print(worlds[i], round(temperature, 1), "K")
 ''')
 
-# ---------------------------------------------------------------- 3. conditionals
+# ---------------------------------------------------------------- 2. conditionals
 md("""
-## 3. Deciding, in code
+## 2. Does that test say Venus could have liquid water?
 
 Now turn a temperature into a verdict. Water is liquid between its melting point and its boiling
 point, and at Earth's sea-level pressure those are 273 K and 373 K. That is the window this
@@ -323,9 +334,9 @@ for i in range(len(worlds)):
 print("worlds the test accepts:", in_window)
 ''')
 
-# ---------------------------------------------------------------- 4. albedo
+# ---------------------------------------------------------------- 3. albedo
 md("""
-## 4. The light a world throws away
+## 3. How much of a world's warmth comes from its air, not its star?
 
 Two of the three pass. One of the two is Earth, which is reassuring. The other is Venus — whose
 surface temperature, in the first table of this notebook, is 737 K. That is 364 degrees above the
@@ -367,7 +378,9 @@ So how wrong is it? We know what these three worlds are actually like.
 """)
 
 md("""
-✏️ **Your turn.** Loop over the three worlds and print, for each, its measured surface temperature
+### ✏️ Your turn 3
+
+Loop over the three worlds and print, for each, its measured surface temperature
 from `surface_temps`, the temperature the test just gave it from `albedo_temps`, the difference
 between them rounded to one decimal place, and its `air_pressures` value. Four numbers on a line,
 and the third one is `surface_temps[i] - albedo_temps[i]`.
@@ -420,12 +433,14 @@ plt.title(f"Starlight alone against reality (n = {len(worlds)})")
 plt.show()
 ''')
 
-# ---------------------------------------------------------------- 5. functions
+# ---------------------------------------------------------------- 4a. functions
 md("""
-## 5. Writing the test down once
+## 4. Which of three thousand real planets pass — and what does the archive not know about them?
 
-You have now typed that formula four times. The next section runs it on three thousand planets, and
-typing it a fifth time inside that loop would mean any correction had to be made in five places.
+Three thousand of them are sitting in the setup cell, and running the test over all of them is a
+loop you can already write. First, one piece of housekeeping. You have now typed that formula four
+times, and typing it a fifth time inside that loop would mean any correction had to be made in
+five places.
 
 A **function** is the fix: write the recipe once, give it a name, and from then on ask for it by
 name. `def` starts the definition, the names in brackets are what the function needs to be given,
@@ -456,13 +471,15 @@ A function can also hand back **two** values at once: `return temperature, verdi
 """)
 
 md("""
-✏️ **Your turn.** Write a function called `check_planet` that takes the same four arguments —
+### ✏️ Your turn 4
+
+Write a function called `check_planet` that takes the same four arguments —
 `star_temp`, `star_radius`, `distance`, `albedo` — and returns two things: the temperature, and a
 verdict string that is `"too cold"` below 273 K, `"too hot"` above 373 K, and
 `"liquid water possible"` in between.
 
 Give it a docstring. Inside it, call `equilibrium_temperature` rather than retyping the formula,
-then use the same `if` / `elif` / `else` as section 3. Finish by calling it on Venus twice — once
+then use the same `if` / `elif` / `else` as section 2. Finish by calling it on Venus twice — once
 with albedo `0.0` and once with albedo `0.770` — and printing both results.
 
 **Use these names**: `check_planet`.
@@ -485,10 +502,8 @@ print("Venus, reflecting nothing:", check_planet(5772, 1.0, 0.723, 0.0))
 print("Venus, at its own albedo:", check_planet(5772, 1.0, 0.723, 0.770))
 ''')
 
-# ---------------------------------------------------------------- 6. the archive
+# ---------------------------------------------------------------- 4b. the archive
 md("""
-## 6. Three thousand other worlds
-
 The setup cell loaded the NASA Exoplanet Archive: every confirmed planet around another star, one
 row each. Six lists, all in the same order.
 
@@ -597,13 +612,11 @@ heat of its own formation. The formula is not wrong about it. It is answering a 
 not apply.
 
 Agreement with the professionals is not agreement with reality, either. Everyone in that figure is
-computing the same quantity, and section 4 already showed what that quantity leaves out.
+computing the same quantity, and section 3 already showed what that quantity leaves out.
 """)
 
-# ---------------------------------------------------------------- 7. the survey
+# ---------------------------------------------------------------- 4c. the survey
 md("""
-## 7. Running the test on all of them
-
 One more number, and it is a radius. A planet's temperature says nothing about whether it has a
 surface: at about 1.6 Earth radii, planets stop being rock and start being small versions of
 Neptune, with atmospheres thousands of kilometres deep and no ground under them. That line comes
@@ -616,7 +629,9 @@ one unavoidable: rocky, too big to be rocky, or the archive never measured its r
 """)
 
 md("""
-✏️ **Your turn.** Loop over the usable planets. For each one, call `check_planet` with albedo
+### ✏️ Your turn 5
+
+Loop over the usable planets. For each one, call `check_planet` with albedo
 `0.0` — the same "reflecting nothing" pass the class started with — and collect every temperature
 into a list called `all_temps`, which the next cell plots.
 
@@ -664,7 +679,7 @@ for i in range(len(usable_names)):
 code(f'''
 assert len(all_temps) == len(usable_names), "all_temps needs one entry per planet, not per hit"
 assert unknown_radius > 0, "unknown_radius never moved — add one to it inside the `is None` branch"
-{check_print("Section 7",
+{check_print("the survey",
              "{n_window} planets in the window: {len(rocky_names)} rocky,",
              "{too_big} too big, {unknown_radius} with no measured radius")}
 ''')
@@ -732,7 +747,7 @@ atmosphere and then a series of contested readings of its JWST spectrum, so "liq
 is the one verdict on that line nobody should read as a finding.
 
 That accept-and-reject set is worth staring at, because it is strange without being random. Look
-back at section 7's twelve rocky candidates: TRAPPIST-1 d, TOI-700 e, Kepler-438 b and K2-72 e are
+back at the twelve rocky candidates your loop printed: TRAPPIST-1 d, TOI-700 e, Kepler-438 b and K2-72 e are
 all planets the field itself puts forward, so the test is not picking out some different set of
 worlds from the ones astronomers care about. What it is doing is sorting **within** those systems
 by temperature alone, keeping the warmer planet and dropping the cooler one — TRAPPIST-1 c and d
@@ -763,8 +778,9 @@ Three parts, on the same archive and the same tools. Part 1 is the one everybody
 is the one that takes thinking rather than typing.
 
 Run the cell below first if you have restarted the kernel — after the setup cell at the top, it
-rebuilds everything parts 1 and 2 use: the two constants, `equilibrium_temperature`, and the five
-`usable_` lists from section 6. Then you do not have to hunt back through the notebook.
+rebuilds everything parts 1 and 2 use: the two constants, `equilibrium_temperature`, and the six
+`usable_` lists from section 4. The one thing it cannot rebuild is `check_planet`, because that
+one is your own answer to Your turn 4; re-run that cell too and part 1 will find it.
 """)
 
 code(weekkit.CHECKPOINT.format(body='''
@@ -782,6 +798,7 @@ usable_star_temps = []
 usable_star_radii = []
 usable_distances = []
 usable_radii = []
+usable_archive_temps = []
 for i in range(len(planet_names)):
     if star_temps[i] is not None and star_radii[i] is not None and distances[i] is not None:
         usable_names.append(planet_names[i])
@@ -789,10 +806,16 @@ for i in range(len(planet_names)):
         usable_star_radii.append(star_radii[i])
         usable_distances.append(distances[i])
         usable_radii.append(planet_radii[i])
+        usable_archive_temps.append(archive_temps[i])
+
+# Re-run your own check_planet cell (Your turn 4) as well: part 1 calls it, and it is not
+# repeated here, because it is the answer to a question you were asked.
 '''.strip("\n")))
 
 md("""
-✏️ **Part 1 — what kind of stars are these?**
+### ✏️ Your turn 6
+
+**What kind of stars are these?**
 
 Class asked which planets could hold liquid water and never asked what they orbit. A star's
 temperature is the first number the formula takes, and it has been sitting in `usable_star_temps`
@@ -804,10 +827,11 @@ one face to its star for good, and close enough that a stellar flare arrives at 
 Whether these candidates orbit Sun-like stars or cool ones is the most consequential thing about
 the list, and nobody has looked yet.
 
-Loop over the usable planets and, for every one that the albedo-0 test calls a rocky candidate —
-inside the 273–373 K window **and** with a radius that is not `None` **and** below 1.6 — append its
-name to `candidate_names` and its star's temperature to `candidate_star_temps`. Two lists growing
-together inside the same `if`.
+Loop over the usable planets and call your own `check_planet` with albedo `0.0`, exactly as
+section 4 did. For every planet whose verdict comes back `"liquid water possible"` **and** whose
+radius is not `None` **and** is below 1.6 — the same rocky candidates section 4 counted — append
+its name to `candidate_names` and its star's temperature to `candidate_star_temps`. Two lists
+growing together inside the same `if`.
 
 Then print: how many candidates there are; how many of them orbit a star cooler than the Sun's
 5772 K, counted into `cooler_than_sun` with a second loop; and the value of the coolest star in
@@ -823,17 +847,23 @@ the candidates and printing each name beside its star's temperature, one per lin
 what tells you whether the planet `.index` picked was alone, and it is the one to read before you
 believe any single line above it.
 
+Then, in two or three sentences in the last cell of this part, say what kind of stars these
+candidates orbit: quote `cooler_than_sun` out of your total and name the planet `.index` gave you
+for `coolest`, and then say what a star that cool forces on a planet warm enough for liquid water,
+and whether the formula knows anything about it.
+
 **Use these names**, because the self-check looks for them: `candidate_names`,
-`candidate_star_temps`, `cooler_than_sun` and `coolest`.
+`candidate_star_temps`, `cooler_than_sun`, `coolest` and `check_planet`.
 """)
 
 answer_code('''
 candidate_names = []
 candidate_star_temps = []
 for i in range(len(usable_names)):
-    temperature = equilibrium_temperature(usable_star_temps[i], usable_star_radii[i],
-                                          usable_distances[i], 0.0)
-    if 273 <= temperature <= 373 and usable_radii[i] is not None and usable_radii[i] < 1.6:
+    temperature, verdict = check_planet(usable_star_temps[i], usable_star_radii[i],
+                                        usable_distances[i], 0.0)
+    if (verdict == "liquid water possible" and usable_radii[i] is not None
+            and usable_radii[i] < 1.6):
         candidate_names.append(usable_names[i])
         candidate_star_temps.append(usable_star_temps[i])
 
@@ -862,8 +892,20 @@ assert len(candidate_names) < 100, "that is everything in the window; the radius
              "cooler than the Sun, coolest {coolest} K")}
 ''')
 
+answer_md("""
+Every one of them orbits a star cooler than the Sun: `cooler_than_sun` printed 12 out of my 12
+candidates, and the coolest is 2566.0 K, which `.index` gave me as TRAPPIST-1 c — less than half
+the Sun's 5772 K. A star that cool is also small and faint, so the only way a planet gets up to
+273–373 K around it is by orbiting very close in, close enough to be held with one face to its
+star for good and to take a stellar flare at full strength. The formula asks for the star's
+temperature and never asks what that temperature implies, so "liquid water possible" around a
+2566 K star is a much weaker claim than the same three words around a Sun-like one.
+""")
+
 md("""
-✏️ **Part 2 — move one knob, and count what moves.**
+### ✏️ Your turn 7
+
+**Move one knob, and count what moves.**
 
 Both of the choices class made were arguable. Pick **one** of these two changes, and only one.
 
@@ -882,6 +924,11 @@ candidate_names` is true when that name is somewhere in the list. (The first num
 own; the other three need part 1 to have run.)
 
 Say which option you took in a comment on the first line.
+
+Then, in two or three sentences in the last cell of this part, say what your four numbers mean for
+the class's answer: quote how many candidates you started with and how many you have now, and say
+whether the twelve rocky candidates class found are a property of those twelve planets or of the
+two numbers class happened to pick.
 
 **Use these names**, because the self-check looks for them: `albedo`, `low`, `high`,
 `new_candidates` and `stayed`.
@@ -918,16 +965,29 @@ assert len(new_candidates) != len(candidate_names), "the count did not move; che
              "{len(new_candidates)} candidates, {stayed} of part 1's still there")}
 ''')
 
-md("""
-✏️ **Part 3 — one planet you do not believe.**
+answer_md("""
+I took option A. Class started from 12 rocky candidates and I now have 59, and `stayed` came out
+0 — so all twelve dropped off and all 59 are new, with no overlap at all. That answers the
+question in the harder direction: the twelve are a property of the two numbers class picked, not
+of those twelve planets. Giving every world Venus's albedo multiplies every temperature by
+`(1 - 0.770) ** 0.25`, about 0.69, so the whole archive slides down past a window that did not
+move; the planets that used to sit in it are now too cold, and planets that used to be far too hot
+have cooled into it. Nothing measured about any individual planet changed. What changed was one
+number the archive has never measured for any of them.
+""")
 
-Section 7's printout lists every planet this week's test calls a rocky candidate, with its
+md("""
+### ✏️ Your turn 8
+
+**One planet you do not believe.**
+
+Your turn 5's printout lists every planet this week's test calls a rocky candidate, with its
 temperature and its radius. Pick **one** of them that you do not believe could have liquid water,
 and make the case against it in two or three sentences, in the cell below.
 
 Quote real numbers, not impressions: that planet's own temperature and radius from the printout, and
 how far the same test was wrong about Earth and about Venus — both of those differences were printed
-in section 4. Then finish with one sentence naming what the test does not know about your planet
+in section 3. Then finish with one sentence naming what the test does not know about your planet
 that would settle it.
 
 There is no single right answer. There is a defensible one with three numbers in it.

@@ -10,15 +10,17 @@ The autograder scores the two code parts. This is the part it cannot: mark it in
 
 ## What the student was asked
 
-✏️ **Part 3 — one planet you do not believe.**
+### ✏️ Your turn 8
 
-Section 7's printout lists every planet this week's test calls a rocky candidate, with its
+**One planet you do not believe.**
+
+Your turn 5's printout lists every planet this week's test calls a rocky candidate, with its
 temperature and its radius. Pick **one** of them that you do not believe could have liquid water,
 and make the case against it in two or three sentences, in the cell below.
 
 Quote real numbers, not impressions: that planet's own temperature and radius from the printout, and
 how far the same test was wrong about Earth and about Venus — both of those differences were printed
-in section 4. Then finish with one sentence naming what the test does not know about your planet
+in section 3. Then finish with one sentence naming what the test does not know about your planet
 that would settle it.
 
 There is no single right answer. There is a defensible one with three numbers in it.

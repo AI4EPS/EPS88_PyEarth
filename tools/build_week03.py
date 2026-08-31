@@ -110,6 +110,22 @@ BIN_SWEEP = [3, 4, 5, 6, 8, 10, 20]
 M["earth_fewest_bins"] = min(n for n in BIN_SWEEP if humps(earth, n) >= 2)
 M["mars_fewest_bins"] = min(n for n in BIN_SWEEP if humps(mars, n) >= 2)
 
+
+def bin_width(grid, n_bins):
+    """How wide one bin is, in metres, when a grid is cut into n_bins of them."""
+    _, edges = np.histogram(grid.ravel(), bins=n_bins)
+    return int(round(edges[1] - edges[0]))
+
+
+# The homework's part-1 answer turns on bin WIDTH rather than bin count, so the widths either
+# side of each planet's merge are measured here instead of read off a printout by hand.
+M["earth_range"] = M["earth_max"] - M["earth_min"]
+M["mars_range"] = M["mars_max"] - M["mars_min"]
+M["earth_width_keeps"] = bin_width(earth, M["earth_fewest_bins"])
+M["earth_width_loses"] = bin_width(earth, BIN_SWEEP[BIN_SWEEP.index(M["earth_fewest_bins"]) - 1])
+M["mars_width_keeps"] = bin_width(mars, M["mars_fewest_bins"])
+M["mars_width_loses"] = bin_width(mars, BIN_SWEEP[BIN_SWEEP.index(M["mars_fewest_bins"]) - 1])
+
 # The third, much smaller bump on the right of Earth's histogram. The prose beside the class
 # figure used to say the histogram has two humps; this measures the third one instead.
 counts_250, edges_250 = np.histogram(earth.ravel(), bins=BINS)
@@ -248,8 +264,13 @@ A table with named columns is a **pandas DataFrame**: `.info()`, `.head()`, `.is
 `.value_counts()`, `.sort_values()` and `.groupby()`.
 
 **Eight places where you write something: five in class, three at home.** Each one is headed
-*Your turn*, with an empty cell under it. The last two ask for a number and then for a sentence
-about it, so those have a second cell as well.
+*Your turn*, with an empty cell under it. All three homework parts ask for a number and then for a
+sentence about it, so those have a second cell as well.
+
+1. Where do Earth's two levels sit?
+2. What are those two levels made of?
+3. Does the same story work for Mars?
+4. Where does old ocean floor end up?
 """)
 
 setup = weekkit.SETUP_CELL.format(
@@ -279,9 +300,9 @@ print("elevation grids:", earth.shape, mars.shape, " catalogue:", quakes.shape)
 '''.strip("\n"))
 code(setup)
 
-# --- section 1 -------------------------------------------------------------
+# --- section 1a: a grid, not a list ------------------------------------------
 md("""
-## A grid, not a list
+## 1. Where do Earth's two levels sit?
 
 Every elevation on this planet, one number per one-degree square, is 64,800 numbers. (Earth's
 come from NOAA's ETOPO global relief model, Mars's from the MOLA laser altimeter that flew on
@@ -337,10 +358,8 @@ print("\u2713 Mars in kilometres \u2014 the highest cell is",
       round(mars_km.max(), 3), "km above the zero level")
 """)
 
-# --- section 2 -------------------------------------------------------------
+# --- section 1b: where the two levels sit ------------------------------------
 md("""
-## The shape of a planet's surface
-
 A histogram wants one long line of numbers, not a grid. `.ravel()` reads the grid row by row and
 lays it out flat — the same 64,800 numbers, in one line instead of 180 of them.
 """)
@@ -455,9 +474,9 @@ print("\u2713 Earth's two levels \u2014", earth_deep, "m and", earth_high, "m,",
       earth_high - earth_deep, "m apart")
 """)
 
-# --- section 3 -------------------------------------------------------------
+# --- section 2 -------------------------------------------------------------
 md("""
-## The same numbers, drawn as a map
+## 2. What are those two levels made of?
 
 The mask you built two cells ago has one `True` or `False` per one-degree square — which is to
 say, it is already a map. `plt.imshow` draws any grid as a picture, one pixel per cell, and
@@ -501,9 +520,9 @@ at the poles the width goes to nothing. Antarctica along the bottom of the map i
 across far more pixels than it deserves. Hold that thought too.
 """)
 
-# --- section 4 -------------------------------------------------------------
+# --- section 3a: Mars -------------------------------------------------------
 md("""
-## The other planet
+## 3. Does the same story work for Mars?
 
 The Mars grid is the same shape as Earth's — 180 by 360, one cell per one-degree square — and it
 was measured by a laser altimeter in orbit, which is why it exists at all. Zero on Mars is not a
@@ -512,8 +531,9 @@ below-and-above mask we colour the whole range. The colour scale is the one norm
 topography, so the blue end means nothing more than *low* — there is no water on this map.
 """)
 
-code(weekkit.CHECKPOINT.format(body="""mars = elevation("mars")
-flat = elevation("earth").ravel()
+code(weekkit.CHECKPOINT.format(body="""earth = elevation("earth")
+mars = elevation("mars")
+flat = earth.ravel()
 # Re-run your own Your turn 2 cell as well, the one that defines peak_position and
 # sets earth_deep and earth_high. That code is yours, so this cell cannot rebuild it
 # for you."""))
@@ -598,10 +618,8 @@ Mars has neither ocean nor plates. So the same explanation cannot cover both: th
 histogram is the same, and the cause is not.
 """)
 
-# --- section 5 -------------------------------------------------------------
+# --- section 3b: where the argument stands ----------------------------------
 md("""
-## Where the Mars argument stands
-
 Earth's two levels have a settled explanation, the one the map and the histogram gave you: two
 kinds of crust, floating at two heights, made and destroyed by plate tectonics. Mars's do not.
 Which process put that hemisphere-wide step in the crust is genuinely unsettled, and the two
@@ -611,15 +629,21 @@ Nobody has closed the argument, so if you found the Mars half less satisfying th
 that is not because the notebook left something out.
 """)
 
-# --- section 6 -------------------------------------------------------------
+# --- section 4 -------------------------------------------------------------
 md("""
-## When the data has names
+## 4. Where does old ocean floor end up?
 
-An array is the right container when every number means the same thing — here, metres of
-elevation — and position is what tells them apart. Plenty of data is not like that. An earthquake
-catalogue has a time, a latitude, a depth, a magnitude and a place name on every row, and those
-are five different kinds of thing. What that wants is a **table**: a table with a name on every
-column, so you ask for data by name instead of by position. Pandas calls one a DataFrame.
+Section 2 left half a sentence hanging. Ocean crust is manufactured at the mid-ocean ridges and
+destroyed within a couple of hundred million years — destroyed *where*, and how would anybody
+watch it happen? Not in an elevation grid. A grid of elevations holds the surface, and this is a
+question about what goes on underneath it. The record that can answer it is an earthquake
+catalogue, and the last question of this notebook is where you go looking in one.
+
+A catalogue is not a grid. An array is the right container when every number means the same
+thing — here, metres of elevation — and position is what tells them apart. A catalogue is not
+like that: it has a time, a latitude, a depth, a magnitude and a place name on every row, and
+those are five different kinds of thing. What that wants is a **table**: a table with a name on
+every column, so you ask for data by name instead of by position. Pandas calls one a DataFrame.
 
 The catalogue below is every earthquake of magnitude 5.5 and above that the USGS has recorded
 since the start of 2000. Remember what such a file is: *A catalogue lists what somebody's
@@ -761,8 +785,15 @@ numbers: that dip is the gap between the two levels, and when it disappears the 
 merged. Report the smallest number of bins that still shows two humps for Earth, and then do the
 same for Mars.
 
+Then, in one or two sentences in the cell after, say which planet keeps its two humps at the
+**smaller** number of bins — and why it is not the planet whose two levels are further apart.
+Quote `earth_fewest_bins` and `mars_fewest_bins`, the bin widths in metres your loop printed
+beside them, and the two peak separations you measured in class, and say which of those numbers
+decides when two humps merge into one.
+
 **Use these names**, because the self-check looks for them: `earth_fewest_bins`,
-`mars_fewest_bins`.
+`mars_fewest_bins`. The check writes its own `still_two_humps` to test the two numbers you report
+against the sweep; it does not go looking for them, because the looking is the question.
 """)
 
 answer(f"""
@@ -782,21 +813,41 @@ earth_fewest_bins = {M['earth_fewest_bins']}
 mars_fewest_bins = {M['mars_fewest_bins']}
 """, """
 
-def fewest_bins(grid):
-    \"\"\"The smallest count in bin_counts whose histogram still dips between two humps.\"\"\"
-    for n in bin_counts:
-        counts, edges = np.histogram(grid.ravel(), bins=n)
-        for i in range(1, len(counts) - 1):
-            if counts[i] < counts[:i].max() and counts[i] < counts[i + 1:].max():
-                return n
+# This CHECKS an answer; it does not find one. The searching is the question, and it is yours.
+def still_two_humps(grid, n_bins):
+    \"\"\"Does this grid's histogram still dip between two humps at this many bins?\"\"\"
+    counts, edges = np.histogram(grid.ravel(), bins=n_bins)
+    for i in range(1, len(counts) - 1):
+        if counts[i] < counts[:i].max() and counts[i] < counts[i + 1:].max():
+            return True
+    return False
 
 
-assert earth_fewest_bins == fewest_bins(earth), \\
-    "that is not where Earth's dip disappears — read the counts again"
-assert mars_fewest_bins == fewest_bins(mars), \\
-    "that is not where Mars's dip disappears — read the counts again"
+assert still_two_humps(earth, earth_fewest_bins), \\
+    "Earth's dip has already gone at that many bins — read the counts again"
+assert not still_two_humps(earth, bin_counts[bin_counts.index(earth_fewest_bins) - 1]), \\
+    "the next coarser binning in the sweep still dips, so that is not the SMALLEST that does"
+assert still_two_humps(mars, mars_fewest_bins), \\
+    "Mars's dip has already gone at that many bins — read the counts again"
+assert not still_two_humps(mars, bin_counts[bin_counts.index(mars_fewest_bins) - 1]), \\
+    "the next coarser binning in the sweep still dips, so that is not the SMALLEST that does"
 print("\u2713 where the peaks merge \u2014 Earth keeps two humps down to", earth_fewest_bins,
       "bins, Mars down to", mars_fewest_bins)
+""")
+
+answer_prose(f"""
+Earth keeps its two humps down to {M['earth_fewest_bins']} bins and Mars needs
+{M['mars_fewest_bins']}, which is the wrong way round if the distance between the levels were what
+mattered: Mars's two levels are {M['mars_gap']:,} m apart and Earth's only {M['earth_gap']:,} m.
+The number that decides it is the bin **width** my loop printed beside each count, not the count.
+Earth's dip survives {M['earth_width_keeps']:,} m bins and is gone by {M['earth_width_loses']:,} m;
+Mars's survives {M['mars_width_keeps']:,} m bins and is gone by {M['mars_width_loses']:,} m — the
+same window of widths for both planets, which is what you would expect if a gap disappears once a
+single bin is wide enough to swallow it. Mars needs twice as many bins to reach that width because
+`np.histogram` spreads its bins across the whole range of the data, and Mars's range is
+{M['mars_range']:,} m against Earth's {M['earth_range']:,} m — Olympus Mons and the Tharsis rise
+reach {M['mars_max_km']} km above the reference surface, so most of those extra bins are spent on
+ground that has nothing to do with either level.
 """)
 
 ask(f"""
