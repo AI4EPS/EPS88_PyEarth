@@ -54,6 +54,7 @@ bad = 0
 bad += run("the plan", "check_course.py")
 bad += generated_is_current()
 bad += run("the checkers themselves", "selftest_checks.py")
+bad += run("the autograder", "selftest_gradescope.py")
 
 built = [s for s in course["schedule"] if s["modules"]
          and (ROOT / "docs/notebooks" / f"{s['slug']}.ipynb").exists()]

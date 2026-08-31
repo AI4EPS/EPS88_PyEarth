@@ -1,0 +1,52 @@
+{
+  "week": 11,
+  "notebook_stem": "11_where_magma",
+  "homework_heading": "## Homework",
+  "parts": [
+    {
+      "name": "Part 1 — the emptiest columns alone",
+      "marker": "✓ the emptiest columns alone —",
+      "check_points": 22,
+      "code_points": 5
+    },
+    {
+      "name": "Part 2 — your cutoff",
+      "marker": "✓ your cutoff —",
+      "check_points": 22,
+      "code_points": 5
+    },
+    {
+      "name": "Part 3 — what dropna costs",
+      "marker": "✓ what dropna costs —",
+      "check_points": 21,
+      "code_points": 5
+    }
+  ],
+  "hygiene": {
+    "points": 5
+  },
+  "released": {
+    "w11-c002": "from sklearn.model_selection import train_test_split\nfrom sklearn.impute import SimpleImputer\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.tree import DecisionTreeClassifier\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.svm import SVC\nimport pandas as pd\nimport matplotlib.pyplot as plt\n\n# house style, set once, so every plot cell below holds only what matters\nplt.rcParams.update({\"figure.figsize\": (7, 4), \"figure.dpi\": 110,\n                     \"axes.grid\": True, \"grid.alpha\": 0.3, \"axes.axisbelow\": True})\n\nCACHE = \"https://raw.githubusercontent.com/AI4EPS/EPS88_PyEarth/main/data\"\n\n# the Vermeesch (2006) compilation, which ships with the course, so there is nothing to fetch\nbasalts = pd.read_csv(CACHE + \"/week11_vermeesch_basalts.csv\")\n\nfeature_columns = []\nfor name in basalts.columns:\n    if name != \"affinity\":\n        feature_columns.append(name)\n\nprint(basalts.shape, \"-\", len(feature_columns), \"chemistry columns and one label\")",
+    "w11-c004": "print(basalts[[\"affinity\", \"SiO2_wt_percent\", \"TiO2_wt_percent\", \"Sr_ppm\"]].head())\nprint(basalts[\"affinity\"].value_counts())",
+    "w11-q01-answer": "# ← your answer here\n\n\nassert baseline < 1, \"baseline is a fraction of 1, not a count of rows\"\nprint(\"✓ the baseline — guessing the commonest of the three settings is right\",\n      round(baseline * 100, 1), \"percent of the time\")",
+    "w11-c009": "pairs = basalts[[\"TiO2_wt_percent\", \"V_ppm\", \"affinity\"]].dropna()\n\nfor setting in [\"MORB\", \"OIB\", \"IAB\"]:\n    rows = pairs[pairs[\"affinity\"] == setting]\n    plt.scatter(rows[\"TiO2_wt_percent\"], rows[\"V_ppm\"], s=12, label=setting)\n\nplt.xlabel(\"TiO2 (weight percent)\")\nplt.ylabel(\"V (ppm)\")\nplt.title(\"514 basalts with both TiO2 and V measured\")\nplt.legend()\nplt.show()",
+    "w11-c011": "X = pairs[[\"TiO2_wt_percent\", \"V_ppm\"]]\ny = pairs[\"affinity\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0,\n                                                    stratify=y)\n\ntree = DecisionTreeClassifier(random_state=0)\ntree.fit(X_train, y_train)\nti_v_score = tree.score(X_test, y_test)\n\nprint(\"rows kept:\", len(pairs), \"of\", len(basalts))\nprint(\"test accuracy:\", round(ti_v_score, 3))",
+    "w11-q02-answer": "# ← your answer here\n\n\nassert \"Zr_ppm\" in zr_y.columns, \"zr_y should be built from Zr and Y, not from TiO2 and V\"\nprint(\"✓ the other classic pair —\", len(zr_y), \"rows survived and the tree scored\",\n      round(zr_y_score, 3))",
+    "w11-c016": "missing = basalts[feature_columns].isna().sum() / len(basalts)\n\nprint(\"best measured:\")\nprint(missing.sort_values().head(3))\nprint(\"worst measured:\")\nprint(missing.sort_values(ascending=False).head(3))",
+    "w11-c017": "plt.bar(range(len(missing)), missing.sort_values() * 100)\nplt.xlabel(\"the 51 chemistry columns, best measured first\")\nplt.ylabel(\"percent of samples with no value\")\nplt.title(\"Missing measurements, 51 columns of 756 basalts\")\nplt.show()",
+    "w11-q03-answer": "# ← your answer here\n\n\nassert n_half_empty > 0, \"n_half_empty came out 0 - 'missing' is a fraction, so half empty is 0.5\"\nprint(\"✓ the holes —\", n_complete, \"complete columns,\", n_half_empty,\n      \"more than half empty, and dropna() leaves\", rows_left, \"of\", len(basalts), \"rows\")",
+    "w11-c022": "def accuracy(model, features, seed=0):\n    \"\"\"Fit one model on one set of columns and score it on the held-out third of the samples.\"\"\"\n    labels = basalts[\"affinity\"]\n    X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.3,\n                                                        random_state=seed, stratify=labels)\n    filler = SimpleImputer(strategy=\"median\")\n    X_train = filler.fit_transform(X_train)\n    X_test = filler.transform(X_test)\n    scaler = StandardScaler()\n    X_train = scaler.fit_transform(X_train)\n    X_test = scaler.transform(X_test)\n    model.fit(X_train, y_train)\n    return model.score(X_test, y_test)",
+    "w11-c023": "filled_score = accuracy(DecisionTreeClassifier(random_state=0),\n                        basalts[[\"TiO2_wt_percent\", \"V_ppm\"]])\n\nprint(\"TiO2 and V, dropping incomplete rows:\", round(ti_v_score, 3), \"on\", len(pairs), \"samples\")\nprint(\"TiO2 and V, filling the holes instead:\", round(filled_score, 3), \"on\", len(basalts),\n      \"samples\")",
+    "w11-c026": "major_oxides = [\"SiO2_wt_percent\", \"TiO2_wt_percent\", \"Al2O3_wt_percent\", \"Fe2O3_wt_percent\",\n                \"FeO_wt_percent\", \"CaO_wt_percent\", \"MgO_wt_percent\", \"MnO_wt_percent\",\n                \"K2O_wt_percent\", \"Na2O_wt_percent\"]\n\nprint(missing[major_oxides].round(3))",
+    "w11-c028": "tree_score = accuracy(DecisionTreeClassifier(random_state=0), basalts[major_oxides])\nforest_score = accuracy(RandomForestClassifier(n_estimators=200, random_state=0),\n                        basalts[major_oxides])\nsvm_score = accuracy(SVC(), basalts[major_oxides])\n\nprint(f\"one tree:                 {tree_score:.3f}\")\nprint(f\"a forest:                 {forest_score:.3f}\")\nprint(f\"a support vector machine: {svm_score:.3f}\")",
+    "w11-q04-answer": "# ← your answer here\n\n\nassert 0 <= my_guess <= 1, \"my_guess is an accuracy, so a number between 0 and 1\"\nassert oxide_score != all_score, \"the two scores are identical - did you pass the same columns twice?\"\nprint(\"✓ ten columns against all of them —\", round(oxide_score, 3), \"and\", round(all_score, 3),\n      \"- a difference of\", round(all_score - oxide_score, 3))",
+    "w11-c034": "for seed in [0, 1, 2, 3, 4]:\n    oxides_only = accuracy(RandomForestClassifier(n_estimators=200, random_state=0),\n                           basalts[major_oxides], seed)\n    everything = accuracy(RandomForestClassifier(n_estimators=200, random_state=0),\n                          basalts[feature_columns], seed)\n    print(\"split\", seed, \"- ten oxides\", round(oxides_only, 3),\n          \" all columns\", round(everything, 3),\n          \" gap\", round(everything - oxides_only, 3))",
+    "w11-c037": "forest = RandomForestClassifier(n_estimators=200, random_state=0)\naccuracy(forest, basalts[feature_columns])\n\nimportance = pd.Series(forest.feature_importances_, index=feature_columns)\nimportance = importance.sort_values(ascending=False)\n\nfor name in importance.head(10).index:\n    print(f\"{name:20s} importance {importance[name]:.3f}   missing {missing[name] * 100:.1f}%\")",
+    "w11-c038": "top_ten = importance.head(10)\nplt.barh(top_ten.index[::-1], top_ten.values[::-1])\nplt.xlabel(\"share of the forest's decisions\")\nplt.ylabel(\"chemistry column\")\nplt.title(\"The 10 columns the forest leaned on, of 51 (756 basalts)\")\nplt.show()",
+    "w11-q05-answer": "# ← your answer here\n\n\nassert oxide_blank_score < blank_score, \\\n    \"the ten oxides' blanks should say less than all the columns' blanks - same table twice?\"\nprint(\"✓ the blanks alone —\", round(blank_score, 3), \"from all the columns and\",\n      round(oxide_blank_score, 3), \"from the ten oxides, against a baseline of\", round(baseline, 3))",
+    "w11-c047": "# ── Checkpoint ── run this if you restarted the kernel or fell behind ──\nmissing = basalts[feature_columns].isna().sum() / len(basalts)\nbaseline = basalts[\"affinity\"].value_counts().max() / len(basalts)\nmajor_oxides = [\"SiO2_wt_percent\", \"TiO2_wt_percent\", \"Al2O3_wt_percent\", \"Fe2O3_wt_percent\",\n                \"FeO_wt_percent\", \"CaO_wt_percent\", \"MgO_wt_percent\", \"MnO_wt_percent\",\n                \"K2O_wt_percent\", \"Na2O_wt_percent\"]\n\n\ndef accuracy(model, features, seed=0):\n    \"\"\"Fit one model on one set of columns and score it on the held-out third of the samples.\"\"\"\n    labels = basalts[\"affinity\"]\n    X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.3,\n                                                        random_state=seed, stratify=labels)\n    filler = SimpleImputer(strategy=\"median\")\n    X_train = filler.fit_transform(X_train)\n    X_test = filler.transform(X_test)\n    scaler = StandardScaler()\n    X_train = scaler.fit_transform(X_train)\n    X_test = scaler.transform(X_test)\n    model.fit(X_train, y_train)\n    return model.score(X_test, y_test)",
+    "w11-q06-answer": "# ← your answer here\n\n\nassert missing[sparse_columns].min() > 0.5, \"every column in sparse_columns should be over half empty\"\nprint(\"✓ the emptiest columns alone —\", len(sparse_columns), \"columns,\",\n      round(sparse_score, 3), \"against a baseline of\", round(baseline, 3))",
+    "w11-q07-answer": "# ← your answer here\n\n\nassert missing[kept_columns].max() < cutoff, \"every column you kept should be emptier than cutoff\"\nprint(\"✓ your cutoff —\", cutoff, \"keeps\", len(kept_columns), \"columns and scores\",\n      round(kept_score, 3))",
+    "w11-q08-answer": "# ← your answer here\n\n\nassert rows_left_all < rows_left_oxides, \\\n    \"dropping over all the columns cannot leave more rows than dropping over ten of them\"\nprint(\"✓ what dropna costs —\", rows_left_oxides, \"rows on the ten oxides and\",\n      rows_left_all, \"on all of them\")"
+  }
+}

@@ -51,6 +51,10 @@ EQ_URL = (FDSN + "&starttime=1990-01-01&endtime=2026-01-01"
 EQ_CACHE = "week08_ca_1990_2026_M3.5-6.9.csv"
 BIG_URL = FDSN + "&starttime=1918-01-01&endtime=2026-01-01&minmagnitude=7.0" + CA_BOX
 BIG_CACHE = "week08_ca_1918_2026_M7.csv"
+# The same query with the threshold moved one notch down, which is the week's threshold-
+# sensitivity check: 7.0 is a round number somebody chose, not a boundary in the rock.
+BIG69_URL = FDSN + "&starttime=1918-01-01&endtime=2026-01-01&minmagnitude=6.9" + CA_BOX
+BIG69_CACHE = "week08_ca_1918_2026_M6.9.csv"
 
 B = 2000            # bootstrap resamples, everywhere in the week
 SEED = 88
@@ -77,6 +81,7 @@ sea["sea_mm"] = sea["MSL"] * 1000
 
 quakes = pd.read_csv(cache(EQ_URL, EQ_CACHE))
 big = pd.read_csv(cache(BIG_URL, BIG_CACHE))
+big69 = pd.read_csv(cache(BIG69_URL, BIG69_CACHE))
 
 M = {}
 M["n_months"] = len(sea)
@@ -189,6 +194,19 @@ M["total_big"] = sum(M["window_counts"])
 M["n_windows"] = len(WINDOW_STARTS)
 M["span_years"] = WINDOW_YEARS * M["n_windows"]
 
+big69["when"] = pd.to_datetime(big69["time"])
+M["window_counts_69"] = []
+for start in WINDOW_STARTS:
+    inside = ((big69["when"] >= f"{start}-01-01")
+              & (big69["when"] < f"{start + WINDOW_YEARS}-01-01"))
+    M["window_counts_69"].append(int(inside.sum()))
+M["total_big_69"] = sum(M["window_counts_69"])
+# The events the threshold move adds, named so the prose cannot invent a different four.
+added = big69[~big69["id"].isin(big["id"])]
+M["added_69"] = [f"{p.split(' ')[1]} {p.split(',')[0].split(' ', 2)[2]}"
+                 for p in added["place"]]
+M["n_added_69"] = len(added)
+
 np.random.seed(SEED)
 long_counts = np.random.poisson(boot_rates * M["n_windows"])
 M["frac_total"] = float((long_counts >= M["total_big"]).mean())
@@ -222,6 +240,31 @@ if "--measure" in sys.argv:
     sys.exit()
 
 LO, HI = M["forks"]["low"], M["forks"]["high"]
+
+# Two later sections read `slopes`, `ci_low` and `ci_high`, so both open by rebuilding them,
+# silently — a checkpoint that rebuilt only the fit sent a restarted student to NameError on the
+# very next question. This is the one thing TEMPLATE 8 lets a notebook say twice.
+REBUILD_SLOPES = f"""np.random.seed(88)
+slopes = []
+for i in range({B}):
+    boot = sea.sample(len(sea), replace=True)
+    slopes.append(LinearRegression().fit(boot[["year"]], boot["sea_mm"]).coef_[0])
+
+slopes = np.array(slopes)
+ci_low, ci_high = np.percentile(slopes, [2.5, 97.5])"""
+
+# The homework re-runs the earthquake argument on its own fitting range, and `predicted_m7` is
+# the one thing it needs that the setup cell does not build.
+REBUILD_FORECAST = '''edges = np.arange(4.0, 5.6, 0.1).round(1)
+
+
+def predicted_m7(mags):
+    """Fit Gutenberg-Richter to these magnitudes and read off the expected number of M7+."""
+    counts = []
+    for edge in edges:
+        counts.append((mags >= edge).sum())
+    line = LinearRegression().fit(edges.reshape(-1, 1), np.log10(counts))
+    return 10 ** (line.intercept_ + line.coef_[0] * 7.0)'''
 
 
 # ---------------------------------------------------------------------------
@@ -532,8 +575,10 @@ Whichever you quote, the interval comes with it: convert `ci_low` and `ci_high` 
 convert the slope, and the answer stays a range.
 """)
 
-code(weekkit.CHECKPOINT.format(body="""fit = LinearRegression().fit(sea[["year"]], sea["sea_mm"])
-slope = fit.coef_[0]"""))
+code(weekkit.CHECKPOINT.format(body='''fit = LinearRegression().fit(sea[["year"]], sea["sea_mm"])
+slope = fit.coef_[0]
+
+''' + REBUILD_SLOPES))
 
 ask(f"""
 ### ✏️ Your turn 3
@@ -735,13 +780,18 @@ plt.show()
 """)
 
 md(f"""
-The picture is completely different. Once the counting noise is in, worlds with five large
-earthquakes do turn up: {100 * M['frac_5']:.1f}% of them, and the busiest reached
+The picture is completely different. Once the counting noise is in, worlds with five **or more**
+large earthquakes do turn up: {100 * M['frac_5']:.1f}% of them, and the busiest reached
 {M['max_count']}. The 95% interval on the count is [{M['count_low']}, {M['count_high']}], and five
 is sitting on its upper edge rather than outside it.
 
-So the honest verdict on this window is *unlikely, not impossible* — a one-in-{round(1 / M['frac_5']):.0f}
-outcome. That is the kind of result that should send you to look at more data rather than to a
+Read that percentage carefully, because the "or more" is doing work. It is the fraction of worlds
+that reached *at least* five, which is what you want when you are asking whether an observation is
+extreme — the worlds that landed on exactly five are a smaller share again. A tail is always
+counted outward from the observation, never at it.
+
+So the honest verdict on this window is *unlikely, not impossible* — five or more is a
+one-in-{round(1 / M['frac_5']):.0f} outcome. That is the kind of result that should send you to look at more data rather than to a
 conclusion. And there is more data: thirty-six years is not the only thirty-six years California
 has had.
 """)
@@ -779,7 +829,7 @@ md(f"""
 of simulated {M['span_years']}-year worlds do at least that well. On the long record the forecast
 is not in trouble at all.
 
-Two caveats you should carry, because neither is settled by anything above. The box is a
+Three caveats you should carry, because none of them is settled by anything above. The box is a
 rectangle of latitude and longitude, not the state, so it collects earthquakes in Nevada and Baja
 California as well: of the {M['total_big']} the cell above listed, Fairview Peak is in Nevada and
 Sierra El Mayor is in Baja California. And the earlier windows
@@ -787,6 +837,35 @@ depend on a catalogue that was thinner: *A catalogue lists what somebody's instr
 not what happened.* If those windows are undercounted, the true long-run rate is higher than
 {M['total_big']} in {M['span_years']} years, and that pushes the same way — it makes five look less
 exceptional, not more.
+
+The third is the one that moves the numbers, and it is hiding inside the words *magnitude 7*. A
+magnitude is a measurement with an uncertainty of a tenth or two, and 7.0 is a round number
+somebody chose, not a boundary in the rock. So try the number on the other side of it. Re-run the
+same query with the threshold at 6.9 — still an earthquake any seismologist would describe as
+roughly magnitude 7 — and count the same three windows again.
+""")
+
+code(f"""
+big69 = load(FDSN + "&starttime=1918-01-01&endtime=2026-01-01&minmagnitude=6.9" + CA_BOX,
+             "{BIG69_CACHE}")
+big69["when"] = pd.to_datetime(big69["time"])
+
+for start in {WINDOW_STARTS}:
+    inside = (big69["when"] >= f"{{start}}-01-01") & (big69["when"] < f"{{start + {WINDOW_YEARS}}}-01-01")
+    print(start, "-", start + {WINDOW_YEARS}, ":", inside.sum(), "M6.9+ earthquakes")
+""")
+
+md(f"""
+{M['window_counts_69'][0]}, {M['window_counts_69'][1]}, {M['window_counts_69'][2]} — against
+{M['window_counts'][0]}, {M['window_counts'][1]}, {M['observed']} a moment ago. One tenth of a
+magnitude adds {M['n_added_69']} earthquakes ({', '.join(M['added_69'])}), every one of them in an
+earlier window, and the recent excess that the first count showed is simply gone.
+
+So *{M['window_counts'][0]}, {M['window_counts'][1]}, {M['observed']}* was never a fact about
+California on its own. It was a fact about California **and a threshold**, and the threshold moved
+the story further than the earthquakes did. That is the same lesson as the interval, applied to a
+choice instead of a sample: when a conclusion rests on one round number, try the number either
+side of it and report what you find.
 """)
 
 # --- section 5 -------------------------------------------------------------
@@ -804,6 +883,8 @@ months of 1931 or none of them — so that whatever is shared inside a year trav
 are {M['n_calendar_years']} years to draw from. `pd.concat` is the function that stacks the chosen
 years back into one table.
 """)
+
+code(weekkit.CHECKPOINT.format(body=REBUILD_SLOPES))
 
 code(f"""
 np.random.seed(88)
@@ -854,9 +935,9 @@ md(f"""
 the forecast finally has an interval attached.** Bootstrapping the catalogue puts the
 Gutenberg-Richter rate at {M['rate']:.2f} M7+ earthquakes per {WINDOW_YEARS} years, 95% CI
 [{M['rate_low']:.2f}, {M['rate_high']:.2f}], and five is far outside that. But a rate is not a
-count: fold in the Poisson scatter that any real thirty-six years is subject to and five happens
-in {100 * M['frac_5']:.1f}% of simulated worlds, sitting on the top edge of the interval on the
-count rather than beyond it. Widen the window and the case for a broken model gets weaker still — {M['total_big']} large
+count: fold in the Poisson scatter that any real thirty-six years is subject to and five or more
+happens in {100 * M['frac_5']:.1f}% of simulated worlds, sitting on the top edge of the interval
+on the count rather than beyond it. Widen the window and the case for a broken model gets weaker still — {M['total_big']} large
 earthquakes in {M['span_years']} years against {M['n_windows'] * M['rate']:.1f} expected, which
 {100 * M['frac_total']:.0f}% of simulated worlds match or beat. The forecast was not convicted; it
 was not acquitted either, and the honest report is the interval rather than the verdict.
@@ -871,8 +952,10 @@ md("""
 Three parts on the two datasets you already have loaded. Part 1 goes back to the Bay and asks
 something class did not; parts 2 and 3 make you re-run the earthquake argument on a fitting range
 you choose yourself. If you have restarted since class, run the setup cell at the top first, then
-the checkpoint cells in the sections you need.
+the checkpoint just below.
 """)
+
+code(weekkit.CHECKPOINT.format(body=REBUILD_FORECAST))
 
 ask(f"""
 ### ✏️ Your turn 6
@@ -1031,7 +1114,7 @@ def main():
 
     (OUT / f"{SLUG}.ipynb").write_text(json.dumps(stu, indent=1) + "\n")
     print(f"wrote {SLUG}.ipynb ({len(CELLS)} cells) and the executed solution")
-    print(f"cache: data/{SEA_CACHE}, data/{EQ_CACHE}, data/{BIG_CACHE}")
+    print(f"cache: data/{SEA_CACHE}, data/{EQ_CACHE}, data/{BIG_CACHE}, data/{BIG69_CACHE}")
 
 
 if __name__ == "__main__":

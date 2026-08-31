@@ -414,7 +414,10 @@ say, it is already a map. `plt.imshow` draws any grid as a picture, one pixel pe
 """)
 
 code(weekkit.CHECKPOINT.format(body="""earth = elevation("earth")
-below = earth < 0"""))
+below = earth < 0
+# Re-run your own Your turn 2 cell as well, the one that defines peak_position and
+# sets earth_deep and earth_high. That code is yours, so this cell cannot rebuild it
+# for you."""))
 
 code(f"""
 plt.imshow(below, extent=[-180, 180, -90, 90], cmap="Greys")
@@ -458,7 +461,10 @@ topography, so the blue end means nothing more than *low* — there is no water 
 """)
 
 code(weekkit.CHECKPOINT.format(body="""mars = elevation("mars")
-flat = elevation("earth").ravel()"""))
+flat = elevation("earth").ravel()
+# Re-run your own Your turn 2 cell as well, the one that defines peak_position and
+# sets earth_deep and earth_high. That code is yours, so this cell cannot rebuild it
+# for you."""))
 
 code(f"""
 # the colour scale stops at 4000 m, or the step between the two halves is invisible
@@ -538,17 +544,16 @@ histogram is the same, and the cause is not.
 """)
 
 # --- section 5 -------------------------------------------------------------
-md(f"""
-## The question, answered
+md("""
+## Where the Mars argument stands
 
-**No — two levels, two different causes.** Earth's two levels are two kinds of crust, thin dense
-ocean floor and thick light continent, floating at two heights and continuously remade by plate
-tectonics; Mars's are one hemisphere-wide step in crustal thickness, made once and never
-reworked. Which process made Mars's step is genuinely unsettled: the two families of explanation
-under discussion are a single enormous impact that excavated the northern lowlands, and a pattern
-of convection inside the young planet that thinned the crust on one side. Nobody has closed the
-argument, so if you found the Mars half less satisfying than the Earth half, that is not because
-the notebook left something out.
+Earth's two levels have a settled explanation, the one the map and the histogram gave you: two
+kinds of crust, floating at two heights, made and destroyed by plate tectonics. Mars's do not.
+Which process put that hemisphere-wide step in the crust is genuinely unsettled, and the two
+families of explanation under discussion are a single enormous impact that excavated the northern
+lowlands, and a pattern of convection inside the young planet that thinned the crust on one side.
+Nobody has closed the argument, so if you found the Mars half less satisfying than the Earth half,
+that is not because the notebook left something out.
 """)
 
 # --- section 6 -------------------------------------------------------------
@@ -658,6 +663,18 @@ print("\u2713 deep earthquakes \u2014", len(deep_quakes), "of them, the deepest 
       deep_quakes["depth"].max(), "km")
 """)
 
+# --- the closing -----------------------------------------------------------
+md(f"""
+{weekkit.CLOSING_HEADING}
+
+**No — two levels, two different causes.** Earth's two levels are two kinds of crust, thin dense
+ocean floor and thick light continent, floating at two heights and continuously remade by plate
+tectonics; Mars's are one hemisphere-wide step in crustal thickness, made once and never reworked,
+on a planet with neither ocean nor plates. The table half is the same story from its other end:
+the earthquakes you filtered out below 500 km happen where ocean floor is sinking back into the
+mantle, which is the half of the cycle that keeps Earth's low level low.
+""")
+
 # --- summary and homework --------------------------------------------------
 md(weekkit.week_cheatsheet(3))
 
@@ -666,8 +683,18 @@ md("""
 
 Three parts, all on the two grids and the catalogue you already have loaded. Part 1 and part 2 go
 back to the elevation grids and finish two arguments class deliberately left open; part 3 stays
-with the table. If you have restarted since class, run the setup cell at the top first.
+with the table. If you have restarted since class, run the setup cell at the top and then the
+checkpoint below: between them they rebuild everything the three parts read.
 """)
+
+code(weekkit.CHECKPOINT.format(body=f"""earth = elevation("earth")
+mars = elevation("mars")
+below = earth < 0
+fraction_below = below.sum() / earth.size
+
+quakes = load("{START}", "{END}", {MINMAG})
+quakes["year"] = quakes["time"].str[:4]
+quakes = quakes[["year", "depth", "mag", "type", "place"]]"""))
 
 ask(f"""
 ### ✏️ Your turn 6

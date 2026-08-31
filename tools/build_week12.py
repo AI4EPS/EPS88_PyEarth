@@ -196,6 +196,71 @@ M["fore_to_main_km"] = round(
     ((((M["main_lon"] - M["fore_lon"]) * KM_EAST) ** 2
       + ((M["main_lat"] - M["fore_lat"]) * KM_NORTH) ** 2) ** 0.5), 1)
 
+# --- how much of the headline cluster the one-line circle already had --------------------
+# The audit this week cites (notes/dataset-audit/usgs-fdsn.md, section 5) says the largest
+# DBSCAN cluster is mostly reproduced by "within RADIUS degrees of the mainshock". Measure it
+# rather than repeat it, because the closing has to say so.
+circle = ((quakes["longitude"] - M["main_lon"]) ** 2
+          + (quakes["latitude"] - M["main_lat"]) ** 2) ** 0.5 < RADIUS
+in_0 = quakes["cluster"] == 0
+M["n_near"] = int(circle.sum())
+M["c0_in_circle"] = int((circle & in_0).sum())
+M["c0_in_circle_pct"] = round(100 * M["c0_in_circle"] / M["largest"], 1)
+M["jaccard_0"] = round(M["c0_in_circle"] / int((circle | in_0).sum()), 3)
+
+# --- what the equal-aspect figure actually spans, as against the standard deviations ------
+along_0 = pca.transform(rupture[["east_km", "north_km", "depth"]])
+axis1, axis3 = pd.Series(along_0[:, 0]), pd.Series(along_0[:, 2])
+M["ext1_lo"], M["ext1_hi"] = round(float(axis1.min()), 1), round(float(axis1.max()), 1)
+M["ext3_lo"], M["ext3_hi"] = round(float(axis3.min()), 1), round(float(axis3.max()), 1)
+M["ext1"] = round(M["ext1_hi"] - M["ext1_lo"], 1)
+M["ext3"] = round(M["ext3_hi"] - M["ext3_lo"], 1)
+M["ext_ratio"] = round(M["ext1"] / M["ext3"], 1)
+# where the dots really are: drop the outermost 1% at each end of the across-plane axis
+M["ext3_core"] = round(float(axis3.quantile(0.99) - axis3.quantile(0.01)), 1)
+
+# --- cluster 0 is not one plane: run the same test on the neighbourhood of the M6.4 -------
+KNOT_KM = 5
+M["fore_cluster"] = int(quakes.loc[fore_row.name, "cluster"])
+fore_east = (M["fore_lon"] - M["main_lon"]) * KM_EAST
+fore_north = (M["fore_lat"] - M["main_lat"]) * KM_NORTH
+to_fore = (((rupture["east_km"] - fore_east) ** 2
+            + (rupture["north_km"] - fore_north) ** 2) ** 0.5)
+knot = rupture[to_fore < KNOT_KM]
+knot_pca = PCA().fit(knot[["east_km", "north_km", "depth"]])
+M["knot_km"] = KNOT_KM
+M["n_knot"] = len(knot)
+M["evr_knot"] = [float(x) for x in knot_pca.explained_variance_ratio_.round(3)]
+M["axis1_knot"] = [float(x) for x in knot_pca.components_[0].round(2)]
+
+# --- two concentrations inside the noise, so the week can say what the grey really is -----
+# Boxes read off the noise-only map and then counted here; nothing is eyeballed into prose.
+PATCH_BOX = (35.85, 36.05, -117.55, -117.25)
+LINE_BOX = (35.25, 35.42, -118.10, -117.85)
+noise_ev = quakes[quakes["cluster"] == -1]
+
+
+def in_box(df, box):
+    lo_lat, hi_lat, lo_lon, hi_lon = box
+    return df[df["latitude"].between(lo_lat, hi_lat)
+              & df["longitude"].between(lo_lon, hi_lon)]
+
+
+patch, lineament = in_box(noise_ev, PATCH_BOX), in_box(noise_ev, LINE_BOX)
+M["n_patch"] = len(patch)
+M["n_line"] = len(lineament)
+M["patch_lat"] = round(float(patch["latitude"].median()), 2)
+M["patch_lon"] = round(float(patch["longitude"].median()), 2)
+M["line_lat"] = round(float(lineament["latitude"].median()), 2)
+M["line_lon"] = round(float(lineament["longitude"].median()), 2)
+line_pca = PCA().fit(lineament[["east_km", "north_km"]])
+line_along = line_pca.transform(lineament[["east_km", "north_km"]])[:, 0]
+M["line_len_km"] = round(float(line_along.max() - line_along.min()), 1)
+M["line_dist_km"] = round(float(((lineament["east_km"] ** 2
+                                  + lineament["north_km"] ** 2) ** 0.5).median()), 1)
+M["patch_dist_km"] = round(float(((patch["east_km"] ** 2
+                                   + patch["north_km"] ** 2) ** 0.5).median()), 1)
+
 
 # ---------------------------------------------------------------------------
 # 2. the cells
@@ -407,7 +472,8 @@ above — so measure how far each earthquake is from it and keep the near ones.
 ask(f"""
 ### ✏️ Your turn 1
 
-Make three new columns and one count.
+Make three new variables and one count. Plain variables, not new columns on `quakes` — the
+self-check reads them by the names below.
 
 Subtract the mainshock's longitude, {M['main_lon']}, from `quakes["longitude"]` and call the
 result `east`. Subtract its latitude, {M['main_lat']}, from `quakes["latitude"]` and call that
@@ -428,7 +494,9 @@ near = quakes[distance < {RADIUS}]
 print(len(near), "of", len(quakes), "earthquakes are within {RADIUS} degrees")
 """, f"""
 assert distance.min() < 0.01, \\
-    "the mainshock's own row should be almost zero away — check the order of the subtraction"
+    "nothing came out near zero, so nothing at all sits where you measured from — check the "\\
+    "minus sign in front of the longitude, and that you took longitude from longitude and "\\
+    "latitude from latitude"
 print("✓ a circle round the mainshock —", len(near), "of", len(quakes),
       "events,", round(len(near) / len(quakes), 3), "of the catalogue")
 """)
@@ -489,7 +557,9 @@ quakes["kmeans"] = model.fit_predict(scaled)
 
 print(quakes["kmeans"].value_counts())
 """, f"""
-assert len(quakes["kmeans"].value_counts()) == {K}, "there should be exactly {K} groups"
+assert sorted(quakes["kmeans"].value_counts(), reverse=True) == {M['km_sizes']}, \\
+    "those are not the group sizes k-means gives here — check you fitted on `scaled` rather "\\
+    "than on the raw degrees, and that random_state=0 is still in the line"
 print("✓ k-means with {K} pins — groups of",
       list(quakes["kmeans"].value_counts()))
 """)
@@ -645,9 +715,22 @@ plt.show()
 
 md(f"""
 The long limb is one cluster now, end to end, and it did not need to be round to survive. The
-patch in the northwest is its own cluster. The grey points are the ones the algorithm declined to
-place, and they are exactly where you would decline too — the outlying dots, and the thin fringes
-round the edges of the dense limb.
+patch in the northwest is its own cluster.
+
+The grey points are the ones the algorithm declined to place, and most of them are where you
+would decline too — isolated dots, and thin fringes round the edges of the dense limb. But look
+at the grey properly before you accept that, because some of it is not fringe. Around
+{M['patch_lat']} degrees north, {M['patch_lon']} degrees east — up the right-hand side of the map,
+about {M['patch_dist_km']:.0f} km from the mainshock — roughly {M['n_patch']} grey events sit
+together in a group of their own. And down near {M['line_lat']} degrees north, {M['line_lon']} degrees east — about
+{M['line_dist_km']:.0f} km southwest of the mainshock — about {M['n_line']} more are strung along
+a straight line some {M['line_len_km']:.0f} km long. That is the shape this whole notebook has
+been teaching you to take seriously, and it is coloured grey.
+
+DBSCAN did not overlook them; it applied its rule. Both groups are spread thinly enough that no
+event in either has {MIN_SAMPLES} neighbours inside `eps` of it, so no event in either can seed a
+cluster. Whether the rule got these two right is a question about `eps` — which is what the
+homework is about.
 
 The cluster numbers on that colour bar are just the order the clusters were found in; they mean
 nothing on their own. To make them mean something, put the sizes, the depths and the times side
@@ -685,8 +768,12 @@ for c in sizes.index:
 
 print(quakes[quakes["cluster"] == 6]["place"].value_counts().head(3))
 """, f"""
-assert len(sizes) == {M['n_clusters']} + 1, \\
-    "one row per cluster plus one for the -1 noise group"
+assert round(depths.loc[0], 2) == {M['depth_0']}, \\
+    "cluster 0's median depth should come out {M['depth_0']} km — .mean() gives a bigger "\\
+    "number, because a few deep events pull it up"
+assert starts.loc[0] == quakes["time"].min(), \\
+    "cluster 0 contains the very first event in the file, so its earliest time is the "\\
+    "earliest time in `quakes` — did .min() become .max()?"
 print("✓ the clusters — largest holds", sizes.max(), "events, smallest holds",
       sizes.min(), ", and", sizes.loc[-1], "events belong to nothing")
 """)
@@ -769,7 +856,7 @@ print("axis 2, as (east, north, down):  ", pca.components_[1].round(2))
 """)
 
 md(f"""
-Read those four lines carefully, because they are the answer to the week's question.
+Read those four lines carefully.
 
 **{M['evr_0'][0] * 100:.1f}% of the spread lies on axis 1 alone.** Three numbers per earthquake,
 and one of them carries almost everything — which is exactly the situation PCA exists to find.
@@ -779,10 +866,10 @@ still.
 
 Axis 1 came out as {M['axis1_0']} in (east, north, down): {M['axis1_0'][1]} north for every
 {abs(M['axis1_0'][0])} west, and only {abs(M['axis1_0'][2])} up or down. So it is a **horizontal
-line running northwest–southeast**. Axis 2 is {M['axis2_0']} — almost straight down. A surface
-whose long direction is horizontal and whose second direction is vertical is a **near-vertical
-plane striking northwest–southeast**, which is what a strike-slip fault in this desert looks
-like, and it matches the direction of the limb you saw by eye on the map.
+line running northwest–southeast**. Axis 2 is {M['axis2_0']} — almost straight down. Taken as one
+object, then, the cluster is a **near-vertical plane striking northwest–southeast**, which is
+what a strike-slip fault in this desert looks like, and it matches the direction of the long limb
+you saw by eye on the map. Hold on to the words *taken as one object*; we come back to them.
 
 Turn the cloud so you are looking along that plane edge-on. `pca.transform` gives every event its
 position on the three new axes, as a grid with one row per event; `along[:, 0]` is the first
@@ -801,10 +888,69 @@ plt.show()
 """)
 
 md(f"""
-A sheet, seen from the side. The numbers you printed say the same thing: {M['sd_0'][0]} km of
-spread along axis 1 against {M['sd_0'][2]} km across the plane, so it is about
-{M['aspect_0']} times longer than it is thick. Some of that thickness is real — faults are zones,
-not razor cuts — and some of it is only how accurately these events could be located.
+A sheet, seen from the side — but read the axes before you read the shape, because the figure and
+the numbers above it are not saying the same thing. Those numbers are **standard deviations**: a
+typical distance from the middle of the cloud, not the size of the object. The figure is drawn at
+equal aspect, so it shows the object. It runs from {M['ext1_lo']} to {M['ext1_hi']} km along axis
+1 — {M['ext1']:.0f} km end to end — inside a band {M['ext3']:.0f} km deep, and even after throwing
+away the outermost one per cent at each edge the dots still fill about {M['ext3_core']:.0f} km
+across. End to end, that picture is about {M['ext_ratio']} times longer than it is thick. The
+printed numbers said {M['aspect_0']}.
+
+{M['ext1']:.0f} km is the number to quote if anyone asks how big this thing is. A magnitude
+{M['main_mag']} strike-slip earthquake breaks a few tens of kilometres of fault, which is what
+{M['ext1']:.0f} km is; {M['sd_0'][0]} km, offered as a length, is wrong by more than a factor of
+three. Ratios of standard deviations are fine for comparing one cluster against another, which is
+what you are about to do. A standard deviation is never the length of a fault.
+
+Some of the thickness is real, because faults are zones and not razor cuts, and some of it is
+only how accurately these events could be located.
+
+## One cluster, or two faults?
+
+{M['evr_0'][0] * 100:.1f}% on one axis is a strong number, and it is also a misleading one, for a
+reason worth learning. Most of cluster 0's events are on the long limb, so the long limb is most
+of the variance, so PCA reported the long limb — and said nothing at all about the rest. Look
+back at your map. A shorter limb crossed the long one at a steep angle near the southern star,
+and the magnitude {M['fore_mag']} epicentre sits right there. Check which cluster it landed in,
+then ask PCA the same question about that neighbourhood alone.
+""")
+
+code(f"""
+print(quakes[quakes["mag"] == {M['fore_mag']}][["latitude", "longitude", "cluster"]])
+
+fore_east = ({M['fore_lon']} - ({M['main_lon']})) * KM_PER_DEGREE_EAST
+fore_north = ({M['fore_lat']} - ({M['main_lat']})) * KM_PER_DEGREE_NORTH
+to_fore = ((rupture["east_km"] - fore_east) ** 2
+           + (rupture["north_km"] - fore_north) ** 2) ** 0.5
+knot = rupture[to_fore < {KNOT_KM}]
+
+knot_pca = PCA()
+knot_pca.fit(knot[["east_km", "north_km", "depth"]])
+
+print(len(knot), "cluster-0 events within {KNOT_KM} km of the magnitude {M['fore_mag']}")
+print("share of the spread on each axis:", knot_pca.explained_variance_ratio_.round(3))
+print("axis 1, as (east, north, down):  ", knot_pca.components_[0].round(2))
+""")
+
+md(f"""
+That is a different object. Where the whole cluster put {M['evr_0'][0] * 100:.1f}% of its spread
+on one axis, these {M['n_knot']} events put {M['evr_knot'][0] * 100:.1f}% — barely half — and the
+axis they put it on is {M['axis1_knot']}, which points almost straight **down**. There is no
+leading horizontal direction here at all, because two of them are competing: the long limb runs
+through this neighbourhood and the short one crosses it, and no single plane holds both.
+
+So the honest answer about cluster 0 is sharper than "yes, it is a fault". **Cluster 0 is at least
+two faults, crossing at a steep angle, reported as one.** The magnitude {M['fore_mag']} broke one
+of them and the magnitude {M['main_mag']} broke the other, {M['gap_hours']:.0f} hours later, and
+DBSCAN — which knows only about crowding, and they are crowded together — put them in the same
+group. It is the finding this sequence is known for: the paper cited at the top of this notebook
+is called *Hierarchical interlocked orthogonal faulting in the 2019 Ridgecrest earthquake
+sequence*.
+
+That is worth more than a clean result. A clustering algorithm merges two structures whenever
+they touch, because touching is the only thing it measures. Nothing in its output says how many
+things a cluster is; you have to go and ask, the way you just did.
 """)
 
 ask(f"""
@@ -860,15 +1006,30 @@ you can say why in numbers.
 md(f"""
 ## The question, answered
 
-**Yes — and cluster 0 is one.** Handed nothing but position and depth, DBSCAN pulled a
-{M['sd_0'][0]:.0f}-by-{M['sd_0'][2]:.1f} km near-vertical sheet out of {M['n']:,} dots, running
-northwest–southeast; most of the fault it traces was not on the California fault map before July
-2019. It also separated a shallow swarm under Coso that the mainshock switched on, found
-{M['n_small']} smaller groups, and declined to place {M['n_noise']:,} events at all — which is the
-useful part, because it is the algorithm telling you where it has no opinion. What it cannot tell
-you is which of those {M['n_clusters']} groups a geologist would accept, and the three settings
-you fed it — the scaler, `eps` and `min_samples` — decided how many there were. So the answer
-always travels with its parameters.
+**Yes — but not where you would expect, and not without an argument.**
+
+Start with what does *not* count. The biggest cluster, the {M['largest']:,}-event one, is very
+nearly the circle you drew by hand in Your turn 1 before any algorithm ran:
+{M['c0_in_circle']:,} of its {M['largest']:,} events — {M['c0_in_circle_pct']}% — are inside that
+{RADIUS}-degree circle. A method whose headline result you could have got by knowing where the
+mainshock was has not yet found you anything, and the {M['sd_0'][0]}-by-{M['sd_0'][1]}-by-{M['sd_0'][2]} km
+plane PCA fitted through it turned out, when you looked closely, to be two faults crossing rather
+than one.
+
+What DBSCAN earned is everything the circle could not do. It cut a {M['coso_n']}-event swarm out
+of the cloud from position alone, and then the three columns it was never shown — time, magnitude
+and place — agreed with it: those events started {M['coso_after_hours']:.1f} hours **after** the
+mainshock, {abs(M['coso_east_km']):.0f} km west and {M['coso_north_km']:.0f} km north of it, under a
+named geothermal field. Nothing you fed the algorithm could have told it that, which is what
+"finds structure with the labels hidden" is worth. It found {M['n_small']} more groups besides. And
+it declined to place {M['n_noise']:,} events — {M['frac_noise'] * 100:.1f}% of the catalogue — which
+k-means cannot do at all, and which is the algorithm telling you where it has no opinion. Some of
+that grey is a straight {M['line_len_km']:.0f} km line.
+
+So: yes, you can pull structures out of an unlabelled cloud of earthquakes, and no, you cannot
+read a fault map off the output. Which of the {M['n_clusters']} groups a geologist would accept is
+not in this file, the number of groups was decided by three settings you chose, and the largest
+one is worth the least. The answer always travels with its parameters.
 """)
 
 md(weekkit.week_cheatsheet(12))
@@ -876,13 +1037,17 @@ md(weekkit.week_cheatsheet(12))
 md(f"""
 ## Homework
 
-Three parts, all on `quakes` and `scaled`, which you already have. If you have restarted since
-class, run the setup cell at the top and then the two checkpoint cells, and you will be back where
-you were.
+Three parts, all on `quakes` and `scaled`. If you have restarted since class, run the setup cell
+at the top and then the checkpoint cell just below, and you will be back where you were.
 
 Class ran DBSCAN once, at `eps={EPS}`, and told you the number was not innocent. Now find out how
 much of the answer it was carrying.
 """)
+
+code(weekkit.CHECKPOINT.format(body=f'''quakes = load("{MAIN[0]}", "{MAIN[1]}")
+quakes = quakes[["time", "latitude", "longitude", "depth", "mag", "place"]]
+scaled = StandardScaler().fit_transform(quakes[{FEATURES}])
+quakes["cluster"] = DBSCAN(eps={EPS}, min_samples={MIN_SAMPLES}).fit_predict(scaled)'''))
 
 ask(f"""
 ### ✏️ Your turn 6
@@ -941,8 +1106,10 @@ print(quakes["my_cluster"].value_counts().head(6))
 coso_now = quakes.loc[quakes["cluster"] == 6, "my_cluster"]
 print(coso_now.value_counts())
 """, f"""
-assert len(coso_now) == {M['coso_n']}, \\
-    "coso_now should be the {M['coso_n']} events class put in cluster 6"
+assert (DBSCAN(eps=my_eps, min_samples={MIN_SAMPLES}).fit_predict(scaled)
+        == quakes["my_cluster"]).all(), \\
+    f"quakes['my_cluster'] is not the column eps={{my_eps}} gives — did you set my_eps and "\\
+    "then forget to re-run DBSCAN with it?"
 print("✓ your choice — eps", my_eps, "gives",
       len(set(quakes["my_cluster"])) - 1, "clusters and leaves",
       (quakes["my_cluster"] == -1).sum(), "events unassigned; the {M['coso_n']} Coso events",
@@ -961,11 +1128,14 @@ Four or five sentences.
 """)
 
 answer_prose(f"""
-I would draw cluster 0. Its {M['largest']:,} events measure {M['sd_0'][0]} by {M['sd_0'][1]} by
-{M['sd_0'][2]} km, with {M['evr_0'][0] * 100:.1f}% of the spread on a single horizontal axis
-running northwest–southeast, which is the shape a fault plane has and not a shape a blob has; it
-holds the magnitude {M['main_mag']} itself and starts with the very first event in the
-catalogue, so it is the thing that actually broke. I think the algorithm invented cluster 7: it holds
+I would draw the long northwest–southeast limb of cluster 0, and only that. The cluster's
+{M['largest']:,} events run {M['ext1']:.0f} km end to end inside a band about
+{M['ext3_core']:.0f} km thick, with {M['evr_0'][0] * 100:.1f}% of the spread on one horizontal
+axis, and it holds the magnitude {M['main_mag']} and the first event in the catalogue, so it is
+the thing that actually broke. I say "the limb" rather than "the cluster" because class showed
+that round the magnitude {M['fore_mag']} the same test gives {M['evr_knot'][0] * 100:.1f}% on an
+axis pointing straight down: DBSCAN merged a second, crossing fault into the same group, and one
+polygon on a map cannot be both. I think the algorithm invented cluster 7: it holds
 {M['sizes'][7]} events, exactly `min_samples`, and it is its own cluster at no other setting I
 tried — at `eps={EPS_SWEEP[0]}` all {M['fate'][(EPS_SWEEP[0], 7)]['noise']} of them become noise,
 and at `eps={EPS_SWEEP[2]}` they are absorbed into a group of

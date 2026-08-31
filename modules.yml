@@ -718,9 +718,6 @@ plain_words:
   - {idea: "Logistic regression",  module: ML3, words: "The same straight line — but now it outputs a probability between 0 and 1."}
   - {idea: "Naive Bayes",          module: ML3, words: "What does a quarry blast usually look like? Shallow, weekday, mid-afternoon. Score each clue and multiply. Pretending the clues are independent is obviously wrong, and it works anyway."}
   - {idea: "Precision / recall",   module: ML3, words: "Of the ones you flagged, how many were right? Of the real ones, how many did you catch?"}
-  - {idea: "Inertia",              module: ML5, words: "The total squared distance from each point to its own pin. It always falls as you add pins, so a small one on its own means nothing."}
-  - {idea: "The noise label",      module: ML5, words: "DBSCAN marks a point that is in no crowd with -1. That is not a cluster; it is the algorithm saying it has no opinion about this one."}
-  - {idea: "Explained variance",   module: ML5, words: "What share of the spread sits on each new axis. If the first one carries almost all of it, the cloud is really a line."}
   - {idea: "Leakage",              module: ML3, words: "You got 99 percent. Be suspicious. Did one of your columns already know the answer?"}
   - {idea: "Baseline",             module: ML3, words: "Write the dumbest rule you can, first. Any model that cannot beat it is decoration."}
   - {idea: "Decision tree",        module: ML4, words: "A flowchart of yes/no questions, learned from the data instead of written by hand."}

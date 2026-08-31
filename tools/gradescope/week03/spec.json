@@ -1,0 +1,51 @@
+{
+  "week": 3,
+  "notebook_stem": "03_two_peaks",
+  "homework_heading": "## Homework",
+  "parts": [
+    {
+      "name": "Part 1 — where the peaks merge",
+      "marker": "✓ where the peaks merge",
+      "checks": [
+        "assert earth_fewest_bins in bin_counts, \"pick one of the bin counts you actually tried\"",
+        "assert mars_fewest_bins in bin_counts, \"pick one of the bin counts you actually tried\""
+      ],
+      "check_points": 28,
+      "code_points": 5
+    },
+    {
+      "name": "Part 2 — area weighting",
+      "marker": "✓ area weighting",
+      "checks": [
+        "assert earth_weighted != fraction_below, \"if nothing moved, the weights were not used\""
+      ],
+      "check_points": 26,
+      "code_points": 5
+    },
+    {
+      "name": "Part 3 — earthquakes by year",
+      "marker": "✓ earthquakes by year",
+      "checks": [
+        "assert len(per_year) == 26, \"one row per year is expected, from 2000 to 2025\""
+      ],
+      "check_points": 26,
+      "code_points": 5
+    }
+  ],
+  "released": {
+    "w03-c048": "# ── Checkpoint ── run this if you restarted the kernel or fell behind ──\nearth = elevation(\"earth\")\nmars = elevation(\"mars\")\nbelow = earth < 0\nfraction_below = below.sum() / earth.size\n\nquakes = load(\"2000-01-01\", \"2026-01-01\", 5.5)\nquakes[\"year\"] = quakes[\"time\"].str[:4]\nquakes = quakes[[\"year\", \"depth\", \"mag\", \"type\", \"place\"]]",
+    "w03-q06-answer": "# ← your answer here\n\n\nassert earth_fewest_bins in bin_counts, \"pick one of the bin counts you actually tried\"\nassert mars_fewest_bins in bin_counts, \"pick one of the bin counts you actually tried\"\nprint(\"✓ where the peaks merge — Earth keeps two humps down to\", earth_fewest_bins,\n      \"bins, Mars down to\", mars_fewest_bins)",
+    "w03-q07-answer": "# ← your answer here\n\n\nassert earth_weighted != fraction_below, \"if nothing moved, the weights were not used\"\nprint(\"✓ area weighting — the fraction below sea level moved from\",\n      f\"{fraction_below:.3f}\", \"to\", f\"{earth_weighted:.3f}\")",
+    "w03-q08-answer": "# ← your answer here\n\n\nassert len(per_year) == 26, \"one row per year is expected, from 2000 to 2025\"\nprint(\"✓ earthquakes by year — busiest is\",\n      per_year.sort_values(ascending=False).index[0], \"with\", per_year.max(),\n      \"against a median of\", per_year.median())"
+  },
+  "hygiene": {
+    "points": 5
+  },
+  "manual": {
+    "parts": 0,
+    "points_each": 25,
+    "points": 0,
+    "note": "Part 4 of 3 is answered in prose and is marked by hand. Add a 0-point manual rubric item in Gradescope; the autograder is out of 100."
+  },
+  "autograder_max": 100
+}

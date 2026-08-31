@@ -19,6 +19,7 @@ import json
 import pathlib
 import subprocess
 import sys
+import textwrap
 
 import numpy as np
 import pandas as pd
@@ -54,6 +55,14 @@ CHILE, JAPAN = (-32, -14, -80, -58), (30, 45, 128, 148)
 
 MAG_EDGES = np.arange(5.5, 9.6, 0.5)
 EARTH_RADIUS_KM = 6371          # IUGG mean radius; see the citation in the notebook
+
+# The confining pressure 600 km down — the number that rules out ordinary brittle fracture at the
+# depths of the deep earthquakes, cold slab or not. Integrated from the PREM density profile
+# (ds.iris.edu/files/products/emc/data/PREM/PREM_1s.csv, read 2026-08-31): the same integration
+# returns 364 GPa at the centre of the Earth against PREM's published 363.85, so the profile is
+# being read correctly. 13.8 GPa at 410 km and 23.5 GPa at 660 km come out of the same run.
+PRESSURE_600KM_GPA = 21
+STANDARD_ATMOSPHERE_PA = 101_325   # the SI definition of one atmosphere
 
 
 # ---------------------------------------------------------------------------
@@ -121,6 +130,8 @@ M["south_deep_lon"] = float(south_deep["longitude"].median())
 M["south_deep_lat"] = float(south_deep["latitude"].median())
 M["south_gap_deg"] = round(M["south_deep_lon"] - M["south_shallow_lon"], 1)
 M["south_deepest"] = round(float(south_arc["depth"].max()))
+M["gpa_600km"] = PRESSURE_600KM_GPA
+M["atm_600km"] = int(round(PRESSURE_600KM_GPA * 1e9 / STANDARD_ATMOSPHERE_PA, -4))
 M["south_gap_km"] = round(abs(M["south_deep_lon"] - M["south_shallow_lon"])
                           * 2 * np.pi * EARTH_RADIUS_KM / 360
                           * float(np.cos(np.deg2rad(M["south_deep_lat"]))))
@@ -358,11 +369,15 @@ Draw the same map for the volcanoes: a scatter of longitude against latitude, th
 top, the same limits and aspect, labelled axes, and a title carrying how many there are. Use
 `marker="^"` so the volcanoes are triangles, and `s=8` so they are big enough to see.
 
-**Use these names**, because the self-check looks for them: `volcanoes`.
+`plt.scatter` hands back the thing it drew. Catch it in a name — `triangles = plt.scatter(...)` —
+so that the self-check can look at the points you actually plotted.
+
+**Use these names**, because the self-check looks for them: `triangles`.
 """)
 
 answer(f"""
-plt.scatter(volcanoes["Longitude"], volcanoes["Latitude"], s=8, color="darkgreen", marker="^")
+triangles = plt.scatter(volcanoes["Longitude"], volcanoes["Latitude"],
+                        s=8, color="darkgreen", marker="^")
 plt.plot(coast.lon, coast.lat, color="0.6", lw=0.6)
 plt.xlim(-180, 180)
 plt.ylim(-90, 90)
@@ -372,9 +387,12 @@ plt.ylabel("latitude (degrees north)")
 plt.title(str(len(volcanoes)) + " volcanoes that have erupted since the last ice age")
 plt.show()
 """, """
-assert volcanoes["Latitude"].notna().all(), "every volcano should have a latitude"
-print("✓ the volcano map —", len(volcanoes), "volcanoes, between latitude",
-      round(volcanoes["Latitude"].min()), "and", round(volcanoes["Latitude"].max()))
+assert len(triangles.get_offsets()) == len(volcanoes), \\
+    "the scatter drew something else — pass the volcano columns, not the earthquake ones"
+assert round(triangles.get_offsets()[:, 1].max()) == round(volcanoes["Latitude"].max()), \\
+    "longitude goes across and latitude up — check which column you gave scatter first"
+print("✓ the volcano map —", len(triangles.get_offsets()), "volcanoes, between latitude",
+      round(triangles.get_offsets()[:, 1].min()), "and", round(triangles.get_offsets()[:, 1].max()))
 """)
 
 # --- section 2 -------------------------------------------------------------
@@ -494,7 +512,8 @@ carries the depth.
 
 `plt.scatter` takes `c=` for the values to colour by and `cmap=` for the colour scheme;
 `vmin` and `vmax` fix what the ends of the scale mean, so that the colours mean the same thing on
-every map you draw. `plt.colorbar(label=...)` then draws the key.
+every map you draw. The thing `plt.scatter` hands back — the one you caught as `triangles` on the
+volcano map — is what `plt.colorbar(label=...)` needs, to know which colours it is the key to.
 """)
 
 ask(f"""
@@ -503,8 +522,8 @@ ask(f"""
 Redraw the world map of earthquakes, but colour each dot by its depth.
 
 Pass `c=quakes["depth"]` and `cmap="plasma_r"` to `plt.scatter`, with `vmin=0` and `vmax=600` so
-that the scale is fixed and pale means shallow. `plt.scatter` hands back the thing that was drawn,
-so catch it in a name and give that to `plt.colorbar`:
+that the scale is fixed and pale means shallow. Catch what `plt.scatter` hands back, as you did on
+the volcano map, and give that to `plt.colorbar`:
 
 ```
 dots = plt.scatter(...)
@@ -631,11 +650,24 @@ About {M['south_gap_km']} kilometres. Put that beside the depths and the shape i
 earthquakes get deeper the further inland you go, from a few tens of kilometres at the coast to
 {M['south_deepest']} km under the interior of the continent. They are not scattered through the
 mantle at random depths; they lie on a surface that starts at the trench and dips away under the
-continent. That
-surface is the plate. Cold ocean floor is bending down at the trench and sliding into the mantle,
-and because it is cold it is still brittle enough to break for several hundred kilometres down,
-while everything around it flows. Each deep earthquake is a snap inside the sinking sheet, and
-together they draw its shape.
+continent. That surface is the plate: cold ocean floor bending down at the trench and sliding into
+the mantle, with the deep earthquakes happening inside it.
+
+That is *where*, and it is only *where*. Being cold is why the slab is the only place down there
+that makes earthquakes at all — it is the one cold thing in a mantle that is otherwise hot and
+flowing quietly — but being cold does not make deep rock breakable. Six hundred kilometres down
+the weight of the rock above is about {M['gpa_600km']} gigapascals, {M['atm_600km']:,} times the
+pressure of the air in this room (worked out from PREM, the standard profile of density inside the
+Earth, `ds.iris.edu/files/products/emc/data/PREM/PREM_1s.csv`, read 2026-08-31), and under that
+squeeze rock does not crack open however cold it is. So the strangeness this section opened with
+is real, and it is still unsolved. Seismologists have candidates: water, given up as minerals in
+the slab break down, which can let a fault slip somewhere between 70 and 300 km; and below roughly
+400 km, a mineral that has survived too long in the wrong crystal form flipping suddenly into a
+denser one, or a thin sliding layer heating itself faster than the heat can escape. Which of them
+does the work, and at what depth, is still argued about (Green and Houston, *Annual Review of Earth
+and Planetary Sciences*, 1995; Houston, *Deep Earthquakes*, in the *Treatise on Geophysics*, 2015).
+Your figure cannot tell you the mechanism. It tells you the geometry, which is the part that is
+settled: whatever is breaking down there, it is breaking inside a sinking plate.
 """)
 
 # --- section 5 -------------------------------------------------------------
@@ -828,7 +860,9 @@ lines before you loaded them, including the mid-Atlantic ridge, where no land ma
 sinking plate melts the mantle above it. And the deep earthquakes, absent from the ridges and
 clustered near the trenches, sit {M['south_gap_km']} km inland of the shallow ones in South America,
 because they are happening inside a cold plate that is still sinking, hundreds of kilometres past
-the point where it went under. One arc is one arc; the homework asks you to check a second one.
+the point where it went under. How rock manages to break at all under that much pressure is a
+question seismologists have not closed; *where* it breaks, your own figure settled. One arc is one
+arc; the homework asks you to check a second one.
 """)
 
 md(weekkit.week_cheatsheet(4))
@@ -905,12 +939,27 @@ The two boxes do not give the same answer, and both are right.
 **Use these names**, because the self-check looks for them: `arc`, `shallow_lon`, `deep_lon`.
 """)
 
-answer(f"""
-# Chile. For Japan instead, the four numbers are {JAPAN[0]}, {JAPAN[1]}, {JAPAN[2]}, {JAPAN[3]}.
-south_lat, north_lat, west_lon, east_lon = {CHILE[0]}, {CHILE[1]}, {CHILE[2]}, {CHILE[3]}
+# The payload of the fork, written into the solution as a comment so that a grader marking a Japan
+# submission has the key for it. Wrapped here rather than by hand: the counts and the offsets are
+# formatted in, so hand-laid line breaks would come out ragged whenever a number changes width.
+WHY_BOTH_ARE_RIGHT = textwrap.fill(
+    f"Why the two arcs disagree, and why both answers are right. Chile has "
+    f"{M['hw']['Chile']['n']} earthquakes in the box and its deep ones sit "
+    f"{abs(M['hw']['Chile']['gap'])} degrees EAST of the shallow ones; Japan has "
+    f"{M['hw']['Japan']['n']} and its deep ones sit {abs(M['hw']['Japan']['gap'])} degrees WEST "
+    f"of them. Off South America the Nazca plate is sinking eastwards under the continent, so the "
+    f"slab gets deeper towards the east and carries its earthquakes inland that way. Off Japan "
+    f"the Pacific plate is sinking westwards, so the same geometry is mirrored and the deep "
+    f"events land on the other side of the shallow ones. The sign of the offset is the direction "
+    f"the plate is going down, and the size, a few degrees either way, is the same slab dipping "
+    f"at much the same angle. So a negative number for Japan and a positive one for Chile are "
+    f"both right, and neither is arbitrary: the sign follows the plate.",
+    width=96, initial_indent="# ", subsequent_indent="# ")
 
-arc = quakes[(quakes["latitude"] >= south_lat) & (quakes["latitude"] <= north_lat)
-             & (quakes["longitude"] >= west_lon) & (quakes["longitude"] <= east_lon)]
+answer(f"""
+# Chile. Either box is a right answer, so both are worked here.
+arc = quakes[(quakes["latitude"] >= {CHILE[0]}) & (quakes["latitude"] <= {CHILE[1]})
+             & (quakes["longitude"] >= {CHILE[2]}) & (quakes["longitude"] <= {CHILE[3]})]
 
 plt.scatter(arc["longitude"], -arc["depth"], s=8, color="crimson")
 plt.xlabel("longitude (degrees east)")
@@ -920,8 +969,25 @@ plt.show()
 
 shallow_lon = arc[arc["depth"] <= 70]["longitude"].median()
 deep_lon = arc[arc["depth"] > 300]["longitude"].median()
-print("shallow events, median longitude:", round(shallow_lon, 2))
-print("deep events, median longitude:   ", round(deep_lon, 2))
+print("Chile, shallow events, median longitude:", round(shallow_lon, 2))
+print("Chile, deep events, median longitude:   ", round(deep_lon, 2))
+
+# The other choice, Japan, worked exactly the same way.
+japan = quakes[(quakes["latitude"] >= {JAPAN[0]}) & (quakes["latitude"] <= {JAPAN[1]})
+               & (quakes["longitude"] >= {JAPAN[2]}) & (quakes["longitude"] <= {JAPAN[3]})]
+
+plt.scatter(japan["longitude"], -japan["depth"], s=8, color="crimson")
+plt.xlabel("longitude (degrees east)")
+plt.ylabel("height relative to the surface (km)")
+plt.title("Japan: " + str(len(japan)) + " earthquakes")
+plt.show()
+
+japan_shallow_lon = japan[japan["depth"] <= 70]["longitude"].median()
+japan_deep_lon = japan[japan["depth"] > 300]["longitude"].median()
+print("Japan, shallow events, median longitude:", round(japan_shallow_lon, 2))
+print("Japan, deep events, median longitude:   ", round(japan_deep_lon, 2))
+
+{WHY_BOTH_ARE_RIGHT}
 """, """
 assert len(arc) > 0, "no earthquakes in that box — check the four numbers"
 if deep_lon > shallow_lon:

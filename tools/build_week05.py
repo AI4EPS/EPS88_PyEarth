@@ -43,7 +43,9 @@ BERK_LAT, BERK_LON = 37.87, -122.27          # Berkeley campus
 BAY_HALF = 2.0                               # the query box: two degrees each side of campus
 BAY_BOX = (f"&minlatitude={BERK_LAT - BAY_HALF}&maxlatitude={BERK_LAT + BAY_HALF}"
            f"&minlongitude={BERK_LON - BAY_HALF}&maxlongitude={BERK_LON + BAY_HALF}")
-BAY_YEARS = 126                              # 1900-01-01 to 2026-01-01
+B_YEAR_START, B_YEAR_END = int(B_START[:4]), int(B_END[:4])
+BAY_YEARS = B_YEAR_END - B_YEAR_START         # 1900-01-01 to 2026-01-01
+LATE_START = 1930                             # the homework's second window: the same box, later
 
 SEED = 88                                    # the course number; fixed before anything was run
 N_WORLDS = 2000                              # the audit's number of Monte Carlo runs
@@ -96,6 +98,10 @@ M["sim_mean"] = float(worlds.mean())
 M["sim_p95"] = float(np.percentile(worlds, 95))
 M["sim_max"] = int(worlds.max())
 M["ratio"] = M["busiest"] / M["sim_mean"]
+# How often a WHOLE simulated world got past the 95th percentile. It is not one world in twenty:
+# the distribution is discrete and a tenth of the worlds land on the percentile itself, so the
+# prose has to quote the count that was measured rather than the name of the percentile.
+M["worlds_over_p95"] = int((worlds > M["sim_p95"]).sum())
 
 # the busiest day itself
 day = quakes[(quakes["time"] >= "2011-03-11") & (quakes["time"] < "2011-03-12")]
@@ -123,19 +129,28 @@ M["expected_quiet"] = round(M["p_zero"] * n_days)
 M["real_quiet"] = int((daily == 0).sum())
 M["excess_quiet"] = M["real_quiet"] - M["expected_quiet"]
 
-# the homework, both sides of the fork
-def forecast(half):
-    near = bay[(abs(bay["latitude"] - BERK_LAT) <= half)
-               & (abs(bay["longitude"] - BERK_LON) <= half)]
+# the homework, both forks: the box in space, and where the record starts
+def forecast(half, start_year):
+    recent = bay[pd.to_datetime(bay["time"]).dt.year >= start_year]
+    near = recent[(abs(recent["latitude"] - BERK_LAT) <= half)
+                  & (abs(recent["longitude"] - BERK_LON) <= half)]
     big = near[near["mag"] >= 6.0].sort_values("time")
-    rate = len(big) / BAY_YEARS
+    years = B_YEAR_END - start_year
+    rate = len(big) / years
     gaps = sorted(pd.to_datetime(big["time"]).diff().dt.days.dropna())
-    return {"n": len(big), "recur": 1 / rate, "p4": float(1 - np.exp(-rate * 4)),
-            "gaps": [int(g) for g in gaps], "places": list(big["place"])}
+    return {"n": len(big), "years": years, "recur": 1 / rate,
+            "p4": float(1 - np.exp(-rate * 4)),
+            "gaps": [int(g) for g in gaps], "places": list(big["place"]),
+            "years_of": [int(y) for y in pd.to_datetime(big["time"]).dt.year]}
 
 
-M["small"] = forecast(1.0)
-M["big"] = forecast(2.0)
+M["small"] = forecast(1.0, B_YEAR_START)
+M["big"] = forecast(2.0, B_YEAR_START)
+M["late"] = forecast(1.0, LATE_START)          # the same box, the record cut later
+M["early_n"] = M["small"]["n"] - M["late"]["n"]
+M["early_first"] = M["small"]["years_of"][0]
+M["early_last"] = M["small"]["years_of"][M["early_n"] - 1]
+M["window_ratio"] = M["small"]["p4"] / M["late"]["p4"]
 M["n_bay"] = len(bay)
 # the two events the wider box adds that the model answer names; both are printed by forecast()
 M["extra"] = [p.replace("The ", "").replace(", California Earthquake", "").strip()
@@ -581,9 +596,11 @@ series, so `daily.groupby(daily.index.year).max()` splits the {M['n_years']} yea
 you the busiest day of each.
 
 Build that, draw it with `plt.scatter`, and mark the 95th percentile you printed above with
-`plt.axhline({M['sim_p95']:.0f}, color="firebrick")` — the bar a world without clustering clears
-only one time in twenty. Then print the series itself, and count how many years are above the
-line.
+`plt.axhline({M['sim_p95']:.0f}, color="firebrick")`. Read that bar carefully, because it came
+from whole worlds and each dot below is a single year: {M['worlds_over_p95']} of the
+{N_WORLDS:,} worlds without clustering held a day above {M['sim_p95']:.0f} — and every one of them
+had all {M['n_years']} years to manage it in. Then print the series itself, and count how many
+years are above the line.
 
 **Use these names**, because the self-check looks for them: `by_year`.
 """)
@@ -608,10 +625,11 @@ print("✓ every year, not one —", above, "of {M['n_years']} years hold a day 
 """)
 
 md(f"""
-{M['years_over']} of the {M['n_years']} years clear a bar that a world without clustering clears
-once in twenty, and even the quietest year in the record reaches {M['quietest_year_max']}. Take
-2011 out entirely and {M['years_over'] - 1} years still do it. This is not one earthquake in Japan;
-it is what the record looks like everywhere you cut it.
+{M['years_over']} of the {M['n_years']} years clear, on their own, a bar that only
+{M['worlds_over_p95']} of {N_WORLDS:,} whole worlds without clustering ever reached, and even the
+quietest year in the record reaches {M['quietest_year_max']}. Take 2011 out entirely and
+{M['years_over'] - 1} years still do it. This is not one earthquake in Japan; it is what the record
+looks like everywhere you cut it.
 """)
 
 # --- section 5 -------------------------------------------------------------
@@ -776,11 +794,21 @@ print("✓ the four-year forecast —", len(big), "earthquakes,", round(1 / rate
 ask(f"""
 ### ✏️ Your turn 7
 
-"Near Berkeley" meant one degree in part 1, and nobody made you prove that was the right box. It
-changes the answer. Find out by how much.
+Part 1 made two choices for you: "near Berkeley" meant one degree, and the record started in
+{B_START[:4]}. Nobody made you prove either was right, and each one changes the answer. Find out by
+how much.
 
-Write a function `forecast(half)` that does everything part 1 did, for a box `half` degrees on each
-side of campus, and **returns** the four-year chance. Inside it, also print:
+Write a function `forecast(half, start_year)` that does everything part 1 did, for a box `half`
+degrees on each side of campus and using only the earthquakes from `start_year` onwards, and
+**returns** the four-year chance. Two lines inside it are new:
+
+- the window: `recent = bay[pd.to_datetime(bay["time"]).dt.year >= start_year]`, and then take
+  `near` out of `recent` rather than out of `bay`. `.dt.year` reads the year off each date, the
+  way `daily.index.year` did in class;
+- and the rate is `len(big) / ({B_END[:4]} - start_year)`, because a window that starts later
+  covers fewer years.
+
+Inside it, also print:
 
 - the events themselves — `print(big[["time", "mag", "place"]])`;
 - the gaps between them in days. `pd.to_datetime(big["time"]).diff()` gives the interval between
@@ -790,22 +818,27 @@ side of campus, and **returns** the four-year chance. Inside it, also print:
 - and the chance of at least one in **30 years**, which is the window published earthquake
   forecasts conventionally use.
 
-Then call it twice, at `half = 1.0` and `half = 2.0`, keeping the two answers.
+Then call it three times, keeping all three answers. `p1 = forecast(1.0, {B_START[:4]})` is part 1
+again. `p2 = forecast(2.0, {B_START[:4]})` widens the box. `p3 = forecast(1.0, {LATE_START})` keeps
+part 1's box and moves the start of the record instead — the same move class made on the global
+catalogue when it split the {M['n_years']} years apart and checked the neighbouring ones before
+concluding anything.
 
-**Use these names**, because the self-check looks for them: `forecast`, `p1`, `p2`.
+**Use these names**, because the self-check looks for them: `forecast`, `p1`, `p2`, `p3`.
 """)
 
 answer(f"""
-def forecast(half):
-    \"\"\"The Poisson forecast for a box `half` degrees each side of campus; returns the 4-year chance.\"\"\"
-    near = bay[(abs(bay["latitude"] - {BERK_LAT}) <= half)
-               & (abs(bay["longitude"] - ({BERK_LON})) <= half)]
+def forecast(half, start_year):
+    \"\"\"The Poisson forecast for a box `half` degrees each side of campus, from `start_year` on.\"\"\"
+    recent = bay[pd.to_datetime(bay["time"]).dt.year >= start_year]
+    near = recent[(abs(recent["latitude"] - {BERK_LAT}) <= half)
+                  & (abs(recent["longitude"] - ({BERK_LON})) <= half)]
     big = near[near["mag"] >= 6.0].sort_values("time")
-    rate = len(big) / {BAY_YEARS}
+    rate = len(big) / ({B_END[:4]} - start_year)
     gaps = pd.to_datetime(big["time"]).diff().dropna().dt.days
 
-    print("half-width", half, "degrees:", len(big), "earthquakes,",
-          round(1 / rate, 1), "years apart on average")
+    print("half-width", half, "degrees, from", start_year, "—", len(big), "earthquakes in",
+          {B_END[:4]} - start_year, "years,", round(1 / rate, 1), "years apart on average")
     print(big[["time", "mag", "place"]])
     print("gaps in days, shortest first:", sorted(gaps))
     print("chance of at least one in 4 years: ", round(1 - np.exp(-rate * 4), 3))
@@ -813,33 +846,40 @@ def forecast(half):
     return 1 - np.exp(-rate * 4)
 
 
-p1 = forecast(1.0)
-p2 = forecast(2.0)
-""", """
+p1 = forecast(1.0, {B_START[:4]})
+p2 = forecast(2.0, {B_START[:4]})
+p3 = forecast(1.0, {LATE_START})
+""", f"""
 assert p2 > p1, "the bigger box holds more earthquakes, so its four-year chance must be the larger"
-print(f"✓ the two boxes — {round(100 * p1)}% within one degree of campus "
-      f"and {round(100 * p2)}% within two")
+assert p3 != p1, \\
+    "p3 covers a different stretch of the record, so it cannot come out identical to p1"
+print(f"✓ the box — {{round(100 * p1)}}% within one degree of campus, "
+      f"{{round(100 * p2)}}% within two")
+print(f"✓ the window — {{round(100 * p1)}}% from {B_START[:4]}, "
+      f"{{round(100 * p3)}}% from {LATE_START}")
 """)
 
 ask(f"""
 ### ✏️ Your turn 8
 
-You now have two numbers for the same question and, under each of them, the earthquakes they were
+You now have three numbers for the same question and, under each of them, the earthquakes they were
 built from and the gaps between those earthquakes. A few sentences on each of these, using **your
 own printed output**:
 
-1. Which of the two four-year numbers would you quote, and what does the wider box buy and what
+1. Which of the three four-year numbers would you quote, and what does the wider box buy and what
    does it cost? Name at least one earthquake it adds.
 2. The Poisson formula assumes events arrive independently at a steady rate. Quote your shortest
    gap and your recurrence interval — and then be careful, because class showed that a world
    without clustering is already bunched, so one short gap on its own proves nothing. Is there
    anything in your two lists of gaps that chance alone would struggle to produce?
-3. Say in which direction you distrust your four-year number, and why.
+3. Say in which direction you distrust the number you quoted, and why. `p1` and `p3` differ only
+   in where the record starts, so your own list of events has something to say about this.
 """)
 
 answer_prose(f"""
-I would quote the one-degree box: {M['small']['p4'] * 100:.0f}% in four years, from
-{M['small']['n']} earthquakes with a recurrence interval of {M['small']['recur']:.1f} years.
+Of my three numbers I would quote the one-degree box over the whole record:
+{M['small']['p4'] * 100:.0f}% in four years, from {M['small']['n']} earthquakes with a recurrence
+interval of {M['small']['recur']:.1f} years.
 Widening to two degrees raises it to {M['big']['p4'] * 100:.0f}% and shortens the recurrence to
 {M['big']['recur']:.1f} years, but it buys those extra {M['big']['n'] - M['small']['n']} events by
 reaching two degrees away: the {M['extra'][0]} and {M['extra'][-1]} earthquakes are both in the
@@ -855,17 +895,23 @@ matter. Its shortest gap is {M['big']['gaps'][0]} days, because two magnitude-6 
 happened within an hour of each other on the same date, and a process delivering one event every
 {M['big']['recur']:.1f} years on average does not put two of them in one hour by luck. Then the
 record swings the other way and the one-degree box waits {M['small']['gaps'][-1]:,} days,
-{M['small']['gaps'][-1] / 365.25:.1f} years, for the next one. Class showed what does that: after a
-large earthquake the surrounding crust is loaded and fails again, so events arrive in bursts, which
-is the same clustering that made the global catalogue's busiest day {M['ratio']:.1f} times what
-chance produces.
+{M['small']['gaps'][-1] / 365.25:.1f} years, for the next one. Class showed that the two go
+together: piling events into a few short intervals has to leave the others emptier, because the
+total is fixed. That is the same trade that gave the global catalogue {M['excess_quiet']} more
+silent days than chance allows at one end and a day holding {M['busiest']} at the other.
 
 Which direction do I distrust it in? Both, which is the honest answer. The count includes
 aftershocks, so the rate is higher than the rate at which *independent* earthquakes begin, and that
-pushes the number up; but the whole estimate rests on {M['small']['n']} events in
-{BAY_YEARS} years, and one event more or fewer moves it by several points. It is a single number
-with nothing attached to say how firm it is, and putting an interval around a number like this one
-is the next thing this course has to learn to do.
+pushes the number up; the whole estimate rests on {M['small']['n']} events in {BAY_YEARS} years, so
+one event more or fewer moves it by several points. And the events are not spread evenly through
+the record: {M['early_n']} of my {M['small']['n']} fall between {M['early_first']} and
+{M['early_last']}, and the same one-degree box started in {LATE_START} instead holds
+{M['late']['n']} events in {M['late']['years']} years and gives {M['late']['p4'] * 100:.0f}% rather
+than {M['small']['p4'] * 100:.0f}% — nearly a factor of {M['window_ratio']:.0f}, out of a choice
+about the start date that nothing in the data makes for me. Neither window is obviously the right
+one, because the early events are also the ones whose magnitudes were reconstructed from written
+accounts. It is a single number with nothing attached to say how firm it is, and putting an
+interval around a number like this one is the next thing this course has to learn to do.
 """)
 
 

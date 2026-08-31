@@ -1,0 +1,39 @@
+{
+  "week": 4,
+  "notebook_stem": "04_where_and_why",
+  "homework_heading": "## Homework",
+  "parts": [
+    {
+      "name": "Part 1 — magnitudes on a log axis",
+      "marker": "✓ magnitudes on a log axis",
+      "checks": [
+        "assert counts.sum() == len(quakes), \"every earthquake should land in a bin — check your edges\""
+      ],
+      "check_points": 30,
+      "code_points": 5
+    },
+    {
+      "name": "Part 2 — the slab",
+      "marker": "✓ the slab",
+      "checks": [
+        "assert len(arc) > 0, \"no earthquakes in that box — check the four numbers\""
+      ],
+      "check_points": 30,
+      "code_points": 5
+    }
+  ],
+  "released": {
+    "w04-q06-answer": "# ← your answer here\n\n\nassert counts.sum() == len(quakes), \"every earthquake should land in a bin — check your edges\"\nprint(\"✓ magnitudes on a log axis — the smallest bin holds\", counts[0],\n      \"earthquakes and the next one\", counts[1])",
+    "w04-q07-answer": "# ← your answer here\n\n\nassert len(arc) > 0, \"no earthquakes in that box — check the four numbers\"\nif deep_lon > shallow_lon:\n    side = \"east\"\nelse:\n    side = \"west\"\nprint(\"✓ the slab —\", len(arc), \"earthquakes; the deep ones sit\",\n      round(abs(deep_lon - shallow_lon), 1), \"degrees\", side, \"of the shallow ones\")"
+  },
+  "hygiene": {
+    "points": 5
+  },
+  "manual": {
+    "parts": 1,
+    "points_each": 25,
+    "points": 25,
+    "note": "Part 3 of 3 is answered in prose and is marked by hand. Add a 25-point manual rubric item in Gradescope; the autograder is out of 75."
+  },
+  "autograder_max": 75
+}

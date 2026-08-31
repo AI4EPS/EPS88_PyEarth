@@ -1,0 +1,78 @@
+{
+  "week": 1,
+  "notebook_stem": "01_birthquake",
+  "homework_heading": "## Homework",
+  "parts": [
+    {
+      "name": "Part 1 — your own birthquake, and how many earthquakes there really were.",
+      "marker": "✓ Homework 1",
+      "checks": [
+        "assert len(all_mags) > len(my_mags), \"the no-floor day should hold more than the M4.5+ day\"",
+        "assert min(all_mags) < 4.5, \"the floor is still on — pass -10 as the magnitude floor\""
+      ],
+      "check_points": 25,
+      "code_points": 5
+    },
+    {
+      "name": "Part 2 — run the ten-to-one rule downwards.",
+      "marker": "✓ Homework 2",
+      "checks": [
+        "assert actual > len(my_mags), \"actual is the count at your lower floor, not the M4.5+ count\""
+      ],
+      "check_points": 25,
+      "code_points": 5
+    },
+    {
+      "name": "Part 3 — how many days of data do you need?",
+      "marker": "✓ Homework 3",
+      "checks": [
+        "assert n_day < n_month, \"a month should hold more earthquakes than one day — check your dates\""
+      ],
+      "check_points": 20,
+      "code_points": 5,
+      "figures": 3,
+      "figure_points": 5
+    }
+  ],
+  "released": {
+    "w01-q06-answer": "# ← your answer here",
+    "w01-q06-check": "assert len(all_mags) > len(my_mags), \"the no-floor day should hold more than the M4.5+ day\"\nassert min(all_mags) < 4.5, \"the floor is still on — pass -10 as the magnitude floor\"\nprint(f\"✓ Homework 1 — birthquake M{max(my_mags)}, guessed {my_guess}, \"\n      f\"catalogue lists {len(all_mags)}, smallest M{min(all_mags)}\")",
+    "w01-q07-answer": "# ← your answer here",
+    "w01-q07-check": "assert actual > len(my_mags), \"actual is the count at your lower floor, not the M4.5+ count\"\nprint(f\"✓ Homework 2 — rule predicts {predicted}, catalogue lists {actual} \"\n      f\"at the same floor: {round(predicted / actual, 1)}x over\")",
+    "w01-q08-answer": "# ← your answer here",
+    "w01-q08-check": "assert n_day < n_month, \"a month should hold more earthquakes than one day — check your dates\"\nprint(f\"✓ Homework 3 — day {n_day}, week {n_week}, month {n_month} earthquakes\")"
+  },
+  "own_dates": {
+    "points": 5,
+    "forbidden": [
+      "1940-01-01",
+      "1940-10-03",
+      "1940-10-04",
+      "1941-01-01",
+      "1976-01-01",
+      "1980-01-01",
+      "1982-01-01",
+      "1983-01-01",
+      "1983-12-02",
+      "1983-12-03",
+      "1984-01-01",
+      "1985-01-01",
+      "1990-01-01",
+      "2000-01-01",
+      "2010-01-01",
+      "2020-01-01",
+      "2026-01-01",
+      "2026-08-31"
+    ]
+  },
+  "hygiene": {
+    "points": 5
+  },
+  "manual": {
+    "parts": 0,
+    "points_each": 25,
+    "points": 0,
+    "note": "Part 4 of 3 is answered in prose and is marked by hand. Add a 0-point manual rubric item in Gradescope; the autograder is out of 100."
+  },
+  "autograder_max": 100
+}

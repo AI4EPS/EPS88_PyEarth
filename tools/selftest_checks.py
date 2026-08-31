@@ -42,6 +42,21 @@ plt.axvline(273)
 plt.text(1, 2, "Venus")
 '''
 
+# A function the STUDENT writes cannot be rebuilt by a checkpoint without publishing the answer,
+# so the checkpoint has to name it and send them back to their own cell. The stub is what marks
+# the cell as theirs, which is why these four lists come in student/solution pairs.
+_CHECKPOINT = "# ── Checkpoint ──\nvei = np.array([2, 3])"
+_TOLD = "# ── Checkpoint ──\n# Re-run your own count_at_least cell too.\nvei = np.array([2, 3])"
+_DEF = 'def count_at_least(values, level):\n    """How many are at or above the level."""\n    return (values >= level).sum()'
+THEIR_STU = [CODE("quakes = load(URL)"), CODE("# ← your answer here"),
+             CODE(_CHECKPOINT), CODE("print(count_at_least(vei, 2))")]
+THEIR_SOL = [CODE("quakes = load(URL)"), CODE(_DEF),
+             CODE(_CHECKPOINT), CODE("print(count_at_least(vei, 2))")]
+TOLD_STU = [CODE("quakes = load(URL)"), CODE("# ← your answer here"),
+            CODE(_TOLD), CODE("print(count_at_least(vei, 2))")]
+TOLD_SOL = [CODE("quakes = load(URL)"), CODE(_DEF),
+            CODE(_TOLD), CODE("print(count_at_least(vei, 2))")]
+
 CASES = [
     ("assert names nothing declares", C.check_asserts,
      [MD("✏️ use `my_mags`"), CODE("assert len(other) > 0")], True),
@@ -80,6 +95,21 @@ CASES = [
      [MD("## The question, answered"), CODE("assert x > 0\nprint('nice work')")], True),
     ("...but not one that uses weekkit.CHECK_LINE", C.check_conventions,
      [MD("## The question, answered"), CODE("assert x > 0\nprint(f'✓ Q3 — you found 14')")], False),
+    # The checkpoint rule, and its one exemption. A checkpoint may not rebuild a function the
+    # STUDENT wrote — that publishes the answer — so naming it in a re-run instruction is the
+    # only discharge, and it has to actually name it.
+    ("a checkpoint that leaves the section reaching for a class variable",
+     lambda c: C.check_checkpoints_rebuild(c, c),
+     [CODE("quakes = load(URL)"), CODE("# ── Checkpoint ──\nvei = np.arange(3)"),
+      CODE("print(vei, mag_levels)")], True),
+    ("...but not one that rebuilds it", lambda c: C.check_checkpoints_rebuild(c, c),
+     [CODE("quakes = load(URL)"),
+      CODE("# ── Checkpoint ──\nvei = np.arange(3)\nmag_levels = np.arange(3)"),
+      CODE("print(vei, mag_levels)")], False),
+    ("a student's own function, with no instruction to re-run it",
+     lambda c: C.check_checkpoints_rebuild(c, THEIR_SOL), THEIR_STU, True),
+    ("...but not when the checkpoint names it and says to re-run it",
+     lambda c: C.check_checkpoints_rebuild(c, TOLD_SOL), TOLD_STU, False),
     ("a notebook with no Predict cell", C.check_predict, [MD("## 1. Something")], True),
     ("...but not one that has the conventional heading", C.check_predict,
      [MD("### Predict before you run\n\nHow many do you expect?")], False),

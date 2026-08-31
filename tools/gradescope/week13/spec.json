@@ -1,0 +1,51 @@
+{
+  "week": 13,
+  "notebook_stem": "13_machine_hears",
+  "homework_heading": "## Homework",
+  "parts": [
+    {
+      "name": "Part 1 — by loudness",
+      "marker": "✓ by loudness",
+      "checks": [
+        "assert len(classic_ok) == len(network_ok) == len(quiet),     \"one True/False per held-out recording, for both methods\""
+      ],
+      "check_points": 28,
+      "code_points": 5
+    },
+    {
+      "name": "Part 2 — the label width",
+      "marker": "✓ the label width",
+      "checks": [
+        "assert my_sigma in (5, 40), \"the question offers 5 or 40; pick one of them\"",
+        "assert len(my_scores) == len(scores), \"same number of epochs, so only the label width changed\""
+      ],
+      "check_points": 26,
+      "code_points": 5
+    },
+    {
+      "name": "Part 3 — more training",
+      "marker": "✓ more training",
+      "checks": [
+        "assert len(long_scores) == 60, \"60 epochs were asked for\""
+      ],
+      "check_points": 26,
+      "code_points": 5
+    }
+  ],
+  "released": {
+    "w13-c046": "# ── Checkpoint ── run this if you restarted the kernel or fell behind ──\npicker, losses, scores = train_picker()\nnet_picks = picks_from(picker, x_test)",
+    "w13-q06-answer": "# ← your answer here\n\n\nassert len(classic_ok) == len(network_ok) == len(quiet),     \"one True/False per held-out recording, for both methods\"\nprint(\"✓ by loudness — on the quiet half the network scores\",\n      round(network_ok[quiet].mean(), 3), \"against STA/LTA's\",\n      round(classic_ok[quiet].mean(), 3))",
+    "w13-q07-answer": "# ← your answer here\n\n\nassert my_sigma in (5, 40), \"the question offers 5 or 40; pick one of them\"\nassert len(my_scores) == len(scores), \"same number of epochs, so only the label width changed\"\nprint(\"✓ the label width — sigma\", my_sigma, \"scores\",\n      round(my_scores[-1], 3), \"against\", round(scores[-1], 3), \"at sigma 20\")",
+    "w13-q08-answer": "# ← your answer here\n\n\nassert len(long_scores) == 60, \"60 epochs were asked for\"\nprint(\"✓ more training — the loss fell by a factor of\",\n      round(long_losses[0] / long_losses[59], 1), \"while the held-out score moved from\",\n      round(long_scores[24], 3), \"to\", round(long_scores[59], 3))"
+  },
+  "hygiene": {
+    "points": 5
+  },
+  "manual": {
+    "parts": 0,
+    "points_each": 25,
+    "points": 0,
+    "note": "Part 4 of 3 is answered in prose and is marked by hand. Add a 0-point manual rubric item in Gradescope; the autograder is out of 100."
+  },
+  "autograder_max": 100
+}

@@ -1,0 +1,40 @@
+{
+  "week": 12,
+  "notebook_stem": "12_hidden_fault",
+  "homework_heading": "## Homework",
+  "parts": [
+    {
+      "name": "Part 1 — the eps sweep",
+      "marker": "✓ the eps sweep",
+      "checks": [
+        "assert len(cluster_counts) == len(eps_values), \\"
+      ],
+      "check_points": 30,
+      "code_points": 5
+    },
+    {
+      "name": "Part 2 — your choice",
+      "marker": "✓ your choice",
+      "checks": [
+        "assert (DBSCAN(eps=my_eps, min_samples=12).fit_predict(scaled)"
+      ],
+      "check_points": 30,
+      "code_points": 5
+    }
+  ],
+  "released": {
+    "w12-c049": "# ── Checkpoint ── run this if you restarted the kernel or fell behind ──\nquakes = load(\"2019-07-01\", \"2019-12-31\")\nquakes = quakes[[\"time\", \"latitude\", \"longitude\", \"depth\", \"mag\", \"place\"]]\nscaled = StandardScaler().fit_transform(quakes[['longitude', 'latitude', 'depth']])\nquakes[\"cluster\"] = DBSCAN(eps=0.15, min_samples=12).fit_predict(scaled)",
+    "w12-q06-answer": "# ← your answer here\n\n\nassert len(cluster_counts) == len(eps_values), \\\n    \"one cluster count per eps — was the append inside the loop?\"\nprint(\"✓ the eps sweep — cluster counts\", cluster_counts, \"for eps\", eps_values)",
+    "w12-q07-answer": "# ← your answer here\n\n\nassert (DBSCAN(eps=my_eps, min_samples=12).fit_predict(scaled)\n        == quakes[\"my_cluster\"]).all(), \\\n    f\"quakes['my_cluster'] is not the column eps={my_eps} gives — did you set my_eps and \"\\\n    \"then forget to re-run DBSCAN with it?\"\nprint(\"✓ your choice — eps\", my_eps, \"gives\",\n      len(set(quakes[\"my_cluster\"])) - 1, \"clusters and leaves\",\n      (quakes[\"my_cluster\"] == -1).sum(), \"events unassigned; the 583 Coso events\",\n      \"landed in\", len(coso_now.value_counts()), \"group(s)\")"
+  },
+  "hygiene": {
+    "points": 5
+  },
+  "manual": {
+    "parts": 1,
+    "points_each": 25,
+    "points": 25,
+    "note": "Part 3 of 3 is answered in prose and is marked by hand. Add a 25-point manual rubric item in Gradescope; the autograder is out of 75."
+  },
+  "autograder_max": 75
+}

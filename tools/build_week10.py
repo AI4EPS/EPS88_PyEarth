@@ -17,6 +17,7 @@ the notebook reads. Nothing is typed from memory or copied from the plan.
     python tools/build_week10.py
 """
 import json
+import math
 import pathlib
 import subprocess
 import sys
@@ -123,6 +124,38 @@ M["top_depth_n"] = int(depth_counts.iloc[0])
 same_depth = blast_rows[blast_rows["depth"] == M["top_depth"]]
 M["top_depth_lat_span"] = float(same_depth["latitude"].max() - same_depth["latitude"].min())
 M["top_depth_lon_span"] = float(same_depth["longitude"].max() - same_depth["longitude"].min())
+# A degree of latitude is a degree of latitude; a degree of longitude shrinks with the cosine.
+# The whole point below is that the two spans are NOT the same distance, so convert both.
+M["top_depth_lat_km"] = M["top_depth_lat_span"] * 111.32
+M["top_depth_lon_km"] = (M["top_depth_lon_span"] * 111.32
+                         * math.cos(math.radians(float(same_depth["latitude"].mean()))))
+M["second_depth"] = float(depth_counts.index[1])
+M["second_depth_n"] = int(depth_counts.iloc[1])
+second_depth = blast_rows[blast_rows["depth"] == M["second_depth"]]
+M["second_depth_lat_span"] = float(second_depth["latitude"].max()
+                                   - second_depth["latitude"].min())
+M["second_depth_lon_span"] = float(second_depth["longitude"].max()
+                                   - second_depth["longitude"].min())
+M["second_depth_lat_km"] = M["second_depth_lat_span"] * 111.32
+# Blast depths are quoted on a 10 m grid, not to the metre: -0.82 km is two decimal places of a
+# kilometre. Measure the share so the prose can say "10 m grid" rather than assert it. The
+# comparison needs a tolerance, not `==`: -0.82 * 100 is -81.99999999999999 in binary floating
+# point, so exact equality reports 88% where the true figure is 95%.
+M["depth_grid_share"] = float((((blast_rows["depth"] * 100).round()
+                                - blast_rows["depth"] * 100).abs() < 1e-6).mean())
+
+# `place` and `depthError` are two of the columns COLUMNS drops. They carry the mechanism: place
+# names the site the analyst matched the event to, and depthError says whether the location
+# routine ever solved for depth at all.
+blast_meta = pd.read_csv(BLAST_PATH)
+top_meta = blast_meta[blast_meta["depth"] == M["top_depth"]]
+towns = top_meta["place"].str.split(" of ").str[-1].str.split(",").str[0].value_counts()
+M["top_site_a"], M["top_site_a_n"] = str(towns.index[0]), int(towns.iloc[0])
+M["top_site_b"], M["top_site_b_n"] = str(towns.index[1]), int(towns.iloc[1])
+M["top_sites"] = int(len(towns))
+M["depth_err_top"] = float(blast_meta["depthError"].value_counts().index[0])
+M["depth_err_share"] = float((blast_meta["depthError"] == M["depth_err_top"]).mean())
+M["depth_err_n"] = int((blast_meta["depthError"] == M["depth_err_top"]).sum())
 
 M["blast_workhours"] = float(((blast_rows["hour"] >= 10) & (blast_rows["hour"] < 17)).mean())
 M["quake_workhours"] = float(((quake_rows["hour"] >= 10) & (quake_rows["hour"] < 17)).mean())
@@ -196,6 +229,29 @@ M["prec_worst_year"] = year_prec[M["year_worst"]]
 M["prec_year_before"] = year_prec[M["year_worst"] - 1]
 M["rec_worst_year"] = year_rec[M["year_worst"]]
 M["rec_year_before"] = year_rec[M["year_worst"] - 1]
+
+# The pinned split is ONE draw. The week's headline is an ordering of three F1 scores that sit
+# within 0.012 of each other, so before any of it is written down, re-draw the split and find out
+# how far these numbers move on their own. `random_state=42` stays pinned for everything the
+# notebook reports; this is the scatter the reported numbers have to be read against.
+SEEDS = list(range(10))
+seed_hand, seed_lr, seed_nb = [], [], []
+for seed in SEEDS:
+    X_fit, X_held, y_fit, y_held = train_test_split(X, y, test_size=0.3, random_state=seed,
+                                                    stratify=y)
+    seed_hand.append(float(f1_score(y_held, hand_rule(X_held))))
+    seed_lr.append(float(f1_score(y_held, LogisticRegression(max_iter=1000)
+                                  .fit(X_fit, y_fit).predict(X_held))))
+    seed_nb.append(float(f1_score(y_held, GaussianNB().fit(X_fit, y_fit).predict(X_held))))
+seed_gap = [h - l for h, l in zip(seed_hand, seed_lr)]
+M["seed_n"] = len(SEEDS)
+M["seed_hand_lo"], M["seed_hand_hi"] = min(seed_hand), max(seed_hand)
+M["seed_lr_lo"], M["seed_lr_hi"] = min(seed_lr), max(seed_lr)
+M["seed_nb_lo"], M["seed_nb_hi"] = min(seed_nb), max(seed_nb)
+M["seed_gap_lo"], M["seed_gap_hi"] = min(seed_gap), max(seed_gap)
+M["seed_lr_ahead"] = sum(1 for g in seed_gap if g < 0)
+M["pinned_gap"] = M["hand_f1"] - M["lr_f1"]
+M["seed_worst_spread"] = max(max(seed_hand) - min(seed_hand), max(seed_lr) - min(seed_lr))
 
 for k in sorted(M):
     print(f"{k:22s} {M[k]}")
@@ -292,7 +348,11 @@ COLUMNS = {COLUMNS}
 # The blast query runs live. The matching earthquake query cannot: the archive refuses any
 # request that matches more than 20,000 events, and that one matches far more, so the
 # earthquakes travel with the course as a file instead of coming down the wire.
-blasts = load()[COLUMNS]
+# The archive sends more columns than COLUMNS keeps. Hold on to the whole blast table too: two
+# of the columns we are about to drop turn out to say where a blast was and how its depth was
+# arrived at, and we come back for them.
+blasts_all = load()
+blasts = blasts_all[COLUMNS]
 quakes = pd.read_csv(CACHE + "/{QUAKE_CACHE}")
 coast = pd.read_csv(CACHE + "/coastlines.csv")
 
@@ -469,8 +529,13 @@ plt.show()
 
 md("""
 The earthquakes are spread over the whole box, in broad belts hundreds of kilometres long: those
-are the state's active faults, where the Pacific and North American plates grind past each other.
-The blasts are not spread at all. They sit in small tight clumps, because a quarry is a fixed hole
+are the region's active belts, and they are not all the same kind of belt. The long one down the
+coast is the boundary where the Pacific and North American plates grind past each other. The
+scatter filling the right-hand side of the map is not: that is the Walker Lane and the Basin and
+Range, where the crust is pulling apart rather than sliding past itself. The dense knot at about
+37.6 N, -118.9 is the volcanic swarm under Long Valley, and the tight cluster on the coast near
+40.3 N, -124.5 is the Mendocino triple junction, where three plates meet at once. The blasts are
+not spread at all. They sit in small tight clumps, because a quarry is a fixed hole
 in the ground that gets blasted again and again for decades. That is already a usable clue, and
 also a warning — a model that learns *where* the quarries are has learned a list of addresses,
 not a piece of physics.
@@ -514,20 +579,57 @@ print(blast_rows["depth"].value_counts().head(5))
 print("distinct depth values, blasts:     ", blast_rows["depth"].nunique())
 print("distinct depth values, earthquakes:", quake_rows["depth"].nunique())
 
+# How far apart are the blasts that share one repeated depth? Ask in BOTH directions: one
+# direction on its own can only tell you about the direction you happened to ask about.
+for repeated in blast_rows["depth"].value_counts().index[:2]:
+    same_depth = blast_rows[blast_rows["depth"] == repeated]
+    print(repeated, "km:", len(same_depth), "blasts spanning",
+          round(same_depth["latitude"].max() - same_depth["latitude"].min(), 2), "deg latitude",
+          "and", round(same_depth["longitude"].max() - same_depth["longitude"].min(), 2),
+          "deg longitude")
+""")
+
+code("""
 top_depth = blast_rows["depth"].value_counts().index[0]
-same_quarry = blast_rows[blast_rows["depth"] == top_depth]
-print("the", len(same_quarry), "blasts at", top_depth, "km span",
-      round(same_quarry["latitude"].max() - same_quarry["latitude"].min(), 2),
-      "degrees of latitude")
+second_depth = blast_rows["depth"].value_counts().index[1]
+top_depth_rows = blasts_all[blasts_all["depth"] == top_depth]
+print(top_depth_rows["longitude"].round(1).value_counts())
+
+# `place` and `depthError` arrived with the blasts and were dropped when we cut down to COLUMNS.
+print("the two clumps at", top_depth, "km:")
+print(top_depth_rows[top_depth_rows["longitude"] > -118]["place"].value_counts().head(2))
+print(top_depth_rows[top_depth_rows["longitude"] < -118]["place"].value_counts().head(2))
+print("and at", second_depth, "km:")
+print(blasts_all[blasts_all["depth"] == second_depth]["place"].value_counts().head(2))
+print(blasts_all["depthError"].value_counts().head(3))
 """)
 
 md(f"""
-{M['top_depth_n']} separate blasts share the depth {M['top_depth']} km, to the metre, and those
-{M['top_depth_n']} events sit within {M['top_depth_lat_span']:.2f} degrees of latitude of each
-other: one quarry, one number. A depth that repeats to the metre was not measured, it was
-**set**. Once an analyst recognises an event as a quarry blast they fix its depth at the quarry's
-own surface instead of letting the location routine solve for it — so the depth column is not a
-property of the ground shaking at all. It is a note about a decision the analyst had already made.
+{M['top_depth_n']} separate blasts share the depth {M['top_depth']} km — the same value to the
+nearest 10 metres, which is as fine as this catalogue quotes a blast depth at all
+({M['depth_grid_share'] * 100:.0f}% of them sit on that 10 m grid). The obvious reading is that
+they are one quarry. Asking in both directions says otherwise: those {M['top_depth_n']} events
+fall within {M['top_depth_lat_span']:.2f} degrees of latitude of each other, about
+{M['top_depth_lat_km']:.0f} km, but {M['top_depth_lon_span']:.2f} degrees of longitude apart,
+about {M['top_depth_lon_km']:.0f} km. Latitude is the narrow one only because this quarry
+district runs east–west along 35 N, so a latitude span on its own is the single statistic that
+was always going to look tight. The longitudes come in two clumps, and `place` — one of the
+columns the archive sent and we dropped — names them: {M['top_site_a_n']} of the blasts are at
+{M['top_site_a']} and {M['top_site_b_n']} at {M['top_site_b']}. **Two quarries, one number.**
+
+The row below is worse. {M['second_depth_n']} blasts share {M['second_depth']} km while spanning
+{M['second_depth_lat_span']:.1f} degrees of latitude — {M['second_depth_lat_km']:.0f} km — and
+most of them are back at {M['top_site_a']}. So one quarry has been handed two different depths,
+and one depth has been handed to quarries hundreds of kilometres apart. Whatever that column holds, it is not each site's own elevation.
+
+`depthError` says it outright. On {M['depth_err_n']:,} of the {M['n_blasts']:,} blasts —
+{M['depth_err_share'] * 100:.0f}% — it is the single constant {M['depth_err_top']} km. An
+uncertainty of {M['depth_err_top']} km attached to an event placed {abs(M['top_depth']) * 1000:.0f}
+metres above sea level is not a statement about that event; it is what a fixed depth looks like
+when the routine that would have solved for one never ran. So the depth was not measured, it was
+**set** — once an analyst recognises an event as a quarry blast, they hold its depth at a value
+they choose. The column is not a property of the ground shaking at all. It is a note about a
+decision the analyst had already made.
 
 That is what **leakage** looks like, and it comes with a plain-language test.
 
@@ -638,7 +740,9 @@ md(f"""
 ## Letting the computer draw the line
 
 Two conditions, nothing fitted to anything, F1 {M['hand_f1']:.4f}. Write that number down;
-everything from here has to beat it.
+everything from here is measured against it. Beating it will have to mean clearing it by more
+than the number wanders on its own when the split is re-cut — hold that thought, because you
+measure how far it wanders before the end of the hour.
 
 **Logistic regression** is the straight-line fit from earlier in the course, bent to answer a
 yes-or-no question.
@@ -807,10 +911,11 @@ print("✓ naive Bayes — F1", round(f1_score(y_test, guess_nb), 4), "on the sa
 
 # --- section 7 -------------------------------------------------------------
 md("""
-## The same rule, year by year
+## The same numbers, measured again
 
 One split of one catalogue gives one number, and a number that only holds for the window you
-happened to pick is not a result. The hand rule has nothing fitted to anything, so it can be
+happened to pick is not a result. There are two ways to find out whether these numbers are
+results, and the cheaper one first: the hand rule has nothing fitted to anything, so it can be
 scored on every event of every year with no risk of cheating. Do that.
 """)
 
@@ -838,16 +943,44 @@ Read the two columns and you can see which half of the score gave way: recall ba
 ({M['rec_year_before']:.3f} to {M['rec_worst_year']:.3f} — the same blasts, still caught), while
 precision falls from {M['prec_year_before']:.3f} to {M['prec_worst_year']:.3f}, because there are
 three times as many earthquakes for the rule to be wrong about.
+
+The years were the cheap way to ask. The second way goes at the comparison itself. Your three F1
+scores — hand rule, logistic regression, naive Bayes — all came out of one random cut of the
+catalogue into two halves, and `random_state=42` is nothing more than the number that decided
+which rows went which way. Change it, refit, rescore, and see how much of the difference between
+the three was ever there.
+""")
+
+code(f"""
+for seed in range({M['seed_n']}):
+    X_fit, X_held, y_fit, y_held = train_test_split(X, y, test_size=0.3, random_state=seed,
+                                                    stratify=y)
+    rule = (X_held["depth"] <= 0) & (X_held["hour"] >= 10) & (X_held["hour"] < 17)
+    pred_lr = LogisticRegression(max_iter=1000).fit(X_fit, y_fit).predict(X_held)
+    pred_nb = GaussianNB().fit(X_fit, y_fit).predict(X_held)
+    print("split", seed,
+          " hand rule", round(f1_score(y_held, rule), 4),
+          " logistic", round(f1_score(y_held, pred_lr), 4),
+          " naive Bayes", round(f1_score(y_held, pred_nb), 4))
 """)
 
 # --- the question, answered ------------------------------------------------
 md(f"""
 ## The question, answered
 
-**Not from a catalogue.** On these {M['n_test']:,} held-out events, two hand-written conditions
-scored F1 {M['hand_f1']:.4f}, logistic regression on six columns scored {M['lr_f1']:.4f} and naive
-Bayes {M['nb_f1']:.4f}. Neither model beat the rule, and none of the three is good enough to hand
-a decision that matters.
+**Not from a catalogue.** On the {M['n_test']:,} held-out events of the pinned split, two
+hand-written conditions scored F1 {M['hand_f1']:.4f}, logistic regression on six columns scored
+{M['lr_f1']:.4f} and naive Bayes {M['nb_f1']:.4f}. Read alone, those three look like an ordering.
+The re-splits say they are not one: across {M['seed_n']} cuts the hand rule ran
+{M['seed_hand_lo']:.4f} to {M['seed_hand_hi']:.4f} and logistic regression
+{M['seed_lr_lo']:.4f} to {M['seed_lr_hi']:.4f}, the gap between the two swung from
+{M['seed_gap_lo']:+.4f} to {M['seed_gap_hi']:+.4f}, and logistic regression finished ahead on
+{M['seed_lr_ahead']} of them. The {M['pinned_gap']:.4f} separating rule from model on this split
+is far less than either number moves when nothing changes but the shuffle. So the models did not
+beat the baseline and the baseline did not beat them: they **tie**. Six columns,
+{M['n_train']:,} labelled examples and two fitted classifiers bought you nothing over two lines
+you wrote before any of it — and that, not a ranking, is the result. None of the three is good
+enough to hand a decision that matters.
 
 The reason is what the clues are made of. Real discrimination of an explosion from an earthquake
 is done on the waveform, not on a catalogue row. An explosion is a sudden push outward from a
@@ -860,11 +993,10 @@ device kilometres down — except that in this file the depth of a blast is not 
 assigned.
 
 What you classified on instead was a quarry's routine: a fixed address, a working day, a weekday,
-an analyst's convention. Every one of those is a property of *legal, advertised, repeated*
-blasting. A clandestine nuclear test is a single event, at a site nobody has recorded before, at
-an hour chosen by people who would rather not be identified, so all four clues go dark at once.
-That is why treaty verification reads waveforms rather than catalogues — and why a small F1 on
-the wrong features is a more useful thing to report than a large one.
+and an analyst's convention about depth. Whether any of those four would still be there for the
+event you actually care about is the last thing the homework asks you. Either way, this is why
+treaty verification reads waveforms rather than catalogues — and why a small F1 on the wrong
+features is a more useful thing to report than a large one.
 """)
 
 # --- summary and homework --------------------------------------------------
@@ -984,15 +1116,19 @@ nothing else changed, it scored {M['lrnd_f1']:.4f}, which is the same F1 as the 
 "earthquake" every time, and naive Bayes fell from {M['nb_f1']:.4f} to {M['nbnd_f1']:.4f}, which is
 barely different from it. So essentially all of the apparent skill was coming from one column, and
 that column is not a measurement: {M['top_depth_n']} blasts share the single depth
-{M['top_depth']} km to the metre, which means somebody assigned it after they had already decided
-the event was a blast. I would not report the first score as a result, because the model was
-reading the answer off the label-maker's own notes rather than off the ground.
+{M['top_depth']} km to the nearest 10 metres across two different quarries, {M['top_site_a']} and
+{M['top_site_b']}, and `depthError` carries the same constant {M['depth_err_top']} km on
+{M['depth_err_share'] * 100:.0f}% of the blasts, so somebody assigned that depth after they had
+already decided the event was a blast. I would not report the first score as a result, because
+the model was reading the answer off the label-maker's own notes rather than off the ground.
 
-None of the clues would survive. The repeated address works because a quarry is blasted from the
-same pit for decades, the working-hours and weekday clues work because blasting is a legal job
-with a shift pattern, and the depth clue works because somebody wrote it down; a clandestine test
-is one event, at a site nobody has recorded, at an hour chosen to attract no attention, so all
-four go at once.
+None of the four clues would survive. The repeated address works because a quarry is blasted from
+the same pit for decades, the working-hours and weekday clues work because blasting is a legal job
+with a shift pattern, and the depth clue works because an analyst wrote it down once the label was
+already chosen. A test nobody has announced is one event, at a site with no history in the
+catalogue, at an hour picked to attract no attention, and with nobody to type a depth in for it —
+so all four go at once, and the honest answer is that this week's classifier would have nothing
+left to read.
 """)
 
 

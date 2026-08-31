@@ -45,9 +45,15 @@ STANDARDS = [
     (1, "the opening cell is weekkit.OPENING with only the question and the hook changed", True),
     (1, "the week summary sits before the homework, and the opening cells carry the DataHub link",
         True),
-    (1, "every self-check uses only names the prompt gave, and can fail", True),
-    (1, "and it fails for the mistake a student will actually make, not merely for some input",
-        False),
+    # NOT enforced_by_checker, though check_asserts covers part of it. Reviewers of weeks 4, 7,
+    # 8, 9 and 12 each found a self-check that passes whatever the student writes, and five of
+    # them said the same thing about this line: marked [auto], it told them not to hand-check
+    # what the machine cannot see. check_asserts tests name availability plus ONE tautology
+    # (asserting above a minmagnitude floor); an assert that is true by construction for any
+    # other reason is invisible to it. The claim a reviewer must actually make is the last
+    # clause, and no checker makes it.
+    (1, "every self-check uses only names the prompt gave, and fails for the wrong answer a "
+        "student will really produce — not for one the code makes impossible", False),
     (1, "the solution executes clean on a fresh kernel", True),
     (1, "only the six libraries", True),
     (1, "nothing arrives before its week except in a setup cell flagged 'Coming later'", True),
@@ -158,6 +164,38 @@ def setup_cell(**kw):
                 "docstring": "Read the live source; fall back to the copy stored with the course.",
                 "url_expr": '""', "unpack": "", "cache_base": ""}
     return SETUP_CELL.format(**{**defaults, **kw})
+
+
+# A dataset that SHIPS WITH THE COURSE has no upstream, so it cannot use the template above. Week
+# 11 shipped with a try/except whose two branches read the same file, byte for byte, from the same
+# repository: the "live source" was a pinned commit of this repo and the "cached copy" was main of
+# this repo. The except branch could only fire in conditions that would kill the fallback too, and
+# the docstring — "fall back to the copy stored with the course" — was false, because the try
+# branch already WAS that copy. That is what the tier-1 standard means by "an asset that lives
+# only in the repo has nothing to fall back from and is read directly". Same imports, same plot
+# defaults, same CACHE; only the four lines that pretended to be a live read are gone.
+ASSET_SETUP_CELL = """{imports}import pandas as pd
+import matplotlib.pyplot as plt
+
+# house style, set once, so every plot cell below holds only what matters
+plt.rcParams.update({{"figure.figsize": {figsize}, "figure.dpi": 110,
+                     "axes.grid": True, "grid.alpha": 0.3, "axes.axisbelow": True}})
+
+CACHE = "{cache_base}"
+
+{unpack}
+"""
+
+
+def asset_setup_cell(**kw):
+    """Fill ASSET_SETUP_CELL: the setup cell for a week whose data ships with the course.
+
+    Use this instead of `setup_cell` when the week reads no live archive. Hand-writing the cell
+    instead is the drift `setup_cell` exists to prevent, which is why the direct-read case is a
+    variant here rather than a note telling a builder to improvise one.
+    """
+    defaults = {"imports": "", "figsize": "(7, 4)", "unpack": "", "cache_base": ""}
+    return ASSET_SETUP_CELL.format(**{**defaults, **kw})
 
 
 def stable_ids(cells, week_n):

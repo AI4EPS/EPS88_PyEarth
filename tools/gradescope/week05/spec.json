@@ -1,0 +1,41 @@
+{
+  "week": 5,
+  "notebook_stem": "05_clustered_or_random",
+  "homework_heading": "## Homework",
+  "parts": [
+    {
+      "name": "Part 1 — the four-year forecast",
+      "marker": "✓ the four-year forecast",
+      "checks": [
+        "assert len(big) < len(near), \"big is the magnitude-6 part of near, so it must be the smaller one\"",
+        "assert rate < 1, \"that is a rate per YEAR — above 1 means you divided by the wrong number\""
+      ],
+      "check_points": 30,
+      "code_points": 5
+    },
+    {
+      "name": "Part 2 — the box",
+      "marker": "✓ the box",
+      "checks": [
+        "assert p2 > p1, \"the bigger box holds more earthquakes, so its four-year chance must be the larger\"",
+        "assert p3 != p1, \\"
+      ],
+      "check_points": 30,
+      "code_points": 5
+    }
+  ],
+  "released": {
+    "w05-q06-answer": "# ← your answer here\n\n\nassert len(big) < len(near), \"big is the magnitude-6 part of near, so it must be the smaller one\"\nassert rate < 1, \"that is a rate per YEAR — above 1 means you divided by the wrong number\"\nprint(\"✓ the four-year forecast —\", len(big), \"earthquakes,\", round(1 / rate, 1),\n      f\"years apart on average, and a {round(100 * (1 - np.exp(-rate * 4)))}% chance in four years\")",
+    "w05-q07-answer": "# ← your answer here\n\n\nassert p2 > p1, \"the bigger box holds more earthquakes, so its four-year chance must be the larger\"\nassert p3 != p1, \\\n    \"p3 covers a different stretch of the record, so it cannot come out identical to p1\"\nprint(f\"✓ the box — {round(100 * p1)}% within one degree of campus, \"\n      f\"{round(100 * p2)}% within two\")\nprint(f\"✓ the window — {round(100 * p1)}% from 1900, \"\n      f\"{round(100 * p3)}% from 1930\")"
+  },
+  "hygiene": {
+    "points": 5
+  },
+  "manual": {
+    "parts": 1,
+    "points_each": 25,
+    "points": 25,
+    "note": "Part 3 of 3 is answered in prose and is marked by hand. Add a 25-point manual rubric item in Gradescope; the autograder is out of 75."
+  },
+  "autograder_max": 75
+}

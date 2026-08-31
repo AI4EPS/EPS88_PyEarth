@@ -1,0 +1,44 @@
+{
+  "week": 2,
+  "notebook_stem": "02_liquid_water",
+  "homework_heading": "## Homework",
+  "parts": [
+    {
+      "name": "Part 1 — what kind of stars are these?",
+      "marker": "✓ Homework 1",
+      "checks": [
+        "assert len(candidate_names) == len(candidate_star_temps), \\",
+        "assert len(candidate_names) < 100, \"that is everything in the window; the radius test is missing\""
+      ],
+      "check_points": 30,
+      "code_points": 5
+    },
+    {
+      "name": "Part 2 — move one knob, and count what moves.",
+      "marker": "✓ Homework 2",
+      "checks": [
+        "assert albedo == 0.770 or low == 250, \"neither knob moved — set up option A or option B\"",
+        "assert len(new_candidates) != len(candidate_names), \"the count did not move; check what you changed\""
+      ],
+      "check_points": 30,
+      "code_points": 5
+    }
+  ],
+  "released": {
+    "w02-c048": "# ── Checkpoint ── run this if you restarted the kernel or fell behind ──\nsun_temp = 5772\nsun_radius_au = 0.00465047\n\n\ndef equilibrium_temperature(star_temp, star_radius, distance, albedo):\n    \"\"\"the temperature starlight alone would hold a planet at, in kelvin\"\"\"\n    return star_temp * (star_radius * sun_radius_au / (2 * distance)) ** 0.5 * (1 - albedo) ** 0.25\n\n\nusable_names = []\nusable_star_temps = []\nusable_star_radii = []\nusable_distances = []\nusable_radii = []\nfor i in range(len(planet_names)):\n    if star_temps[i] is not None and star_radii[i] is not None and distances[i] is not None:\n        usable_names.append(planet_names[i])\n        usable_star_temps.append(star_temps[i])\n        usable_star_radii.append(star_radii[i])\n        usable_distances.append(distances[i])\n        usable_radii.append(planet_radii[i])",
+    "w02-q06-answer": "# ← your answer here",
+    "w02-q06-check": "assert len(candidate_names) == len(candidate_star_temps), \\\n    \"the two lists must grow together — append to both inside the same if\"\nassert len(candidate_names) < 100, \"that is everything in the window; the radius test is missing\"\nprint(f\"✓ Homework 1 — {len(candidate_names)} candidates, {cooler_than_sun} around stars \"\n      f\"cooler than the Sun, coolest {coolest} K\")",
+    "w02-q07-answer": "# ← your answer here",
+    "w02-q07-check": "assert albedo == 0.770 or low == 250, \"neither knob moved — set up option A or option B\"\nassert len(new_candidates) != len(candidate_names), \"the count did not move; check what you changed\"\nprint(f\"✓ Homework 2 — albedo {albedo}, window {low}-{high} K: \"\n      f\"{len(new_candidates)} candidates, {stayed} of part 1's still there\")"
+  },
+  "hygiene": {
+    "points": 5
+  },
+  "manual": {
+    "parts": 1,
+    "points_each": 25,
+    "points": 25,
+    "note": "Part 3 of 3 is answered in prose and is marked by hand. Add a 25-point manual rubric item in Gradescope; the autograder is out of 75."
+  },
+  "autograder_max": 75
+}

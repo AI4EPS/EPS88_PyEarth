@@ -22,6 +22,7 @@ import shutil
 import subprocess
 import sys
 
+import numpy as np
 import pandas as pd
 import yaml
 from sklearn.linear_model import LinearRegression
@@ -123,7 +124,35 @@ for tag, table in (("par", par), ("mar", mar)):
     M[f"{tag}_free_r2"] = float(f.score(x, d))
     M[f"{tag}_forced_slope"] = float(o.coef_[0])
     M[f"{tag}_forced_r2"] = float(o.score(x, d))
-M["ridge_ratio"] = M["par_forced_slope"] / M["mar_forced_slope"]
+# THE TWO RIDGE FILES DO NOT MEAN THE SAME THING BY "Distance" — course.yml's pinned block for
+# this week says so, and this is the check rather than the assertion. Both tables carry the
+# longitude and latitude of every pick, so the column can be compared with the ground: for each
+# pick, the great-circle distance from the youngest pick in its own file, which is the one still
+# sitting on the ridge axis. Picks younger than 2 Ma are dropped from the comparison because
+# there both numbers are near zero and their ratio is meaningless.
+#
+# The answer is unambiguous: PAR's column is 2.06 times the ground distance (a FULL-SPREADING
+# distance, counting the seafloor added on both flanks) and MAR's is 1.00 times it (ONE FLANK).
+# So the two fitted slopes are not comparable until PAR's is halved, and the notebook halves it
+# in the open rather than quoting the raw 3.9, which compares a full rate with a half rate.
+def ground_km(table):
+    """Great-circle distance on the ground from the youngest pick in the table, in km."""
+    axis = table.loc[table["Age"].idxmin()]
+    lat1, lon1 = np.radians(axis["Lat"]), np.radians(axis["Lon"])
+    lat2, lon2 = np.radians(table["Lat"]), np.radians(table["Lon"])
+    cos_sep = (np.sin(lat1) * np.sin(lat2)
+               + np.cos(lat1) * np.cos(lat2) * np.cos(lon2 - lon1))
+    return 6371.0 * np.arccos(np.clip(cos_sep, -1, 1))
+
+
+for tag, table in (("par", par), ("mar", mar)):
+    away = table["Age"] > 2
+    M[f"{tag}_column_over_ground"] = float(
+        (table["Distance"][away] / ground_km(table)[away]).median())
+
+# one flank of the Pacific-Antarctic Ridge, which is what the Mid-Atlantic column already holds
+M["par_half_slope"] = M["par_forced_slope"] / 2
+M["ridge_ratio"] = M["par_half_slope"] / M["mar_forced_slope"]
 M["n_picks"] = M["par_n"] + M["mar_n"]
 
 # homework 1: the nearest half and the farthest half of the supernovae
@@ -148,11 +177,26 @@ M["old_forced_slope"] = float(old_forced.coef_[0])
 M["old_forced_r2"] = float(old_forced.score(old[["Age"]], old["Distance"]))
 M["within_par_ratio"] = M["par_forced_slope"] / M["old_free_slope"]
 
-# the two literature numbers this week checks itself against, both read 2026-08-31
+# the literature numbers this week checks itself against, all read 2026-08-31
 PLANCK_AGE = 13.797            # Planck 2018 results VI, A&A 641, A6 (2020): 13.797 +/- 0.023 Gyr
 PLANCK_ERR = 0.023
+PLANCK_H0 = 67.36              # same paper, TT,TE,EE+lowE+lensing: 67.36 +/- 0.54 km/s/Mpc
+OMEGA_M = 0.315                # same paper: matter density 0.315 +/- 0.007, flat, so dark energy
+OMEGA_L = 1 - OMEGA_M          # is the rest
 FREEDMAN_H0 = 71               # Freedman et al. 2001, ApJ 553, 47: 71 +/- 2 +/- 6 from SNe Ia
 M["age_gap_percent"] = abs(M["age_forced"] - PLANCK_AGE) / PLANCK_AGE * 100
+
+# 1/H0 is NOT the age, and the two deviations do NOT cancel. For a flat universe of matter plus
+# a cosmological constant the age is
+#     t0 = 2 / (3 H0 sqrt(OL)) * asinh(sqrt(OL / OM)),
+# which is 1/H0 times a factor of 0.951 — so the Hubble time overstates the age by about 5 %,
+# always, at any H0. The reason this notebook's 1/H0 lands on the published age anyway is that
+# its H0 is about 5 % ABOVE Planck's, which pulls 1/H0 down by the same 5 %. Two errors of the
+# same size in opposite directions: a coincidence, not a cancellation of physics.
+LCDM_FACTOR = 2 / (3 * OMEGA_L ** 0.5) * float(np.arcsinh((OMEGA_L / OMEGA_M) ** 0.5))
+M["lcdm_age"] = M["age_forced"] * LCDM_FACTOR
+M["hubble_time_excess"] = (1 / LCDM_FACTOR - 1) * 100
+M["h0_above_planck"] = (M["sn_forced_slope"] / PLANCK_H0 - 1) * 100
 
 
 # ---------------------------------------------------------------------------
@@ -213,8 +257,9 @@ md("""
 ## What you'll be able to do
 
 **The science.** Say how old the universe is, in billions of years, and say exactly which
-measurement that number came from. Say how fast two ocean ridges are building new seafloor, and
-why one of them is several times faster than the other.
+measurement that number came from. Say how fast two ocean ridges are building new seafloor, why
+one of them is about twice as fast as the other, and why you have to know what a column means
+before you divide one by another.
 
 **The skills.** Fit a straight line with scikit-learn: `LinearRegression().fit(x, y)`, then
 `.coef_` for the slope, `.intercept_` for where it crosses zero, `.predict()` for what the line
@@ -557,16 +602,25 @@ Collaboration, *Astronomy & Astrophysics* **641**, A6, 2020; both figures read 2
 
 That is a startlingly good answer from thirty-six points, and it deserves one honest caveat. 1 / H₀ is
 the age only if the expansion has always run at today's rate. It has not: gravity slowed it down
-early on, and over the last few billion years it has been speeding up again. Those two effects
-very nearly cancel in our universe, which is why the simple answer lands so close to the careful
-one. And notice what the constraint bought. The free fit, with its {M['sn_free_intercept']:.0f}
+early on, and over the last few billion years it has been speeding up again. Those two effects do
+not cancel. Done properly, with the mixture of matter and dark energy the Planck paper reports,
+the age comes out at {M['lcdm_age']:.2f} billion years for the H₀ you just fitted — so 1 / H₀
+overstates it by about {M['hubble_time_excess']:.0f} %, and it does that at every H₀, not just
+this one.
+
+Then why did {M['age_forced']:.2f} land on the published {PLANCK_AGE}? Because a second error of
+almost the same size pulled the other way. This table's H₀ is {M['h0_above_planck']:.1f} % above
+Planck's {PLANCK_H0} km/s/Mpc, and a bigger H₀ means a smaller 1 / H₀ — shrinking it by very
+nearly the {M['hubble_time_excess']:.0f} % the always-at-today's-rate assumption had just added. That is a coincidence, and it is worth being able to
+say which part of an answer is the measurement and which part is luck. And notice what the
+constraint bought. The free fit, with its {M['sn_free_intercept']:.0f}
 km/s intercept, gives {M['age_free']:.2f} billion years — {M['age_free'] - PLANCK_AGE:.2f} billion
 years out, for a reason that has nothing to do with cosmology and everything to do with a line
 nobody told where to start.
 """)
 
 # --- section 3: the same decision on the ocean floor ----------------------
-md("""
+md(f"""
 ## The same question on the ocean floor
 
 Nothing in the last three sections was about astronomy. Two columns, a straight line, a slope with
@@ -586,10 +640,24 @@ They came into the course with the earlier offerings and carry no source note of
 is worth knowing about any file you did not make. Each row is one pick: its age in millions of
 years, where it is, and its distance in kilometres. (The first column is the pick number the
 original files were saved with; ignore it.)
+
+And here is what an undocumented file will not tell you: **the two `Distance` columns do not
+measure the same thing.** Both tables also give the longitude and latitude of every pick, so the
+column can be checked against the ground — how far a pick really lies from the youngest pick in
+its own file, the one still sitting on the ridge. Do that and the Mid-Atlantic column comes out at
+{M['mar_column_over_ground']:.2f} times the ground distance, while the Pacific-Antarctic column
+comes out at {M['par_column_over_ground']:.2f} times it. Seafloor is made on **both** sides of a
+ridge at once, and the two files chose differently: the Atlantic one measures **one flank**, the
+distance from the ridge, and the Pacific one measures the **full spreading distance**, both flanks
+added together. Both conventions are normal in the literature. Neither file says which it used.
+
+Nothing below changes because of that until the two ridges are put side by side — and there it
+changes everything, so hold on to it.
 """)
 
 code(weekkit.CHECKPOINT.format(body='''par = load(RIDGES + "PAR_east_age_dist.csv", "%s")
-mar = load(RIDGES + "MAR_east_age_dist.csv", "%s")'''
+mar = load(RIDGES + "MAR_east_age_dist.csv", "%s")
+coast = pd.read_csv(CACHE + "/coastlines.csv")'''
                                % (CACHED[PAR_PATH], CACHED[MAR_PATH])))
 
 code("""
@@ -627,15 +695,16 @@ Now the same plot as the supernovae, with age where distance was.
 code(f"""
 plt.scatter(par["Age"], par["Distance"], s=10)
 plt.xlabel("age of the seafloor (millions of years)")
-plt.ylabel("distance from the ridge (km)")
+plt.ylabel("full spreading distance, both flanks (km)")
 plt.title("Pacific-Antarctic Ridge, {M['par_n']} picks")
 plt.show()
 """)
 
 md("""
 Straight, and the physical constraint is even more obvious here than it was for the supernovae:
-seafloor of age zero is being made at the ridge right now, so it is zero kilometres from the
-ridge. The line has a point it must pass through, and it is the origin again.
+seafloor of age zero is being made at the ridge right now, so its distance is zero — on either
+convention, since half of nothing is also nothing. The line has a point it must pass through, and
+it is the origin again.
 """)
 
 ask("""
@@ -658,7 +727,7 @@ par_free = LinearRegression().fit(par[["Age"]], par["Distance"])
 par_forced = LinearRegression(fit_intercept=False).fit(par[["Age"]], par["Distance"])
 
 print("free fit:  ", round(par_free.coef_[0] / 10, 2), "cm/yr, crossing age zero at",
-      round(par_free.intercept_, 1), "km from the ridge")
+      round(par_free.intercept_, 1), "km of spreading distance")
 print("forced fit:", round(par_forced.coef_[0] / 10, 2), "cm/yr")
 
 plt.scatter(par["Age"], par["Distance"], s=10, label="picks")
@@ -666,7 +735,7 @@ plt.plot(par["Age"], par_free.predict(par[["Age"]]), color="black", label="free 
 plt.plot(par["Age"], par_forced.predict(par[["Age"]]), color="red",
          label="forced through the origin")
 plt.xlabel("age of the seafloor (millions of years)")
-plt.ylabel("distance from the ridge (km)")
+plt.ylabel("full spreading distance, both flanks (km)")
 plt.title("Pacific-Antarctic Ridge, {M['par_n']} picks, two fits")
 plt.legend()
 plt.show()
@@ -674,14 +743,15 @@ plt.show()
 assert par_forced.intercept_ == 0, \\
     "the forced model should have no intercept at all — did you pass fit_intercept=False?"
 print("✓ the Pacific-Antarctic Ridge — free fit",
-      round(par_free.coef_[0] / 10, 2), "cm/yr with the ridge",
-      round(par_free.intercept_), "km from itself; forced through the origin",
-      round(par_forced.coef_[0] / 10, 2), "cm/yr")
+      round(par_free.coef_[0] / 10, 2), "cm/yr with",
+      round(par_free.intercept_), "km of seafloor already spread at age zero;",
+      "forced through the origin", round(par_forced.coef_[0] / 10, 2), "cm/yr")
 """)
 
 md(f"""
-The free fit puts seafloor of age zero {M['par_free_intercept']:.0f} km away from the ridge
-that is making it. There is no reading of that which is physically possible: no seafloor can
+The free fit puts seafloor of age zero {M['par_free_intercept']:.0f} km of spreading distance —
+about {M['par_free_intercept'] / 2:.0f} km of actual ocean floor on each side — away from the
+ridge that is making it. There is no reading of that which is physically possible: no seafloor can
 exist before any seafloor has been made. It is the {M['sn_free_intercept']:.0f} km/s intercept
 again in different clothes, but the cause here is in the picks themselves: they do not sit on
 one straight line, they bend, and a single straight line drawn through a bend can cross age zero
@@ -693,38 +763,47 @@ argument rather than by any new data.
 ## A second ridge
 
 One ridge is not a result. The Mid-Atlantic table has {M['mar_n']} picks, and the fit is lines you
-have already written.
+have already written — plus the one thing this pair of files makes you do by hand. The Atlantic
+column is one flank and the Pacific column is both, so the Pacific rate has to be halved before
+the two can be set against each other. Compare the raw slopes and you compare a full rate with a
+half rate, and the gap you report is twice the gap that is there.
 """)
 
 code(f"""
 mar_forced = LinearRegression(fit_intercept=False).fit(mar[["Age"]], mar["Distance"])
+par_one_flank = par_forced.coef_[0] / 2      # both flanks -> one, to match the Atlantic column
 
-print("Mid-Atlantic:      ", round(mar_forced.coef_[0] / 10, 2), "cm/yr, R²",
+print("Mid-Atlantic, one flank:       ", round(mar_forced.coef_[0] / 10, 2), "cm/yr, R²",
       round(mar_forced.score(mar[["Age"]], mar["Distance"]), 3))
-print("Pacific-Antarctic: ", round(par_forced.coef_[0] / 10, 2), "cm/yr, R²",
+print("Pacific-Antarctic, both flanks:", round(par_forced.coef_[0] / 10, 2), "cm/yr, R²",
       round(par_forced.score(par[["Age"]], par["Distance"]), 3))
-print("ratio:             ", round(par_forced.coef_[0] / mar_forced.coef_[0], 2))
+print("Pacific-Antarctic, one flank:  ", round(par_one_flank / 10, 2), "cm/yr")
+print("one flank against one flank:   ", round(par_one_flank / mar_forced.coef_[0], 2))
 """)
 
 code(f"""
 plt.scatter(mar["Age"], mar["Distance"], s=10, label="Mid-Atlantic picks")
-plt.scatter(par["Age"], par["Distance"], s=10, label="Pacific-Antarctic picks")
+plt.scatter(par["Age"], par["Distance"] / 2, s=10, label="Pacific-Antarctic picks, halved")
 plt.plot(mar["Age"], mar_forced.predict(mar[["Age"]]), color="black")
-plt.plot(par["Age"], par_forced.predict(par[["Age"]]), color="red")
+plt.plot(par["Age"], par_forced.predict(par[["Age"]]) / 2, color="red")
 plt.xlabel("age of the seafloor (millions of years)")
-plt.ylabel("distance from the ridge (km)")
-plt.title("Two ridges, {M['n_picks']} picks, both forced through the origin")
+plt.ylabel("distance from the ridge, one flank (km)")
+plt.title("Two ridges on one convention, {M['n_picks']} picks, both through the origin")
 plt.legend()
 plt.show()
 """)
 
 md(f"""
-The Mid-Atlantic line rises at {M['mar_forced_slope'] / 10:.2f} cm/yr and the Pacific-Antarctic
-one at {M['par_forced_slope'] / 10:.2f} cm/yr — {M['ridge_ratio']:.1f} times as steep, over
+The Mid-Atlantic flank grows at {M['mar_forced_slope'] / 10:.2f} cm/yr. The Pacific-Antarctic
+Ridge opens at {M['par_forced_slope'] / 10:.2f} cm/yr counting both of its flanks, which is
+{M['par_half_slope'] / 10:.2f} cm/yr on one — {M['ridge_ratio']:.1f} times the Atlantic, over
 {M['mar_age_max']:.0f} million years of Atlantic seafloor and {M['par_age_max']:.0f} million years
 of Pacific. Both are roughly the speed a fingernail grows, and neither fit accounts for less than
 {int(min(M['par_forced_r2'], M['mar_forced_r2']) * 100)} % of the variation in the distances, so
-the gap between them is not slop in the fitting.
+the gap between them is not slop in the fitting. Nor is it an artefact of the two conventions:
+that is what the halving was for. Had the raw columns been divided instead, the answer would have
+come out at {M['par_forced_slope'] / M['mar_forced_slope']:.1f} — twice the real difference, and
+wrong in a way no fitting diagnostic would ever have caught.
 
 It is not slop in the Earth either. Plates are pulled along mainly by their own sinking edges:
 where old, cold ocean floor bends down into the mantle at a trench, its weight drags the rest of
@@ -753,12 +832,20 @@ md("""
 Three parts on the two datasets you already have loaded. Parts 1 and 2 are two versions of the
 same worry: class fitted one line to a whole table and read one number off it, and neither table
 was asked whether a single line is really enough. Part 3 is where you argue from your own numbers.
-If you have restarted since class, run the setup cell at the top, then the cell below, and then
-your own answer to *Your turn 4*, so that `age_of_universe` exists again.
+If you have restarted since class, run the setup cell at the top and then the cell below, which
+brings back both tables and the `age_of_universe` function you wrote in *Your turn 4*.
 """)
 
 code(weekkit.CHECKPOINT.format(body='''sn = load(STARS + "Freedman2000_Supernova1a.csv", "%s")
-par = load(RIDGES + "PAR_east_age_dist.csv", "%s")'''
+par = load(RIDGES + "PAR_east_age_dist.csv", "%s")
+
+
+def age_of_universe(H0):
+    """A Hubble constant in km/s per Mpc, turned into an age in billions of years."""
+    MPC_IN_KM = 3.0857e19
+    SECONDS_PER_YEAR = 60 * 60 * 24 * 365.25
+    seconds = MPC_IN_KM / H0
+    return seconds / SECONDS_PER_YEAR / 1e9'''
                                % (CACHED[SN_PATH], CACHED[PAR_PATH])))
 
 ask(f"""
@@ -825,7 +912,7 @@ old_forced = LinearRegression(fit_intercept=False).fit(old[["Age"]], old["Distan
 
 print(len(old), "picks kept")
 print("free fit:  ", round(old_free.coef_[0] / 10, 2), "cm/yr, crossing age zero at",
-      round(old_free.intercept_, 1), "km")
+      round(old_free.intercept_, 1), "km of spreading distance")
 print("forced fit:", round(old_forced.coef_[0] / 10, 2), "cm/yr")
 
 plt.scatter(old["Age"], old["Distance"], s=10, label="picks 20 Ma and older")
@@ -833,7 +920,7 @@ plt.plot(old["Age"], old_free.predict(old[["Age"]]), color="black", label="free 
 plt.plot(old["Age"], old_forced.predict(old[["Age"]]), color="red",
          label="forced through the origin")
 plt.xlabel("age of the seafloor (millions of years)")
-plt.ylabel("distance from the ridge (km)")
+plt.ylabel("full spreading distance, both flanks (km)")
 plt.title("Pacific-Antarctic Ridge, {M['old_n']} picks older than 20 Ma")
 plt.legend()
 plt.show()
@@ -846,10 +933,11 @@ print("✓ the older half of the ridge — free", round(old_free.coef_[0] / 10, 
 ask(f"""
 ### ✏️ Your turn 8
 
-Four numbers, all yours: the whole-ridge rate from class ({M['par_forced_slope'] / 10:.2f} cm/yr,
-forced through the origin), the Mid-Atlantic rate from class
-({M['mar_forced_slope'] / 10:.2f} cm/yr), and your two rates for the older half of the
-Pacific-Antarctic picks.
+Four numbers, all yours: the whole-ridge Pacific-Antarctic rate from class
+({M['par_forced_slope'] / 10:.2f} cm/yr, forced through the origin), the Mid-Atlantic rate from
+class ({M['mar_forced_slope'] / 10:.2f} cm/yr), and your two rates for the older half of the
+Pacific-Antarctic picks. Three of those four come from the Pacific-Antarctic file, so they count
+both flanks; the Mid-Atlantic one counts a single flank.
 
 Quote all four, then answer both of these in a short paragraph.
 
@@ -858,15 +946,17 @@ window of time, and why? Your answer has to deal with the free fit's intercept, 
 close to zero.
 
 **And is the difference *between* the two ridges bigger or smaller than the difference *within*
-the Pacific-Antarctic Ridge?** Give both as a ratio, from your own numbers, and say what your
-answer implies about whether "the spreading rate of a ridge" is one number or several.
+the Pacific-Antarctic Ridge?** Give both as a ratio from your own numbers. The within-ridge ratio
+takes two numbers out of one file and needs no care; the between-ridge one crosses the two
+conventions, so halve the Pacific-Antarctic rate first, as class did. Then say what your answer
+implies about whether "the spreading rate of a ridge" is one number or several.
 """)
 
 answer_prose(f"""
-Whole Pacific-Antarctic ridge, forced through the origin: {M['par_forced_slope'] / 10:.2f} cm/yr.
-Mid-Atlantic: {M['mar_forced_slope'] / 10:.2f} cm/yr. Older Pacific-Antarctic picks only:
-{M['old_free_slope'] / 10:.2f} cm/yr free, {M['old_forced_slope'] / 10:.2f} cm/yr forced through
-the origin.
+Whole Pacific-Antarctic ridge, forced through the origin: {M['par_forced_slope'] / 10:.2f} cm/yr
+across both flanks. Mid-Atlantic: {M['mar_forced_slope'] / 10:.2f} cm/yr on one flank. Older
+Pacific-Antarctic picks only: {M['old_free_slope'] / 10:.2f} cm/yr free,
+{M['old_forced_slope'] / 10:.2f} cm/yr forced through the origin, both again across both flanks.
 
 I would publish the free fit, {M['old_free_slope'] / 10:.2f} cm/yr, for that window. The origin
 constraint was a real physical fact in class because the line was being asked about the whole
@@ -879,11 +969,12 @@ question, averaging in a faster recent period it was never given. The clue is th
 version, {M['old_forced_slope'] / 10:.2f} cm/yr, comes out much closer to the whole-ridge number
 than the free version does.
 
-Between the ridges: {M['par_forced_slope'] / 10:.2f} / {M['mar_forced_slope'] / 10:.2f} =
-{M['ridge_ratio']:.1f}. Within the Pacific-Antarctic: {M['par_forced_slope'] / 10:.2f} /
-{M['old_free_slope'] / 10:.2f} = {M['within_par_ratio']:.2f}. The gap between the two ridges is
-far bigger than the change inside one of them, so a single number is a fair summary of a ridge for
-most purposes — but it is a summary, not a constant. My own numbers say the Pacific-Antarctic
+Between the ridges, with the Pacific-Antarctic rate halved onto the Atlantic's convention:
+{M['par_half_slope'] / 10:.2f} / {M['mar_forced_slope'] / 10:.2f} = {M['ridge_ratio']:.1f}.
+Within the Pacific-Antarctic, where both numbers come from the same file and no halving is
+needed: {M['par_forced_slope'] / 10:.2f} / {M['old_free_slope'] / 10:.2f} =
+{M['within_par_ratio']:.2f}. The gap between the two ridges is still the bigger of the two, so a
+single number is a fair summary of a ridge for most purposes — but it is a summary, not a constant. My own numbers say the Pacific-Antarctic
 Ridge was around {(M['par_forced_slope'] - M['old_free_slope']) / M['old_free_slope'] * 100:.0f} %
 slower in the older part of the record than the whole-ridge fit reports, which is a real change in
 the speed of a plate and would be invisible to anyone who only ever fitted one line.

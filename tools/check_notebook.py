@@ -464,11 +464,59 @@ def check_checkpoints_rebuild(cells, solution_cells):
     if not starts:
         return
 
+    theirs = _student_functions(cells, solution_cells)
     for start in sorted(starts):
-        _one_checkpoint(cs, setup, start)
+        _one_checkpoint(cs, setup, start, theirs)
 
 
-def _one_checkpoint(cs, setup, start):
+def _student_functions(cells, solution_cells):
+    """Functions the STUDENT writes, in their own answer cell.
+
+    The one thing a checkpoint may not rebuild. Pasting the model answer into a cell every
+    student reads publishes the answer to the question that asked for it — week 7 asks them to
+    write `count_at_least` and `predict_count`, and the whole volcano half then calls both. The
+    honest instruction is the one the homework intro already gives: name the cells and tell them
+    to re-run their own. So these names, and only these, may be discharged that way, and only
+    where the boundary says it in as many words.
+
+    Everything an ANSWER STUB binds, not just its functions. The line that matters is whether
+    the cell is the student's own answer, not whether the name happens to be a `def`: week 3's
+    `earth_deep` and `earth_high` are assignments in the same stub as `peak_position`, and
+    pasting them into a checkpoint publishes Your turn 2 exactly as pasting the function would.
+
+    This does NOT reopen what the rule was built to catch. The variables that failed in weeks 2,
+    3 and 5 — `usable_names`, `below`, `fraction_below` — are bound in WORKED class cells, which
+    carry no stub marker and are therefore not exempt here; a checkpoint must still rebuild
+    those, and it does. Only a name whose sole definition is the student's own work can be
+    discharged this way, and only where the boundary names it in a re-run instruction.
+    """
+    out = set()
+    for stu, sol in zip(cells, solution_cells or []):
+        if stu["cell_type"] != "code" or "your answer here" not in src(stu).lower():
+            continue
+        try:
+            tree = ast.parse(src(sol))
+        except SyntaxError:
+            continue
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef):
+                out.add(node.name)
+            elif isinstance(node, ast.Assign):
+                for tg in node.targets:
+                    out |= {x.id for x in ast.walk(tg) if isinstance(x, ast.Name)}
+    return out
+
+
+RERUN = re.compile(r"re-?run\b", re.I)
+
+
+def _told_to_rerun(text, name):
+    """The boundary tells the student, by name, to re-run their own cell for this one."""
+    return any(re.search(rf"\b{re.escape(name)}\b", text[m.start():m.start() + 200])
+               for m in RERUN.finditer(text))
+
+
+def _one_checkpoint(cs, setup, start, student_functions=frozenset()):
     """A student who restarts, runs setup, then runs from `start`, must not get NameError."""
     after = [c for c in cs[start:] if c["cell_type"] == "code"]
     if not after:
@@ -502,7 +550,10 @@ def _one_checkpoint(cs, setup, start):
                 read.add(node.id)
 
     safe = bound | set(dir(builtins)) | set(keyword.kwlist) | LIBS
-    missing = sorted(n for n in read - safe if not n.startswith("_"))
+    boundary = src(cs[start])
+    missing = sorted(n for n in read - safe
+                     if not n.startswith("_")
+                     and not (n in student_functions and _told_to_rerun(boundary, n)))
     if missing:
         errs.append(
             f"the section from cell {start} reads {', '.join('`' + m + '`' for m in missing)}, "

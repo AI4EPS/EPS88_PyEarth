@@ -41,8 +41,16 @@ The class/homework split is about **when**, not whose work it is:
    identical in week 13 and week 1; do not rewrite them.
 1. **The hook** — the week's Earth-science question, ~150 words, into `{hook}`.
 2. **What you'll be able to do** — the science *and* the technical skill, naming the functions.
-3. **Setup** — one imports cell, one data cell. Use `weekkit.SETUP_CELL`: it carries the plot
-   defaults and the live-source-with-cached-fallback pattern, so every week's setup is identical.
+3. **Setup** — one imports cell, one data cell, both out of `weekkit`, so every week's setup is
+   identical. `weekkit.setup_cell()` carries the plot defaults and the
+   live-source-with-cached-fallback pattern, and is what a week reads a live archive with.
+   **A dataset that ships with the course is the exception, and takes
+   `weekkit.asset_setup_cell()` instead** — the same cell with the pretend live read removed, so
+   the data arrives as one `pd.read_csv(CACHE + "/name.csv")`. It has no upstream to be live from:
+   wrapped in the pattern, both branches of the try/except read the same file from the same
+   repository, the except branch can only fire in conditions that would kill the fallback too, and
+   the docstring promising to "fall back to the copy stored with the course" is false, because the
+   try branch already is that copy. Week 11 shipped exactly that before anyone noticed.
 4. **Sections** — prose → a worked example typed together → a question. Roughly every 8–10
    minutes. A section that needs state from an earlier one opens with `weekkit.CHECKPOINT`.
 5. **The buffer.** `modules.yml` calls it `extension`; it is a budget for you, not a section for

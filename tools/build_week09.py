@@ -13,12 +13,21 @@ fallback read needs no arguments the live read does not have.
 Every number that appears in prose or in a model answer is computed HERE, from the same file the
 notebook reads, and formatted in. Nothing is typed from memory or copied from the plan.
 
-    python tools/build_week09.py
+NOAA appends a month to that file every month, and the student's notebook reads it LIVE — so a
+prose number taken from the record's tail expires between the build and the class. Two things
+stop that. The notebook averages only the years with all twelve months, so a new month cannot
+move a single fitted number; and the counts and months that do change are printed at run time
+rather than written into markdown. What remains literal is listed in the build's closing report.
+
+    python tools/build_week09.py              # build from the cached copy
+    python tools/build_week09.py --refresh    # download NOAA again first — do this before class
 """
+import datetime
 import json
 import pathlib
 import subprocess
 import sys
+import time
 
 import numpy as np
 import pandas as pd
@@ -40,9 +49,8 @@ CACHE_BASE = PLATFORM["cache_base"]
 # below cannot drift apart.
 CO2_URL = "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_mm_mlo.csv"
 CACHE_NAME = "week09_co2_mm_mlo.csv"
-READ_DATE = "2026-08-31"          # the day this build downloaded the file
+STALE_DAYS = 30                   # after this the cache is behind NOAA by a month or more
 
-START_YEAR = 1958                 # the record's first year; every fit measures x from here
 SPLIT_YEAR = 2000                 # class hides everything after this from itself
 OTHER_SPLITS = [1990, 1995, 2005]  # the neighbouring windows, so one cut is not the whole story
 DEGREES = list(range(1, 10))
@@ -53,16 +61,39 @@ SHUFFLE_SEED = 88
 # ---------------------------------------------------------------------------
 # 1. measure everything the notebook will say
 # ---------------------------------------------------------------------------
-def fetch_monthly():
-    """Run the live read once, cache the PARSED table, and return it."""
+def fetch_monthly(refresh=False):
+    """Run the live read, cache the PARSED table, and return it.
+
+    The cache used to be downloaded once and then never again, which is the quiet way this week
+    goes wrong: NOAA adds a month to the file every month, the student's notebook reads it live,
+    and a build months later would keep describing a record that no longer exists. So `--refresh`
+    downloads it again, and a cache older than STALE_DAYS says so loudly rather than passing for
+    current.
+    """
     out = ROOT / "data" / CACHE_NAME
-    if not out.exists():
+    if refresh or not out.exists():
+        print(f"downloading {CO2_URL}")
         pd.read_csv(CO2_URL, comment="#").to_csv(out, index=False)
+    else:
+        age = (time.time() - out.stat().st_mtime) / 86400
+        if age > STALE_DAYS:
+            print(f"WARNING: data/{CACHE_NAME} was downloaded {age:.0f} days ago. NOAA has "
+                  f"appended months since, and the student's notebook reads NOAA live. "
+                  f"Rebuild with --refresh before the class.")
     return pd.read_csv(out)
 
 
 def annual_means(monthly):
-    return (monthly.groupby("year", as_index=False)["average"].mean()
+    """One number per year — but only the years that have all twelve months.
+
+    The record begins in March and its final year is still being measured, so both end years
+    would be averages of whichever seasons happened to be present. That is a real bias (the
+    notebook measures it), and leaving those two years in is also what made every fitted number
+    in the prose expire the moment NOAA published another month.
+    """
+    full = monthly[(monthly["year"] >= monthly["year"].min() + 1)
+                   & (monthly["year"] <= monthly["year"].max() - 1)]
+    return (full.groupby("year", as_index=False)["average"].mean()
             .rename(columns={"average": "co2"}))
 
 
@@ -89,30 +120,35 @@ def crossing_year(coeffs):
     return None
 
 
-monthly_full = fetch_monthly()
+REFRESH = "--refresh" in sys.argv
+monthly_full = fetch_monthly(REFRESH)
+READ_DATE = datetime.date.fromtimestamp(
+    (ROOT / "data" / CACHE_NAME).stat().st_mtime).isoformat()
 monthly = monthly_full[["year", "month", "average"]]
 annual = annual_means(monthly)
+START_YEAR = int(annual["year"].min())   # the first complete year; every fit measures x from here
 train = annual[annual["year"] <= SPLIT_YEAR]
 later = annual[annual["year"] > SPLIT_YEAR]
 
 M = {}
 M["n_monthly"] = len(monthly)
 M["n_annual"] = len(annual)
-M["first_year"] = int(annual["year"].min())
+M["first_year"] = START_YEAR
 M["last_year"] = int(annual["year"].max())
-M["first_month_n"] = int(monthly["month"].iloc[0])
-M["last_month_n"] = int(monthly["month"].iloc[-1])
-M["observed_2026"] = round(float(annual["co2"].iloc[-1]), 2)
-# The last COMPLETE year of the record: how big the seasonal swing is, and what averaging only
-# the months the final year happens to have does to that year's mean.
-M["last_complete"] = M["last_year"] - 1
-recent = monthly[monthly["year"] == M["last_complete"]]
+M["observed"] = round(float(annual["co2"].iloc[-1]), 2)
+# The two part-years the record starts and ends on, and what averaging only the months a
+# part-year happens to have does to a year's mean. These are the only numbers here that a new
+# month of NOAA data moves, and none of them reaches the prose.
+M["record_first_year"] = int(monthly["year"].min())
+M["record_first_month"] = int(monthly["month"].iloc[0])
+M["part_year"] = int(monthly["year"].max())
+M["part_months"] = int(monthly["month"].iloc[-1])
+recent = monthly[monthly["year"] == M["last_year"]]
 M["season_low"] = round(float(recent["average"].min()), 2)
 M["season_high"] = round(float(recent["average"].max()), 2)
 M["season_range"] = round(M["season_high"] - M["season_low"], 2)
-M["lc_full_mean"] = round(float(recent["average"].mean()), 2)
-M["lc_part_mean"] = round(float(recent[recent["month"] <= M["last_month_n"]]["average"].mean()), 2)
-M["lc_bias"] = round(M["lc_part_mean"] - M["lc_full_mean"], 2)
+M["lc_bias"] = round(float(recent[recent["month"] <= M["part_months"]]["average"].mean())
+                     - float(recent["average"].mean()), 2)
 
 line = fit_curve(annual, 1)
 M["line_slope"] = round(float(line[0]), 3)
@@ -120,11 +156,11 @@ M["line_at_start"] = round(float(curve_value(line, START_YEAR)), 1)
 M["line_miss"] = round(typical_miss(annual["co2"], curve_value(line, annual["year"])), 2)
 
 resid = annual["co2"] - curve_value(line, annual["year"])
-RESID_DECADES = [1958, 1980, 2017]
-M["resid_decade"] = {}
+RESID_DECADES = [START_YEAR, 1980, M["last_year"] - 9]   # first ten years, the 1980s, last ten
+M["resid_decade"] = []
 for start in RESID_DECADES:
     dec = resid[(annual["year"] >= start) & (annual["year"] < start + 10)]
-    M["resid_decade"][start] = round(float(dec.mean()), 1)
+    M["resid_decade"].append(round(float(dec.mean()), 1))
 M["resid_min"] = round(float(resid.min()), 1)
 M["resid_max"] = round(float(resid.max()), 1)
 
@@ -140,9 +176,10 @@ for start in DECADES:
 
 M["n_train"] = len(train)
 M["n_later"] = len(later)
-M["pred_2026"] = {d: round(float(curve_value(fit_curve(train, d), M["last_year"])), 1)
-                  for d in [1, 2, 3]}
-M["err_2026"] = {d: round(M["pred_2026"][d] - M["observed_2026"], 1) for d in [1, 2, 3]}
+M["pred"] = {d: round(float(curve_value(fit_curve(train, d), M["last_year"])), 1)
+             for d in [1, 2, 3]}
+M["err"] = {d: round(M["pred"][d] - M["observed"], 1) for d in [1, 2, 3]}
+M["pred_spread"] = round(max(M["pred"].values()) - min(M["pred"].values()), 1)
 
 M["train_miss"] = {}
 M["test_miss"] = {}
@@ -206,15 +243,41 @@ def answer_prose(model):
                   "*(Double-click this cell and replace this line with your answer.)*"))
 
 
+# What class builds and every later section reads: the three functions and the split. A
+# checkpoint has to rebuild the scalars and the functions too, not only the dataframes — the
+# section it opens is what a student who restarted the kernel runs next, and a missing helper is
+# a NameError from the one cell whose job is to get them going again. Written once here and
+# used by both checkpoints so the two cannot drift.
+CLASS_TOOLKIT = f"""
+def fit_curve(table, degree):
+    \"\"\"Fit a polynomial of this degree to a table of years and CO2; hand back its coefficients.\"\"\"
+    return np.polyfit(table["year"] - START_YEAR, table["co2"], degree)
+
+
+def curve_value(coeffs, year):
+    \"\"\"What a fitted curve says CO2 is in that year — one year, or a whole column of them.\"\"\"
+    return np.polyval(coeffs, year - START_YEAR)
+
+
+def typical_miss(actual, predicted):
+    \"\"\"The usual size of the gap between what happened and what the curve said, in ppm.\"\"\"
+    return np.sqrt(np.mean((actual - predicted) ** 2))
+
+
+train = annual[annual["year"] <= {SPLIT_YEAR}]
+later = annual[annual["year"] > {SPLIT_YEAR}]
+""".strip("\n")
+
 datahub = (f"{PLATFORM['datahub']}/hub/user-redirect/git-pull"
            f"?repo={PLATFORM['repo'].replace(':', '%3A').replace('/', '%2F')}"
            f"&branch={PLATFORM['branch']}"
            f"&urlpath=lab%2Ftree%2FEPS88_PyEarth%2F{PLATFORM['notebook_dir']}%2F{SLUG}.ipynb")
 
 HOOK = f"""
-In {M['first_year']} Charles David Keeling put a carbon-dioxide analyser high on a Hawaiian
-volcano, far from anybody's chimney, and started measuring. It has been running ever since, and
-the {M['n_monthly']} monthly numbers it has produced are among the most consequential in science.
+In {M['record_first_year']} Charles David Keeling put a carbon-dioxide analyser high on a
+Hawaiian volcano, far from anybody's chimney, and started measuring. It has been running ever
+since, and the monthly numbers it has produced — one more of them every month, including the
+month you are reading this in — are among the most consequential in science.
 
 It goes up. Everybody knows it goes up. The question worth asking is whether it goes up in a
 *straight line* — because a straight line and a gently bending curve look nearly identical over
@@ -248,73 +311,83 @@ setup = weekkit.setup_cell(
     imports="import numpy as np\n",
     figsize="(7, 4)",
     cache_base=CACHE_BASE,
-    docstring=("Read NOAA's Mauna Loa monthly CO2 file live; fall back to the copy stored with "
-               "the course."),
+    docstring=(f"Read NOAA's Mauna Loa monthly CO2 file live; fall back to the copy stored with "
+               f"the course, downloaded {READ_DATE}."),
     url_expr=f'"{CO2_URL}", comment="#"',
     cache_expr=f'"{CACHE_NAME}"',
-    unpack=f'''
+    unpack='''
 # NOAA Global Monitoring Laboratory, Mauna Loa monthly mean CO2 — the Keeling curve.
-# Read {READ_DATE}. The comment="#" above skips the file's own header notes.
-START_YEAR = {START_YEAR}      # every fit below counts years from here, not from year zero
-
+# The comment="#" above skips the file's own header notes. NOAA adds a month to this file
+# every month, so the record below is longer every time you run it.
 monthly = load()[["year", "month", "average"]]
-annual = (monthly.groupby("year", as_index=False)["average"].mean()
-          .rename(columns={{"average": "co2"}}))
 
-print("monthly readings:", len(monthly), " annual means:", len(annual))
+# The record starts partway through its first year and its last year is still being measured,
+# so averaging those two would average whichever seasons happen to be there. Keep the rest.
+first_full = monthly["year"].min() + 1
+last_full = monthly["year"].max() - 1
+annual = (monthly[(monthly["year"] >= first_full) & (monthly["year"] <= last_full)]
+          .groupby("year", as_index=False)["average"].mean()
+          .rename(columns={"average": "co2"}))
+
+START_YEAR = first_full   # every fit below counts years from here, not from year zero
+
+print("monthly readings:", len(monthly))
+print("complete years:", len(annual), "—", first_full, "to", last_full)
 print(annual.head())
 '''.strip("\n"))
 code(setup)
 
 # --- section 1 -------------------------------------------------------------
-md(f"""
+md("""
 ## The record
 
-Two lines of pandas turned {M['n_monthly']} monthly readings into {M['n_annual']} annual
-averages. Draw both and you can see why we bothered.
+Three lines of pandas turned every monthly reading into one number per complete year. Draw both
+and you can see why we bothered — and why the setup cell threw two years away.
 """)
 
-code(f"""
+code("""
 plt.plot(monthly["year"] + monthly["month"] / 12, monthly["average"],
          color="0.7", lw=0.8, label="every month")
 plt.plot(annual["year"], annual["co2"], marker="o", ms=3, label="annual average")
 plt.xlabel("year")
 plt.ylabel("CO2 (parts per million)")
-plt.title("Mauna Loa CO2, {M['n_monthly']} monthly readings, {M['n_annual']} years")
+plt.title(f"Mauna Loa CO2, {len(monthly)} monthly readings, {len(annual)} complete years")
 plt.legend()
 plt.show()
 """)
 
-md(f"""
+md("""
 The grey line has teeth. That is the northern hemisphere breathing: most of the world's land
 plants live north of the equator, they pull CO2 out of the air through the growing season and
 give it back as leaves and soil decay through the winter, and Mauna Loa sits far enough north to
-feel it. Measure one complete year of it, and measure what happens if you average only part of a
-year.
+feel it. Measure one whole year of it, then average only as many months as the record's
+unfinished last year has, and compare the two.
 """)
 
-code(f"""
-last_complete = monthly[monthly["year"] == {M['last_complete']}]
+code("""
+recent = monthly[monthly["year"] == last_full]      # the last whole year
+unfinished = monthly[monthly["year"] > last_full]   # the year still being measured
+months_so_far = unfinished["month"].max()
 
-print("in {M['last_complete']} CO2 ran from", round(last_complete["average"].min(), 2), "to",
-      round(last_complete["average"].max(), 2), "ppm")
-print("average of all twelve months:      ", round(last_complete["average"].mean(), 2), "ppm")
-print("average of its first {M['last_month_n']} months only:",
-      round(last_complete[last_complete["month"] <= {M['last_month_n']}]["average"].mean(), 2), "ppm")
+print(last_full, "ran from", round(recent["average"].min(), 2), "to",
+      round(recent["average"].max(), 2), "ppm — a swing of",
+      round(recent["average"].max() - recent["average"].min(), 2), "ppm inside one year")
+print("its average over all twelve months:", round(recent["average"].mean(), 2), "ppm")
+print("its average over the first", months_so_far, "months only:",
+      round(recent[recent["month"] <= months_so_far]["average"].mean(), 2), "ppm")
 """)
 
 md(f"""
-{M['season_range']} ppm of swing inside a single year, and stopping in month
-{M['last_month_n']} instead of month 12 leaves that year's average {M['lc_bias']:+.2f} ppm out.
-
-That matters at exactly two places in this record: {M['first_year']} begins at month
-{M['first_month_n']}, and {M['last_year']} stops at month {M['last_month_n']}, so both of those
-years average fewer than twelve months and both carry a little of this bias. It is around a ppm, small against everything we are about to
-measure, but not zero.
+{M['season_range']} ppm of swing inside a single year — and averaging only the months a part-year
+happens to have shifts that year's mean by around a ppm, because the months you keep are not a
+fair sample of the seasons. That is why the setup cell kept only whole years: the record begins
+partway through {M['record_first_year']} and its last year is still being measured, so both would
+have carried that bias into every curve we fit. It also means nothing below changes when NOAA
+publishes next month's number.
 
 The teeth otherwise are not what this week is about. Averaging each year removes them and leaves
-the rise, which is what we want to model. So from here on we work with `annual`: {M['n_annual']}
-numbers, one per year, from {M['first_year']} to {M['last_year']}.
+the rise, which is what we want to model. So from here on we work with `annual`: one number per
+year, from {M['first_year']} to {M['last_year']}.
 """)
 
 md("""
@@ -356,7 +429,9 @@ slope = line[0]
 print("the line rises", round(slope, 3), "ppm per year")
 print("and puts", round(curve_value(line, START_YEAR), 1), "ppm at the start of the record")
 """, """
-assert slope > 1, "a slope well under 1 means year and CO2 went into fit_curve the wrong way round"
+assert 0.5 < slope < 5, \\
+    "CO2 rises by a couple of ppm a year, so a slope in the hundreds is the wrong coefficient: \\
+line[0] is the ppm per year and line[1] is where the line starts"
 print("✓ the straight line —", round(slope, 3), "ppm per year, starting from",
       round(curve_value(line, START_YEAR), 1), "ppm")
 """)
@@ -390,10 +465,10 @@ regression week that is a good fit. But an average miss hides *where* the misses
 question here. Subtract the line from the data and plot what is left over.
 """)
 
-code(f"""
+code("""
 residual = annual["co2"] - curve_value(line, annual["year"])
 
-for start in {RESID_DECADES}:
+for start in [first_full, 1980, last_full - 9]:
     decade = residual[(annual["year"] >= start) & (annual["year"] < start + 10)]
     print(start, "to", start + 9, ": the line misses by", round(decade.mean(), 1), "ppm on average")
 
@@ -401,19 +476,19 @@ print("furthest above the line:", round(residual.max(), 1), "ppm")
 print("furthest below the line:", round(residual.min(), 1), "ppm")
 """)
 
-code(f"""
+code("""
 plt.plot(annual["year"], residual, marker="o", ms=3)
 plt.axhline(0, color="0.5", lw=0.8)      # the line itself, for the eye to measure against
 plt.xlabel("year")
 plt.ylabel("data minus straight line (ppm)")
-plt.title("What the straight line leaves behind, {M['n_annual']} years")
+plt.title(f"What the straight line leaves behind, {len(annual)} years")
 plt.show()
 """)
 
 md(f"""
 Those are not random misses. They are a smile: the line runs below the data at both ends and
-above it in the middle: {M['resid_decade'][1958]:+.1f} ppm on average over the record's first
-ten years, {M['resid_decade'][1980]:+.1f} ppm over the 1980s, {M['resid_decade'][2017]:+.1f} ppm
+above it in the middle: {M['resid_decade'][0]:+.1f} ppm on average over the record's first
+ten years, {M['resid_decade'][1]:+.1f} ppm over the 1980s, {M['resid_decade'][2]:+.1f} ppm
 over the last ten. The two extremes are {M['resid_max']:+.1f} and {M['resid_min']:+.1f} ppm.
 A least-squares line always leaves misses that average to zero overall, so seeing them arranged
 in an arc rather than scattered means the line has the wrong *shape*, not just some noise around
@@ -432,7 +507,7 @@ degree 9 can bend eight times. `fit_curve` already takes the degree as its secon
 trying more flexible curves costs nothing but the number.
 """)
 
-code(f"""
+code("""
 for degree in [1, 2, 3]:
     coeffs = fit_curve(annual, degree)
     plt.plot(annual["year"], curve_value(coeffs, annual["year"]), label="degree " + str(degree))
@@ -440,7 +515,7 @@ for degree in [1, 2, 3]:
 plt.plot(annual["year"], annual["co2"], "k.", ms=4, label="annual average")
 plt.xlabel("year")
 plt.ylabel("CO2 (parts per million)")
-plt.title("Three curves fitted to the same {M['n_annual']} years")
+plt.title(f"Three curves fitted to the same {len(annual)} years")
 plt.legend()
 plt.show()
 """)
@@ -499,28 +574,28 @@ The trouble with judging a curve by how close it sits to the data is that the da
 been used. The fix is the oldest trick in the subject and it is one sentence: **Hide some data
 from yourself, then check.**
 
-We have {M['n_annual']} years. Fit only the ones up to {SPLIT_YEAR}, then ask each fitted curve
-what CO2 was in {M['last_year']} — a year it has never seen — and compare with what actually
-happened. {M['n_later']} years of the future, already in hand, waiting to mark the answer.
+Fit only the years up to {SPLIT_YEAR}, then ask each fitted curve what CO2 was in `last_full` —
+a year it has never seen — and compare with what actually happened. {M['n_later']} years of the
+future, already in hand, waiting to mark the answer.
 """)
 
 code(f"""
 train = annual[annual["year"] <= {SPLIT_YEAR}]
 later = annual[annual["year"] > {SPLIT_YEAR}]
-observed_2026 = annual["co2"].iloc[-1]
+observed = annual["co2"].iloc[-1]
 
 print("fitting on", len(train), "years, holding back", len(later))
-print("what actually happened in", int(annual["year"].iloc[-1]), "was",
-      round(observed_2026, 2), "ppm")
+print("what actually happened in", last_full, "was", round(observed, 2), "ppm")
 """)
 
-md("""
+md(f"""
 ### Predict before you run
 
-Three curves are about to be fitted to {a}–{b} and asked about {c}: a straight line, a parabola
-and a cubic. One of them will come closest. Which? Change `my_guess` to 1, 2 or 3 and run the
-cell — committing to a wrong answer is worth more than being told the right one.
-""".format(a=M["first_year"], b=SPLIT_YEAR, c=M["last_year"]))
+Three curves are about to be fitted to {M['first_year']}–{SPLIT_YEAR} and asked about the last
+complete year: a straight line, a parabola and a cubic. One of them will come closest. Which?
+Change `my_guess` to 1, 2 or 3 and run the cell — committing to a wrong answer is worth more
+than being told the right one.
+""")
 
 code("""
 my_guess = 3
@@ -532,49 +607,50 @@ ask(f"""
 ### ✏️ Your turn 2
 
 Fit degrees 1, 2 and 3 to `train` only — nothing after {SPLIT_YEAR} — and ask each one what CO2
-was in {M['last_year']}. Print, for each degree, what it predicted and how far that is from
-`observed_2026`.
+was in `last_full`, the last complete year of the record. Print, for each degree, what it
+predicted and how far that is from `observed`.
 
 Loop over `[1, 2, 3]`, and inside the loop use `fit_curve(train, degree)` and then
-`curve_value(coeffs, {M['last_year']})`. Collect the three predictions in a list as you go.
+`curve_value(coeffs, last_full)`. Collect the three predictions in a list as you go.
 
 **Use these names**, because the self-check looks for them: `predictions`.
 """)
 
-answer(f"""
+answer("""
 predictions = []
 
 for degree in [1, 2, 3]:
     coeffs = fit_curve(train, degree)
-    predicted = curve_value(coeffs, {M['last_year']})
+    predicted = curve_value(coeffs, last_full)
     predictions.append(predicted)
     print("degree", degree, "predicts", round(predicted, 1), "ppm, missing by",
-          round(predicted - observed_2026, 1), "ppm")
+          round(predicted - observed, 1), "ppm")
 """, """
-assert max(predictions) < observed_2026, \\
-    "every curve here was fitted without seeing a year after the split; if one lands on the \\
-observed value, check you passed train and not annual to fit_curve"
+assert max(predictions) - min(predictions) > 20, \\
+    "three curves that never saw a year after the split disagree about it by tens of ppm; if \\
+yours nearly agree they were fitted on the whole record and already know the answer \u2014 check you \\
+passed train, not annual, to fit_curve"
 print("✓ three forecasts — the closest misses by",
-      round(min(abs(p - observed_2026) for p in predictions), 1), "ppm, the worst by",
-      round(max(abs(p - observed_2026) for p in predictions), 1), "ppm")
+      round(min(abs(p - observed) for p in predictions), 1), "ppm, the worst by",
+      round(max(abs(p - observed) for p in predictions), 1), "ppm")
 """)
 
 md(f"""
 Read those three numbers again, because they are the point of the week.
 
-The straight line predicted {M['pred_2026'][1]} ppm and was {abs(M['err_2026'][1])} ppm low: too
-simple, it never saw the acceleration coming. The parabola predicted {M['pred_2026'][2]} and was
-{abs(M['err_2026'][2])} ppm low — off by less than the seasonal swing in a single year, from a
-fit that stopped {M['last_year'] - SPLIT_YEAR} years before the answer.
+The straight line predicted {M['pred'][1]} ppm and was {abs(M['err'][1])} ppm low: too simple, it
+never saw the acceleration coming. The parabola predicted {M['pred'][2]} and was
+{abs(M['err'][2])} ppm low — off by less than the seasonal swing in a single year, from a fit
+that stopped {M['last_year'] - SPLIT_YEAR} years before the answer.
 
 And the cubic — the most flexible of the three, the one that sat closest to the training years —
-predicted {M['pred_2026'][3]}, missing by {abs(M['err_2026'][3])} ppm. **Worse than the straight
-line.** *A curve that memorises the data you gave it fails on the data you did not.* The picture
-says it better than the numbers do.
+predicted {M['pred'][3]}, missing by {abs(M['err'][3])} ppm. **Worse than the straight line.**
+*A curve that memorises the data you gave it fails on the data you did not.* The picture says it
+better than the numbers do.
 """)
 
 code(f"""
-span = np.arange({M['first_year']}, {M['last_year']} + 1)
+span = np.arange(first_full, last_full + 1)
 for degree in [1, 2, 3]:
     coeffs = fit_curve(train, degree)
     plt.plot(span, curve_value(coeffs, span), label="degree " + str(degree))
@@ -584,7 +660,7 @@ plt.plot(later["year"], later["co2"], "r.", ms=5, label="held back")
 plt.axvline({SPLIT_YEAR}, color="0.5", lw=0.8)     # where the curves stopped seeing data
 plt.xlabel("year")
 plt.ylabel("CO2 (parts per million)")
-plt.title("Fitted on {M['n_train']} years, checked against {M['n_later']}")
+plt.title(f"Fitted on {{len(train)}} years, checked against {{len(later)}}")
 plt.legend()
 plt.show()
 """)
@@ -603,8 +679,7 @@ One year of checking is thin. Score each curve on all {M['n_later']} held-out ye
 score it on its training years too, so the two can be compared.
 """)
 
-code(weekkit.CHECKPOINT.format(body=f"""train = annual[annual["year"] <= {SPLIT_YEAR}]
-later = annual[annual["year"] > {SPLIT_YEAR}]"""))
+code(weekkit.CHECKPOINT.format(body=CLASS_TOOLKIT))
 
 ask(f"""
 ### ✏️ Your turn 3
@@ -676,14 +751,6 @@ for cut in {OTHER_SPLITS}:
     print("splitting at", cut, "the best degree is", degrees[misses.index(min(misses))])
 """)
 
-md(f"""
-Splitting at {OTHER_SPLITS[1]} and {OTHER_SPLITS[2]} gives degree
-{M['other_best'][OTHER_SPLITS[1]]}, as {SPLIT_YEAR} did; splitting at {OTHER_SPLITS[0]} gives
-degree {M['other_best'][OTHER_SPLITS[0]]}. So what this record supports is "two bends, possibly
-three", not "exactly two" — and every one of the four cuts rules out the flexible end
-completely.
-""")
-
 ask(f"""
 ### ✏️ Your turn 4
 
@@ -709,6 +776,14 @@ mind much: {OTHER_SPLITS[1]} and {OTHER_SPLITS[2]} also chose degree
 nine.
 """)
 
+md(f"""
+Between them the four cuts say something a single cut could not. Splitting at {OTHER_SPLITS[1]}
+and {OTHER_SPLITS[2]} gives degree {M['other_best'][OTHER_SPLITS[1]]}, as {SPLIT_YEAR} did;
+splitting at {OTHER_SPLITS[0]} gives degree {M['other_best'][OTHER_SPLITS[0]]}. So what this
+record supports is "two bends, possibly three", not "exactly two" — and every one of the four
+cuts rules out the flexible end completely.
+""")
+
 # --- section 5 -------------------------------------------------------------
 md(f"""
 ## Choosing which years to hide
@@ -722,8 +797,8 @@ other. `.sample(frac=1, random_state=...)` shuffles a table into a random order,
 
 code(f"""
 shuffled = annual.sample(frac=1, random_state={SHUFFLE_SEED})
-rand_test = shuffled.iloc[:{M['n_later']}]
-rand_train = shuffled.iloc[{M['n_later']}:]
+rand_test = shuffled.iloc[:len(later)]      # the same number of years as the honest split
+rand_train = shuffled.iloc[len(later):]
 
 print("random split:", len(rand_train), "years to fit on,", len(rand_test), "held out")
 print("held-out years, in order:", sorted(rand_test["year"])[:8], "...")
@@ -748,11 +823,13 @@ for degree in [1, 2, 3, 9]:
     rand_miss.append(typical_miss(rand_test["co2"], curve_value(coeffs, rand_test["year"])))
     print("degree", degree, "  random split", round(rand_miss[-1], 3),
           "  future held back", round(test_miss[degree - 1], 3))
-""", f"""
-assert len(rand_train) + len(rand_test) == len(annual), \\
-    "the two halves should account for every year exactly once"
+""", """
+assert len(rand_miss) == 4, "rand_miss should hold one miss per degree — 1, 2, 3 and 9"
+assert rand_miss[3] < test_miss[8] / 100, \\
+    "scattering the held-out years through the record should flatter degree 9 by orders of \\
+magnitude; if it does not, check you fitted on rand_train and scored against rand_test"
 print("✓ two ways to split — at degree 9 the random split says",
-      round(rand_miss[-1], 3), "ppm and the held-back future says",
+      round(rand_miss[3], 3), "ppm and the held-back future says",
       round(test_miss[8], 3), "ppm")
 """)
 
@@ -782,9 +859,9 @@ md(f"""
 {M['decade_rate'][1960]} ppm a year in the 1960s and {M['decade_rate'][2010]} ppm a year in the
 2010s, and a straight line through the whole record leaves an arc of misses that no amount of
 noise explains. One bend is enough to capture it: a parabola fitted with nothing after
-{SPLIT_YEAR} predicted {M['last_year']} to within {abs(M['err_2026'][2])} ppm, while a straight
-line was {abs(M['err_2026'][1])} ppm low and a cubic — more flexible, closer to the training
-years, worse at the job — was {abs(M['err_2026'][3])} ppm out.
+{SPLIT_YEAR} predicted {M['last_year']} to within {abs(M['err'][2])} ppm, while a straight
+line was {abs(M['err'][1])} ppm low and a cubic — more flexible, closer to the training
+years, worse at the job — was {abs(M['err'][3])} ppm out.
 
 What that does *not* license is trusting a polynomial far beyond the record. The parabola has no
 physics in it; it fits because emissions have grown smoothly so far, and it will keep bending
@@ -796,14 +873,17 @@ forecast is data and how much is the modelling choice.
 md(weekkit.week_cheatsheet(9))
 
 # --- homework --------------------------------------------------------------
-md(f"""
+md("""
 ## Homework
 
 Three parts, on the same record you have had open all along. If you have restarted since class,
-run the setup cell at the top and the checkpoint cell in *Choosing how much bend* first.
+run the setup cell at the top and then the cell just below, which rebuilds the functions class
+wrote and the split it used.
 
 Class never once asked a curve about a year beyond the record. That is the whole homework.
 """)
+
+code(weekkit.CHECKPOINT.format(body=CLASS_TOOLKIT))
 
 ask(f"""
 ### ✏️ Your turn 6
@@ -858,7 +938,7 @@ This part re-uses `crossing_year` from part 1; its self-check tells you whether 
 answer("""
 crossings = []
 
-for table, label in [(annual, "the whole record"), (train, "1958-2000 only")]:
+for table, label in [(annual, "the whole record"), (train, "the training years only")]:
     for degree in [1, 2]:
         year = crossing_year(fit_curve(table, degree))
         crossings.append(year)
@@ -941,7 +1021,16 @@ def main():
 
     (OUT / f"{SLUG}.ipynb").write_text(json.dumps(stu, indent=1) + "\n")
     print(f"wrote {SLUG}.ipynb ({len(CELLS)} cells) and the executed solution")
-    print(f"cache: data/{CACHE_NAME}")
+    print(f"cache: data/{CACHE_NAME}, downloaded {READ_DATE}")
+    print(f"NOAA file: {M['n_monthly']} monthly readings, "
+          f"{M['record_first_year']}-{M['record_first_month']:02d} to "
+          f"{M['part_year']}-{M['part_months']:02d}")
+    print(f"prose is written from the {M['n_annual']} COMPLETE years, "
+          f"{M['first_year']}-{M['last_year']}. Every literal number in the markdown is a "
+          f"function of those years alone, so months NOAA adds after this build cannot "
+          f"contradict it; the counts and months that do move are printed at run time. The "
+          f"literals go stale only when {M['last_year'] + 1} becomes complete (NOAA publishes "
+          f"its December around February) or if NOAA revises the historical series.")
 
 
 if __name__ == "__main__":

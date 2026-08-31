@@ -241,8 +241,10 @@ temperature = star_temp * (star_radius / (2 * distance)) ** 0.5 * (1 - albedo) *
 ```
 
 - `star_temp` is the star's surface temperature in kelvin;
-- `star_radius / (2 * distance)` is how big the star looks from the planet, with both lengths in
-  the same units;
+- `star_radius / distance` is how big the star looks from the planet, with both lengths in the
+  same units; the extra `2` is not part of that view. It is there because the planet catches
+  starlight on one circular face but glows from its whole surface — four times the area — so the
+  heat it caught is spread over day and night alike;
 - `** 0.5` is a square root and `** 0.25` a fourth root, so `(1 - albedo) ** 0.25` is the fourth
   root of the fraction of light the planet keeps.
 
@@ -672,8 +674,8 @@ easiest kind to find — a bias in the catalogue, not in the galaxy.
 
 Now the interesting part. Astronomers keep an informal list of the planets thought most likely to
 be habitable, and it is short: the outer TRAPPIST-1 planets, Proxima Centauri b, TOI-700 d,
-Kepler-186 f, Kepler-442 b. The cell below asks our test about those, and about two more that the
-field does not put on that list.
+Kepler-186 f, Kepler-442 b. The cell below asks our test about those, and about two more that are
+not on it.
 """)
 
 code('''
@@ -693,12 +695,20 @@ Earth's 254.0 K, on planets whose whole claim to interest is that they might hav
 Cen b prints its radius as `None`: it was found by watching its star wobble, and that method never
 measures a size.)
 
-The two it accepts are the two nobody argues for. TRAPPIST-1 c comes out at 339.9 K, hotter than
-any of its siblings we looked at, and K2-18 b at 282.7 K is 2.37 Earth radii — a size our own
-radius branch had already counted as too big to be rock.
+It accepts two. TRAPPIST-1 c comes out at 339.9 K, hotter than any of its siblings we looked at,
+and K2-18 b at 282.7 K — and K2-18 b is 2.37 Earth radii, a size our own radius branch had already
+counted as too big to be rock, so the verdict string and the radius disagree about the same planet.
+K2-18 b is also the planet the field has argued over hardest in recent years, water vapour in its
+atmosphere and then a series of contested readings of its JWST spectrum, so "liquid water possible"
+is the one verdict on that line nobody should read as a finding.
 
-The list of candidates our test produced is very nearly the complement of the list the field
-argues about.
+That accept-and-reject set is worth staring at, because it is strange without being random. Look
+back at section 7's twelve rocky candidates: TRAPPIST-1 d, TOI-700 e, Kepler-438 b and K2-72 e are
+all planets the field itself puts forward, so the test is not picking out some different set of
+worlds from the ones astronomers care about. What it is doing is sorting **within** those systems
+by temperature alone, keeping the warmer planet and dropping the cooler one — TRAPPIST-1 c and d
+in, e, f and g out. That is the only thing a bare rock with no air can be sorted by, and it is
+exactly the sorting that put Earth on the wrong side of the line.
 """)
 
 # ---------------------------------------------------------------- the question, answered
@@ -723,8 +733,9 @@ md("""
 Three parts, on the same archive and the same tools. Part 1 is the one everybody finishes; part 3
 is the one that takes thinking rather than typing.
 
-Run the cell below first if you have restarted the kernel — it rebuilds the two constants and the
-function that parts 1 and 2 need, so you do not have to hunt back through the notebook.
+Run the cell below first if you have restarted the kernel — after the setup cell at the top, it
+rebuilds everything parts 1 and 2 use: the two constants, `equilibrium_temperature`, and the five
+`usable_` lists from section 6. Then you do not have to hunt back through the notebook.
 """)
 
 code(weekkit.CHECKPOINT.format(body='''
@@ -735,6 +746,20 @@ sun_radius_au = 0.00465047
 def equilibrium_temperature(star_temp, star_radius, distance, albedo):
     """the temperature starlight alone would hold a planet at, in kelvin"""
     return star_temp * (star_radius * sun_radius_au / (2 * distance)) ** 0.5 * (1 - albedo) ** 0.25
+
+
+usable_names = []
+usable_star_temps = []
+usable_star_radii = []
+usable_distances = []
+usable_radii = []
+for i in range(len(planet_names)):
+    if star_temps[i] is not None and star_radii[i] is not None and distances[i] is not None:
+        usable_names.append(planet_names[i])
+        usable_star_temps.append(star_temps[i])
+        usable_star_radii.append(star_radii[i])
+        usable_distances.append(distances[i])
+        usable_radii.append(planet_radii[i])
 '''.strip("\n")))
 
 md("""

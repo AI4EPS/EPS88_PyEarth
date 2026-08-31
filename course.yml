@@ -15,15 +15,15 @@ catalog_line: >
   dioxide rising faster than it used to? Can a machine learn to hear an earthquake?
 
 
-  Nothing here is a teaching example. You work with the USGS earthquake catalogue, NASA's
-  Exoplanet Archive, the Smithsonian's record of volcanic eruptions, and the seismic recordings
-  used to train published deep-learning models. Python starts from zero in the first week and the
-  first hour ends with a plot on your screen; by the last week you are training a neural network.
-  In between you learn to fit a model to data, to say how far it can be trusted, and to tell a
-  real result from a coincidence. Thirteen notebooks, then a project of your own.
+  The datasets are the ones research uses, not simplified teaching examples: the USGS earthquake
+  catalogue, NASA's Exoplanet Archive, the Smithsonian's record of volcanic eruptions, and the
+  seismic recordings used to train published deep-learning models. Python begins from zero in the
+  first week, which ends with a figure you have plotted yourself, and reaches a neural network in
+  the last. In between you learn to fit a model to data, to state how far it can be trusted, and
+  to distinguish a real result from a coincidence. Thirteen notebooks, then a project of your own.
 prerequisites: >
   None. No programming experience is assumed — we build Python from zero. EPS 88 is a Data 8
-  connector; students who have taken Data 8 will recognise some statistics and move faster,
+  connector; students who have taken Data 8 will recognize some of the statistics and move faster,
   but nothing here requires it.
 
 platform:
@@ -180,7 +180,7 @@ schedule:
           per week and check every number that hangs off it moves with it."
         surface_T_K: {earth: 288.0, venus: 737.0, mars: 210}
       expect:
-        T_eq_at_measured_albedo: {earth: 254.0, venus: 226.6, mars: 209.8}
+        T_eq_at_measured_albedo: {earth: 254.0, venus: 226.7, mars: 209.8}
         T_eq_at_albedo_zero: {earth: 278.3, venus: 327.3}
         in_window_273_373: 189   # of which 12 rocky, 75 too big, 102 unknown radius
         agree_with_pl_eqt: "median 2.56 K, mean 40.4 K, 62% within 10 K — quote the median"
@@ -190,12 +190,12 @@ schedule:
       THE TEST NEVER GETS IT RIGHT, AND THAT IS THE WEEK. Equilibrium temperature ignores
       atmospheres, and the failure is not one-sided — run it twice and it is wrong both times.
       With albedo 0 it ACCEPTS both Venus (327.3 K) and Earth (278.3 K). With each planet's
-      measured Bond albedo it REJECTS both: Venus 226.6 K, Earth 254.0 K, nineteen degrees below
+      measured Bond albedo it REJECTS both: Venus 226.7 K, Earth 254.0 K, nineteen degrees below
       freezing. Reality is Earth 288 K and habitable, Venus 737 K and not.
       Do not state it as "Earth fails while Venus passes" — that sentence is only true by mixing
       Earth's measured albedo with Venus at zero, and it was in this file for a while. Run both
       passes in sequence; the reveal is stronger honest.
-      The gaps are the greenhouse effect, measured: Earth +34.0 K at 1.014 bar, Venus +510.4 K at
+      The gaps are the greenhouse effect, measured: Earth +34.0 K at 1.014 bar, Venus +510.3 K at
       92 bar, Mars +0.2 K at 0.006 bar. Same physics, three thicknesses of air. It also rejects the famous habitable-zone candidates — TRAPPIST-1 e,
       f and g, Proxima Cen b, TOI-700 d, Kepler-186 f, Kepler-442 b — and accepts TRAPPIST-1 c,
       a 340 K Venus analogue, and K2-18 b, a sub-Neptune.
@@ -373,14 +373,18 @@ schedule:
       # matches published HALF rates (1.1-1.5) and PAR's 6.77 matches published FULL rates (~7.4
       # at 56 S), so comparing them directly mixes conventions: in comparable terms the ridges
       # differ by about 1.9x, not 3.9x. An earlier takeaway said "fourfold" and was wrong.
-      # Teach the contrast and the slab-pull mechanism, which hold either way; do NOT quote a
-      # ratio, and do NOT compare either number to a published spreading rate.
+      # Teach the contrast and the slab-pull mechanism, which hold either way; do NOT quote the
+      # raw 3.9, which divides a full rate by a half rate, and do NOT compare either number to a
+      # published spreading rate. The built week reconciles the two conventions in the open: it
+      # checks both Distance columns against the coordinates in the same files (PAR 2.06x the
+      # ground distance, MAR 1.00x), halves PAR's fitted rate to 3.38 cm/yr, and quotes 1.9x from
+      # that. A ratio is allowed only after that halving is done and shown.
       expect:
         free_fit: {slope: 67.5, intercept_km_s: 711.8}   # intercept must be zero: zero distance,
         forced_through_origin: {H0: 70.7, age_Gyr: 13.84} # zero recession. Accepted age 13.8.
       do_not_teach: "the radiometric-isochron half — no dataset has been located or checked"
       verified: 2026-08-30
-    exercise: "Now the seafloor. Fit distance against age for the Pacific-Antarctic Ridge — a free fit puts the ridge 181 km away from itself at age zero. Force it through the origin, and say why physics required that."
+    exercise: "Now the seafloor. Fit distance against age for the Pacific-Antarctic Ridge — a free fit puts the ridge 181 km of spreading distance (about 90 km of ocean floor per flank) away from itself at age zero. Force it through the origin, and say why physics required that."
     note: >
       Two straight lines whose SLOPE is an age. 36 supernovae give H0 = 70.7 km/s/Mpc and
       1/H0 = 13.84 Gyr; then the identical three lines run on noisy sea level.
@@ -398,13 +402,14 @@ schedule:
         data: "MAR 235 points, PAR 140 points — both in the archive, both tiny"
         the_fork: "The same one: through the origin, or not?"
         what_happens: >
-          Pacific-Antarctic free fit gives 6.11 cm/yr with an intercept of +181 km — physically impossible, since distance from the ridge is zero at age zero. Forced through the origin: 6.77 cm/yr against a published ~7. The Atlantic gives 1.74 cm/yr. Two ridges, a fourfold difference, and that difference IS the science.
-        check: "published half-spreading rates"
+          Pacific-Antarctic free fit gives 6.11 cm/yr with an intercept of +181 km of spreading distance — physically impossible, since distance from the ridge is zero at age zero. Forced through the origin: 6.77 cm/yr. The Atlantic gives 1.74 cm/yr. BUT THE TWO COLUMNS USE DIFFERENT CONVENTIONS (see pinned:): PAR counts both flanks, MAR one, so the comparable pair is 3.38 against 1.74 — about twice, NOT four times. Halve PAR's rate in the open, and do not compare either number to a published rate. Two ridges, a twofold difference, and that difference IS the science.
+        check: "the two Distance columns against the coordinates in the same files, which is what shows the conventions differ"
     takeaways:
       - "A slope can be an age."
       - "Physics can force a fit through the origin; the free fit was not wrong, it was unconstrained."
-      - "Two ocean ridges build new seafloor at rates several times apart, and that difference is
-        the science."
+      - "Two ocean ridges build new seafloor at rates about twofold apart, and that difference is
+        the science — but only after checking that the two files measure distance the same way,
+        which they did not."
   - n: 7
     date: 2026-10-19
     slug: 07_how_often_tambora
@@ -417,20 +422,42 @@ schedule:
       # The box is NOT optional: M7+ moves 4 -> 5 -> 7 across defensible 'California' boxes, and
       # the cliffhanger's whole punchline is that FIVE occurred. It lived only in the audit.
       slice: "USGS FDSN, minlatitude=32 maxlatitude=42 minlongitude=-125 maxlongitude=-114"
+      # A CUT IS EITHER THE SAMPLE OR THE TRAINING RANGE, AND A PIN MUST SAY WHICH. The first
+      # build read `M3.5_to_6.9` as the sample, dropped the five M7s from `mags`, and every count
+      # and fit below was computed on the truncated catalogue. It is the training range.
+      sample: >
+        EVERY event the slice returns, M7 and above INCLUDED — 6,287 rows. The cumulative counts
+        are of the whole catalogue, because a point labelled "number at or above magnitude 6" has
+        to be that number: without the M7s it reads 16 where California holds 21, and at 6.5 it
+        reads 5 where California holds 10. Removing them steepens the line, lowers the predicted
+        M7 count, and so manufactures part of the very shortfall the week argues about. Never a
+        hold-out: the events are still in the counts.
+      training_range: >
+        The MAGNITUDE RANGE the least-squares line is fitted over — 3.5-5.0 for the class fit,
+        with 4.0-5.5 and 4.5-6.0 as the alternatives the fork offers. This is the only thing held
+        back, and it is what makes magnitude 7 an extrapolation: the line is measured where the
+        data is thick and then asked about a level it was never fitted at.
       expect:
-        M3.5_to_6.9: 6282
+        M3.5_to_6.9: 6282        # the training-range slice; the SAMPLE is 6287, the five M7s too
         M7_plus: 5
         # BUILD THE MAGNITUDE LEVELS FROM INTEGERS, not np.arange: arange(3.5, 5.05, 0.1)[3] is
         # 3.8000000000000003, so `mags >= level` silently drops all 214 events recorded at exactly
         # 3.8. An earlier pin said 1.18 for the first range; that was the artifact, not a result.
-        # Two builders found it independently. The other two ranges land clean and are unchanged.
-        fits: {"M3.5-5.0": 1.41, "M4.0-5.5": 1.64, "M4.5-6.0": 1.54}   # predicted M7+ in 36 years
-      verified: 2026-08-30
+        # Two builders found it independently.
+        # The three below are on the FULL sample. On the M7-truncated one they read 1.41 / 1.64 /
+        # 1.54 — the numbers this pin and the audit both carried until 2026-08-31 — and the last
+        # of those is 43% low, because at level 6.0 the truncation removes a quarter of the point
+        # the line's top end rests on.
+        fits: {"M3.5-5.0": 1.49, "M4.0-5.5": 1.87, "M4.5-6.0": 2.21}   # predicted M7+ in 36 years
+      verified: 2026-08-31
     exercise: "Fit Gutenberg-Richter on M3.5-5.0 in California, predict how many M7+ to expect in 36 years, then count the real ones. Write down whether you think your model failed — you cannot settle it yet."
     note_critical: >
-      VERIFIED: fitting M3.5-5.0 predicts 1.18 M7+ events in 36 years, M4.0-5.5 predicts 1.64,
-      M4.5-6.0 predicts 1.54. FIVE occurred. The week ends without resolving whether that is a
-      broken model or bad luck — which is exactly what next week's tool decides.
+      VERIFIED 2026-08-31 on the full sample (see pinned: sample): fitting M3.5-5.0 predicts 1.49
+      M7+ events in 36 years, M4.0-5.5 predicts 1.87, M4.5-6.0 predicts 2.21. FIVE occurred, so
+      every defensible range still falls short by a factor of 2.3 to 3.4 — but the range CHOICE
+      moves the answer by half again, so the week may not claim the choice does not matter. The
+      week ends without resolving whether the shortfall is a broken model or bad luck — which is
+      exactly what next week's tool decides.
     note: >
       Regression must come FIRST: fitting log10 N against magnitude is least squares on
       transformed data, so it cannot precede the week that teaches least squares.
@@ -440,10 +467,10 @@ schedule:
 
     flagship:
       - question: "How many big earthquakes should California expect?"
-        data: "USGS catalogue, M3.5-6.9, California 1990-2026 — 6,282 events, live"
+        data: "USGS catalogue, M3.5+, California 1990-2026 — 6,287 events, live; the counts include the five M7s"
         the_fork: "Which magnitude range do you fit Gutenberg-Richter on?"
         what_happens: >
-          Fitting M3.5-5.0 predicts 1.18 M7+ events in 36 years; M4.0-5.5 predicts 1.64; M4.5-6.0 predicts 1.54. OBSERVED: 5. Every defensible choice under-predicts by about three. The student made a forecast from small earthquakes, checked it against large ones, and it failed — which is the real open question, not a broken exercise. Is 36 years too short? Is sqrt(5) ~ 2.2 of Poisson scatter enough? Or does California make more large earthquakes than G-R predicts?
+          Fitting M3.5-5.0 predicts 1.49 M7+ events in 36 years; M4.0-5.5 predicts 1.87; M4.5-6.0 predicts 2.21. OBSERVED: 5. Every defensible choice under-predicts, by a factor of 3.4 down to 2.3 — the choice moves the answer by half again, so it is not nothing, but it does not close the gap. The student made a forecast from small earthquakes, checked it against large ones, and it failed — which is the real open question, not a broken exercise. Is 36 years too short? Is sqrt(5) ~ 2.2 of Poisson scatter enough? Or does California make more large earthquakes than G-R predicts?
         check: "SELF-VALIDATING — the student checks their own extrapolation against the observed count"
         note: "The student predicts, verifies, and is WRONG for reasons worth arguing about."
         pairs_with: "the Tambora problem below, where the identical method succeeds"
@@ -472,18 +499,18 @@ schedule:
       expect:
         slope_mm_per_yr: 1.965
         ci95_iid: [1.877, 2.050]
-        ci95_block_by_year: [1.80, 2.14]   # WIDER, because monthly sea level is autocorrelated
-        cm_per_century: 19.7
+        ci95_block_by_year: [1.79, 2.14]   # WIDER, because monthly sea level is autocorrelated
+        cm_per_century: 19.6
         cm_now_to_2100: 14.7               # a DIFFERENT number; the notebook must not swap them
       verified: 2026-08-30
     exercise: "Then go back to your week-5 answer. You counted events to get a rate, then computed a probability. Bootstrap the rate, and report that probability as an interval instead of a number."
     note: >
       Placed immediately after regression so there is a SLOPE to put an interval on, and well
       before the project proposal. SF sea level, 1,503 monthly means 1900-2025: slope 1.965 mm/yr,
-      95% CI [1.877, 2.050] — which is 19.7 cm PER CENTURY, and 14.7 cm from now to 2100. Those are
+      95% CI [1.877, 2.050] — which is 19.6 cm PER CENTURY, and 14.7 cm from now to 2100. Those are
       different numbers and the notebook must not swap them.
       The IID bootstrap CI is too tight because monthly sea level is autocorrelated; resampling
-      whole YEARS roughly doubles it to [1.80, 2.14]. Teach the IID version, then show the block
+      whole YEARS roughly doubles it to [1.79, 2.14]. Teach the IID version, then show the block
       version as the extension — the interval getting WIDER when you respect the data's structure
       is the honest lesson.
       Also verified: the California M7 forecast gives a CI of [1.01, 2.50] against 5 observed,
@@ -491,7 +518,7 @@ schedule:
     takeaways:
       - "A single number is not an answer. Report an interval."
       - "Resampling your own data tells you how much your estimate would have wobbled."
-      - "An interval that excludes the observation means the model is failing, not that you were unlucky."
+      - "An interval tells you what would have wobbled; check you are comparing like with like before you call a model broken."
   - n: 9
     date: 2026-11-02
     slug: 09_rising_faster
@@ -545,34 +572,62 @@ schedule:
       # THE FEATURE SET DECIDES WHETHER THE WEEK'S POINT SURVIVES. Measured:
       #   depth+hour only          -> logistic 0.14, and the model looks sabotaged
       #   lat,lon,depth,mag,hour   -> naive Bayes 0.785 BEATS the hand rule and the week collapses
-      #   the six below            -> hand 0.772 > logistic 0.770 > naive Bayes 0.761, as intended
+      #   the six below            -> hand 0.772, logistic 0.770, naive Bayes 0.761 — a tie
       # The principle, not the score, chooses it: every column the catalogue gives, plus the two
       # clock columns derived from time. There is no defensible reason to take hour and drop
       # weekday. Do not re-choose this.
       features: [latitude, longitude, depth, mag, hour, weekday]
       split: {test_size: 0.3, random_state: 42, stratify: true}
+      # EVERY NUMBER UNDER expect: IS A MEASUREMENT, not a target and not a tolerance. Each was
+      # read off the shipped data by tools/build_week10.py on the date in `verified:`, on the
+      # pinned split above, and the notebook prints the same figures. A build that disagrees with
+      # one of these has found that the data moved: re-measure and update this block, never
+      # tune the notebook towards it. The one exception is labelled where it sits.
       expect:
-        blasts: 2802
-        earthquakes: 128736              # as of 2026-08-31; the audit's 128,717 is an older read
+        blasts: 2803                     # rows in data/week10_ca_quarry_blasts_2015_2026.csv
+        earthquakes: 128735              # rows in data/week10_ca_earthquakes_2015_2026.csv.gz
         always_say_earthquake: 0.9787    # accuracy, and useless
-        f1: {hand_rule: 0.765, logistic: 0.760, naive_bayes: 0.755, random_forest: 0.975}
-        hand_rule: "depth <= 0 AND 10:00 <= local hour < 17:00 — students write it FIRST and it wins"
+        f1: {hand_rule: 0.7718, logistic: 0.7701, naive_bayes: 0.7612,
+             random_forest: 0.975}       # rf is the audit's read, NOT measured by this build
+        # THE THREE F1s ABOVE ARE A TIE, NOT AN ORDERING. Over the 10 re-splits the notebook runs
+        # (seeds 0-9, same data, only the shuffle changed) the hand rule ran 0.7564-0.7774 and
+        # logistic regression 0.7359-0.7744; the gap between them swung -0.0122 to +0.0372 and
+        # logistic won 1 of the 10. Over 20 seeds the gap's SD is 0.0128, so the pinned split's
+        # 0.0017 is 0.13 SD — the week says the models TIE the two-line rule. Do not restore "the
+        # hand rule wins": that is one draw's noise, and week 8 taught them to ask.
+        split_to_split: {seeds: 10, hand_f1: [0.7564, 0.7774], logistic_f1: [0.7359, 0.7744],
+                         gap_hand_minus_logistic: [-0.0122, 0.0372], logistic_ahead_on: 1,
+                         gap_sd_over_20_seeds: 0.0128}
+        hand_rule: "depth <= 0 AND 10:00 <= local hour < 17:00 — students write it FIRST and no
+          fitted model clears it"
         blast_depth: "median -0.519 km, 93.8% below zero, top 20 repeated values cover 53%"
+        blast_depth_leakage: "the most repeated depth, -0.82 km, is shared by 360 blasts at TWO
+          quarries 0.67 deg of longitude (~61 km) apart — 322 at Boron, 38 at Mojave — and the
+          next, -0.79 km, is shared across 5.7 deg of latitude. depthError is the constant
+          31.61 km on 96% of blasts: the depth was assigned, not solved for."
       verified: 2026-08-31
     exercise: "Retrain without depth. Explain why the score fell and why the second model is the honest one."
     note: >
-      2,802 blasts against 128,707 earthquakes, so "always say earthquake" scores 97.87% and is
+      2,803 blasts against 128,735 earthquakes, so "always say earthquake" scores 97.87% and is
       useless — precision and recall become a discovery. VERIFIED.
       LEAKAGE, CORRECTED 2026-08-30: blast depth is NOT "pinned to 0" as this file used to say —
       exactly one blast has depth 0. It is NEGATIVE: median -0.519 km, 93.8% below zero, because
-      quarry benches sit above sea level, and the top 20 repeated values cover 53% of blasts, i.e.
-      pinned to each QUARRY's elevation. Real leakage, different mechanism, and a better story.
+      quarry benches sit above sea level, and the top 20 repeated values cover 53% of blasts.
+      CORRECTED AGAIN 2026-08-31: those repeated values are not each quarry's own elevation either.
+      -0.82 km covers two quarries ~61 km apart and -0.79 km covers sites 5.7 deg of latitude
+      apart, while depthError holds one constant (31.61 km) on 96% of blasts. The depth is an
+      assigned constant reused across sites — stronger leakage than a per-quarry elevation, and a
+      better story.
     note_critical: >
-      MEASURED: the hand rule "depth <= 0 AND 10:00 <= local hour < 17:00" scores F1 0.765, which
-      BEATS logistic regression (0.760) and Naive Bayes (0.755). As written the taught classifier
-      is decorative — the exact failure the project spec forbids.
+      MEASURED on the pinned split: the hand rule "depth <= 0 AND 10:00 <= local hour < 17:00"
+      scores F1 0.7718 against logistic regression 0.7701 and Naive Bayes 0.7612. That 0.0017 is
+      NOISE — see expect.split_to_split — so the honest statement is that the fitted models TIE
+      two hand-written conditions. Either way the taught classifier buys nothing, which is the
+      exact failure the project spec forbids if it is left unsaid.
       FIX: make the two-if-statement hand rule the baseline students must BEAT, not an afterthought.
-      They write it first, it wins, and the week becomes "why did my clever model lose to two ifs?"
+      They write it first, nothing clears it, and the week becomes "why did my clever model buy me
+      nothing over two ifs?" The notebook re-splits ten times so the tie is shown rather than
+      asserted; do not let a later edit turn 0.0017 back into a victory.
       Random forest reaches F1 0.975, so the answer arrives in week 11 — which turns a dead end into
       the strongest bridge between the two ML weeks in the course.
 
@@ -645,7 +700,31 @@ schedule:
       expect:
         dbscan: {clusters: 11, noise_fraction: 0.184, largest_cluster: 4670}
         kmeans_k3: [2361, 2223, 2062]    # three equal blobs; it must assign every event
+        # Cluster 6 is Coso. The ID and the size are both hardcoded in the notebook's prose and
+        # in a self-check, so a re-run that renumbers the clusters must be caught here.
+        coso: {cluster_id: 6, n: 583, median_depth_km: 2.36}
+        # PCA of cluster 0 in km east/north/depth measured from the M7.1 epicentre, using
+        # 111.19 km per degree of latitude and 90.21 km per degree of longitude at 35.8 N.
+        pca_cluster0:
+          explained_variance_ratio: [0.959, 0.028, 0.014]
+          sd_km: [16.03, 2.73, 1.9]                  # STANDARD DEVIATIONS, not extents
+          extent_km: {axis1: 58.0, axis3: 16.2}      # what the equal-aspect figure spans
+          axis1: [-0.61, 0.79, -0.01]                # (east, north, down): horizontal, NW-SE
+          axis2: [-0.29, -0.22, 0.93]                # near-vertical
+        # Cluster 0 is NOT one plane. The M6.4 epicentre (35.7053, -117.5038) is inside it, and
+        # within 5 km of it the leading axis turns vertical and carries barely half the spread:
+        # DBSCAN merged the M6.4's conjugate rupture into the M7.1's cluster.
+        pca_cluster0_near_M64: {radius_km: 5, n: 969, evr1: 0.537, axis1: [-0.24, -0.01, 0.97]}
+        # The trivial baseline the audit warns about: 97.9% of cluster 0 is inside the circle,
+        # Jaccard 0.815 against the cluster. The largest cluster is the part worth the least.
+        trivial_circle: {radius_deg: 0.3, n: 5507, cluster0_inside: 4571, jaccard: 0.815}
+        # Two concentrations inside the 1,225 noise events, counted in these boxes, which the
+        # week points at instead of claiming the grey is all fringe.
+        noise_concentrations:
+          patch: {n: 151, lat: [35.85, 36.05], lon: [-117.55, -117.25]}
+          lineament: {n: 35, lat: [35.25, 35.42], lon: [-118.10, -117.85], length_km: 15.6}
       verified: 2026-08-30
+      verified_pca_and_baseline: 2026-08-31
     exercise: "Re-run DBSCAN with eps halved and then doubled. Report how many clusters each gives, pick the value you would defend, and then name one cluster you think is a real fault and one you think the algorithm invented. You cannot prove either — say what evidence would settle it."
     note: >
       CLUSTERING, promoted to a real week (it had none). k-means, PCA and DBSCAN together, because

@@ -101,19 +101,22 @@ quakes = fetch(EQ_URL, EQ_CACHE)
 big_history = fetch(HIST_URL, HIST_CACHE)
 eruptions = fetch(GVP, GVP_CACHE)
 
-small = quakes[quakes["mag"] < 7.0]
+# `mags` is EVERY magnitude the slice returned, the five magnitude 7s included. A count labelled
+# "at or above this magnitude" has to be that count: dropping the large events made the level-6.0
+# point read 16 where the catalogue holds 21, steepened the line, and manufactured part of the
+# very shortfall this week argues about. What is held back is the RANGE the line is fitted over
+# (course.yml, pinned: training_range), never the events. `big` is the same five events, picked
+# out so the reveal has something to print.
 big = quakes[quakes["mag"] >= 7.0]
-mags = small["mag"].values
+mags = quakes["mag"].values
 
 M = {}
 M["n_quakes"] = len(quakes)
-M["n_small"] = len(small)
 M["n_big"] = len(big)
 M["mean_mag"] = round(float(mags.mean()), 3)
 M["median_mag"] = round(float(np.median(mags)), 2)
-M["max_small"] = float(mags.max())
-M["max_big"] = float(big["mag"].max())
-M["energy_ratio"] = round(float(ENERGY_PER_STEP ** (M["max_big"] - mags.mean())))
+M["max_mag"] = float(mags.max())
+M["energy_ratio"] = round(float(ENERGY_PER_STEP ** (M["max_mag"] - mags.mean())))
 M["places"] = list(big["place"])
 M["big_years"] = [t[:4] for t in big["time"]]
 
@@ -133,6 +136,17 @@ M["slope"] = round(float(eq_model.coef_[0]), 3)
 M["intercept"] = round(float(eq_model.intercept_), 3)
 M["step_factor"] = round(float(10 ** -eq_model.coef_[0]), 2)
 M["r2"] = round(float(eq_model.score(MAG_LEVELS.reshape(-1, 1), np.log10(eq_counts))), 5)
+
+# The control that shows what that R squared is worth. Cumulative counts can only fall, so the
+# fit is very nearly guaranteed a straight line whatever the magnitudes are: run it on magnitudes
+# drawn UNIFORMLY across the catalogue's own range — the least power-law-like thing there is —
+# and it still scores near 1. Measured here, and again in the notebook, rather than asserted.
+FLAT_SEED = 88                                  # the course number, as everywhere else
+FLAT_LOW = int(round(EQ_FLOOR * 10))            # the catalogue's own range, counted in tenths,
+FLAT_TOP = int(round(M["max_mag"] * 10)) + 1    # so every magnitude on the 0.1 grid is drawable
+flat = np.random.default_rng(FLAT_SEED).integers(FLAT_LOW, FLAT_TOP, len(mags)) / 10
+flat_model, flat_counts = fit_line(flat, MAG_LEVELS)
+M["r2_flat"] = round(float(flat_model.score(MAG_LEVELS.reshape(-1, 1), np.log10(flat_counts))), 5)
 
 # the float trap the notebook warns about, measured rather than asserted
 naive = np.arange(3.5, 5.05, 0.1)
@@ -288,11 +302,11 @@ big_history = load(USGS + "&starttime={HIST_START}&endtime={HIST_END}&minmagnitu
                    "{HIST_CACHE}")
 eruptions = load(GVP, "{GVP_CACHE}")
 
-# The line gets built from the small earthquakes only, because the whole question is whether the
-# small ones can tell you about the large ones. So the large ones are set aside from the start.
-small = quakes[quakes["mag"] < 7.0]
-big = quakes[quakes["mag"] >= 7.0]
-mags = small["mag"].values
+# mags is every magnitude in the box, the largest included: "how many at magnitude 5 or above"
+# has to count the magnitude 7s too, or it is not that count. What we hold back today is the
+# RANGE of magnitudes the line gets fitted over, never the earthquakes themselves.
+mags = quakes["mag"].values
+big = quakes[quakes["mag"] >= 7.0]      # the same events again, gathered so we can look at them
 
 print("California catalogue:", quakes.shape, "  eruption catalogue:", eruptions.shape)
 print("magnitude 7 and above in the same box since 1810:", len(big_history))
@@ -343,17 +357,16 @@ md(f"""
 `quakes` is every earthquake of magnitude {EQ_FLOOR} and above that the USGS recorded between
 {EQ_START} and {EQ_END} inside a box around California: latitude 32 to 42 north, longitude 125 to
 114 west. That box is a rectangle, not a state — it reaches into Nevada and into Baja California —
-and it holds {M['n_quakes']:,} earthquakes, of which the {M['n_small']:,} below magnitude 7 are in
-`mags`.
+and it holds {M['n_quakes']:,} earthquakes, whose magnitudes are all in `mags`.
 
 Start with the plainest possible picture of them.
 """)
 
 code(f"""
-plt.hist(mags, bins=np.arange(3.5, 7.5, 0.5))
+plt.hist(mags, bins=np.arange(3.5, 8.0, 0.5))
 plt.xlabel("magnitude")
 plt.ylabel("number of earthquakes")
-plt.title("California, {M['n_small']:,} earthquakes at magnitude {EQ_FLOOR} and above, "
+plt.title("California, {M['n_quakes']:,} earthquakes at magnitude {EQ_FLOOR} and above, "
           "{EQ_START[:4]}-{EQ_END[:4]}")
 plt.show()
 """)
@@ -370,18 +383,19 @@ Which is why the usual summary of a column — its middle — is worse than usel
 code(f"""
 print("mean magnitude:  ", round(mags.mean(), 3))
 print("median magnitude:", round(np.median(mags), 2))
-print("largest in the box:", big["mag"].max())
+print("largest in the box:", mags.max())
 
 # USGS, "Earthquake Magnitude, Energy Release, and Shaking Intensity", read 2026-08-31:
 # one whole step of magnitude is about {ENERGY_PER_STEP} times more energy released.
-energy_ratio = {ENERGY_PER_STEP} ** (big["mag"].max() - mags.mean())
+energy_ratio = {ENERGY_PER_STEP} ** (mags.max() - mags.mean())
 print(f"the largest released about {{round(energy_ratio):,}} times the energy of an average one")
 """)
 
 md(f"""
-The average California earthquake in this file is magnitude {M['mean_mag']}, and no Californian has
-ever felt one. Meanwhile the largest in the box released roughly {M['energy_ratio']:,} times as much
-energy as that average. When a distribution is shaped like this one, the mean describes the crowd
+The average California earthquake in this file is magnitude {M['mean_mag']}. People nearby feel one
+of those, and it damages nothing; no plan for the state's next hundred years turns on it. Meanwhile
+the largest in the box released roughly {M['energy_ratio']:,} times as much energy as that average.
+When a distribution is shaped like this one, the mean describes the crowd
 and the crowd is irrelevant: everything that matters is in the part of the axis where the histogram
 looks like zero.
 
@@ -391,7 +405,7 @@ So stop asking what is typical, and start asking how the count changes as the si
 ask(f"""
 ### ✏️ Your turn 1
 
-`mags` holds the magnitude of every one of the {M['n_small']:,} earthquakes below magnitude 7.
+`mags` holds the magnitude of every one of the {M['n_quakes']:,} earthquakes in the box.
 Count how many are at magnitude 4.0 or above, at 5.0 or above, and at 6.0 or above — a comparison
 gives you True and False, and adding those up counts the Trues. Then print each count divided by
 the next one.
@@ -493,7 +507,7 @@ code(f"""
 plt.scatter(mag_levels, counts)
 plt.xlabel("magnitude")
 plt.ylabel("number of earthquakes at or above this magnitude")
-plt.title("California, {M['n_small']:,} earthquakes counted at {len(MAG_LEVELS)} levels")
+plt.title("California, {M['n_quakes']:,} earthquakes counted at {len(MAG_LEVELS)} levels")
 plt.show()
 """)
 
@@ -514,7 +528,7 @@ plt.scatter(mag_levels, counts)
 plt.yscale("log")
 plt.xlabel("magnitude")
 plt.ylabel("number of earthquakes at or above this magnitude")
-plt.title("California, the same {len(MAG_LEVELS)} counts of {M['n_small']:,} earthquakes, log axis")
+plt.title("California, the same {len(MAG_LEVELS)} counts of {M['n_quakes']:,} earthquakes, log axis")
 plt.show()
 """)
 
@@ -582,6 +596,35 @@ earthquake size the way a person has a characteristic height — the same physic
 running along a fault and stopping produces every size, and only the chance of running further
 decides which one you get.
 
+The one number in that output you should not be impressed by is the R squared. A cumulative count
+can only fall as the level rises — that is what "at or above" means — so these dots were going to
+descend smoothly whatever the magnitudes were, and a fit to something already smooth and already
+falling scores near 1 almost regardless. Test it: give the identical fit magnitudes with no pattern
+in them at all, spread evenly from one end of the catalogue's range to the other.
+""")
+
+code(f"""
+# the same number of magnitudes, with no law in them: every tenth from {EQ_FLOOR} to
+# {M['max_mag']} equally likely, drawn in tenths so they land on the same grid as real magnitudes
+flat = np.random.default_rng({FLAT_SEED}).integers({FLAT_LOW}, {FLAT_TOP}, len(mags)) / 10
+
+flat_counts = []
+for level in mag_levels:
+    flat_counts.append(count_at_least(flat, level))
+
+flat_model = LinearRegression()
+flat_model.fit(mag_levels.reshape(-1, 1), np.log10(flat_counts))
+print("R squared on magnitudes with no pattern at all:",
+      round(flat_model.score(mag_levels.reshape(-1, 1), np.log10(flat_counts)), 5))
+""")
+
+md(f"""
+{M['r2_flat']} — from magnitudes that hold no law whatever, against {M['r2']} from the real
+catalogue. The check could hardly have failed, so passing it says almost nothing, and any argument
+resting on that {M['r2']} is resting on the shape of a cumulative count rather than on California.
+What would be worth something is the line holding up somewhere it was never fitted. That is
+testable, so test it.
+
 ## Reading the line off past the end of the data
 
 The line was measured between magnitude 3.5 and 5.0. Nothing stops us evaluating it somewhere else,
@@ -598,7 +641,7 @@ plt.plot(line_x, line_y, color="firebrick", label="the fitted line, extended")
 plt.yscale("log")
 plt.xlabel("magnitude")
 plt.ylabel("number of earthquakes at or above this magnitude")
-plt.title("California, {M['n_small']:,} earthquakes and the line fitted to {len(MAG_LEVELS)} levels")
+plt.title("California, {M['n_quakes']:,} earthquakes and the line fitted to {len(MAG_LEVELS)} levels")
 plt.legend()
 plt.show()
 """)
@@ -611,11 +654,12 @@ print("the line expects", round(predicted_7, 2), "earthquakes at magnitude 7 or 
 md(f"""
 ### Predict before you run
 
-The line, which has never been shown an earthquake bigger than magnitude 5.0, says to expect about
-{M['pred_main']} earthquakes of magnitude 7 or above in this box in these {WINDOW} years.
+The line, which was measured between magnitude 3.5 and 5.0 and never asked about anything larger,
+says to expect about {M['pred_main']} earthquakes of magnitude 7 or above in this box in these
+{WINDOW} years.
 
 How many actually happened? Write your guess into `my_guess` below before you run the cell. `big`
-holds them; it was set aside in the setup cell and nothing since has touched it.
+holds them, gathered in the setup cell and not looked at since.
 """)
 
 code("""
@@ -685,8 +729,13 @@ print("✓ three defensible choices — the line expects",
 """)
 
 md(f"""
-Every defensible range lands between {min(M['eq_predictions'])} and {max(M['eq_predictions'])}, and
-{M['n_big']} happened. The choice is not what is doing the work; the shortfall survives all three.
+The three defensible ranges land between {min(M['eq_predictions'])} and
+{max(M['eq_predictions'])}, and {M['n_big']} happened. The choice does matter: the highest of the
+three expects about {round(max(M['eq_predictions']) / min(M['eq_predictions']), 1)} times what the
+lowest does, which is worth remembering the next time somebody quotes a single number off a fit like
+this one. What it does not do is close the gap. Every range falls short of {M['n_big']} by a factor
+of between {round(M['n_big'] / max(M['eq_predictions']), 1)} and
+{round(M['n_big'] / min(M['eq_predictions']), 1)}, so whatever is missing is missing from all three.
 
 Three things could be true, and this notebook cannot tell them apart. {WINDOW} years may simply be
 too short a window for an event this rare, so we are looking at an unlucky draw. Or California may
@@ -706,7 +755,9 @@ almost nothing.
 The counts below are every rated eruption since {VOLCANO_FROM}, at each level from 0 upward.
 """)
 
-code(weekkit.CHECKPOINT.format(body=f"""rated = eruptions.dropna(subset=["ExplosivityIndexMax"])
+code(weekkit.CHECKPOINT.format(body=f"""# Re-run your own count_at_least (Your turn 2) and predict_count (Your turn 4) cells as well.
+# Those two are your code, so this cell cannot rebuild them for you; the rest of the week uses them.
+rated = eruptions.dropna(subset=["ExplosivityIndexMax"])
 recent = rated[rated["StartDateYear"] >= {VOLCANO_FROM}]
 vei = recent["ExplosivityIndexMax"].values"""))
 
@@ -736,7 +787,8 @@ Build `vei_levels = np.array([2, 3, 4])`, call your `predict_count` on `vei` wit
 print the slope, the predicted number of VEI 7 eruptions since {VOLCANO_FROM}, and — using
 `count_at_least` — how many the catalogue actually holds.
 
-**Use these names**, because the self-check looks for them: `vei_levels`, `vei_predicted`.
+**Use these names**, because the self-check and the cells below look for them: `vei_levels`,
+`vei_slope`, `vei_predicted`.
 """)
 
 answer(f"""
@@ -747,7 +799,11 @@ print("slope:", round(vei_slope, 3))
 print("the line expects", round(vei_predicted, 2), "eruptions at VEI 7 since {VOLCANO_FROM}")
 print("the catalogue holds", count_at_least(vei, 7))
 """, """
-assert vei_levels.min() >= 2, "fit from VEI 2 upward — 0 and 1 are the levels the catalogue misses"
+assert not isinstance(vei_predicted, tuple), \\
+    "predict_count hands back two things — unpack both: vei_slope, vei_predicted = predict_count(...)"
+assert 0.5 < vei_predicted < 2, \\
+    ("a VEI 7 count outside 0.5 to 2 means something went into predict_count in the wrong slot — "
+     "the order is the values, then the levels, then the target")
 print("✓ the volcano line — it expects", round(vei_predicted, 2),
       "at VEI 7 and the catalogue holds", count_at_least(vei, 7))
 """)
@@ -839,10 +895,12 @@ better than that.** Fitting the Gutenberg–Richter line to eruptions of VEI 2 t
 {M['one_per']} years — and exactly {M['vei_obs7']} occurred. Across the whole catalogue the same
 kind of event has come every {M['top_rate']:,} years. Both numbers are defensible and they disagree
 by a factor of {round(M['top_rate'] / M['one_per'])}, because one rests on a single event and the
-other on a record that thins as it goes back. The line itself is the solid part: it reproduces VEI 5
-and VEI 6 without ever being shown them, and it fits California's small earthquakes to an R squared
-of {M['r2']} — right up to the point where it under-predicts magnitude 7 by a factor of
-{M['under_by']}.
+other on a record that thins as it goes back. The line itself is the solid part, and for one reason
+only: fitted to VEI 2, 3 and 4, it reproduces VEI 5 and VEI 6 without ever being shown them, which
+is a test it could have failed. Its R squared is not such a test — magnitudes with no pattern in
+them scored {M['r2_flat']} on the same fit — and neither is landing near a count of
+{M['vei_obs7']}. Where the line was tested by something that could have refuted it, it duly was
+refuted: California's magnitude 7s outnumber what it expects by a factor of {M['under_by']}.
 """)
 
 # --- summary and homework --------------------------------------------------
@@ -854,8 +912,13 @@ md(f"""
 Three parts, on the same two catalogues. Part 1 goes after the first of the three explanations class
 left open for California; part 2 makes you choose a window for the volcanoes and live with the
 consequence; part 3 puts the two together. If you have restarted since class, run the setup cell at
-the top first, and re-run your `count_at_least` and `predict_count` cells.
+the top first, then the checkpoint below.
 """)
+
+code(weekkit.CHECKPOINT.format(body=f"""# Re-run your own count_at_least (Your turn 2) and predict_count (Your turn 4) cells as well.
+# Those two are your code, so this cell cannot rebuild them for you; every part below uses them.
+rated = eruptions.dropna(subset=["ExplosivityIndexMax"])
+vei_levels = np.array([2, 3, 4])"""))
 
 ask(f"""
 ### ✏️ Your turn 6

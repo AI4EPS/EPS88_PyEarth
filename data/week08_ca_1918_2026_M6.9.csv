@@ -1,0 +1,13 @@
+time,latitude,longitude,depth,mag,magType,nst,gap,dmin,rms,net,id,updated,place,type,horizontalError,depthError,magError,magNst,status,locationSource,magSource
+1927-11-04T13:51:03.410Z,34.68,-120.705,10,6.9,mw,,,,,iscgem,iscgem909604,2024-02-05T01:04:39.397Z,"The 1927 Lompoc, California Earthquake",earthquake,,3.6,0.3,,reviewed,iscgem,iscgem
+1940-05-19T04:36:40.500Z,32.8441667,-115.381,6,6.9,mw,7,300,,0.42,ci,ci3365279,2024-02-16T10:28:13.282Z,"The 1940 Imperial Valley, California Earthquake",earthquake,12.77,31.61,,0,reviewed,ci,ci
+1952-07-21T11:52:14.540Z,34.9581667,-118.998,6,7.5,mw,8,146,,0.39,ci,ci3319401,2025-12-26T18:49:44.091Z,"The 1952 Kern County, California Earthquake",earthquake,1.42,31.61,,0,reviewed,ci,ci
+1954-12-16T11:07:00.000Z,39.2,-118,12,7.1,mw,,,,,nn,nn19541216110700000,2026-08-11T23:49:39.861Z,"The 1954 Fairview Peak, Nevada Earthquake",earthquake,,0,,,reviewed,nn,nn
+1954-12-16T11:11:00.000Z,39.67,-117.87,12,6.9,mw,,,,,nn,nn19541216111100000,2026-05-05T22:24:11.538Z,"The 1954 Dixie Valley, Nevada Earthquake",earthquake,,0,,,reviewed,nn,nn
+1980-11-08T10:27:34.000Z,41.117,-124.253,19,7.2,mw,,,,,us,usp0001aq1,2025-12-19T21:54:44.916Z,"The 1980 Eureka, California Earthquake",earthquake,,,,,reviewed,us,01023
+1989-10-18T00:04:15.190Z,37.0361667,-121.8798333,17.214,6.9,mw,84,89,,0.08,nc,nc216859,2026-08-26T17:31:03.342Z,"The 1989 Loma Prieta, California Earthquake",earthquake,0.21,0.31,,0,reviewed,nc,nc
+1992-04-25T18:06:05.180Z,40.3353333,-124.2286667,9.856,7.2,mw,9,115,,0.07,nc,nc269151,2026-04-20T22:30:55.722Z,"The 1992 Petrolia, California Earthquake",earthquake,0.33,0.64,,0,reviewed,nc,nc
+1992-06-28T11:57:34.130Z,34.2,-116.437,-0.097,7.3,mw,0,43.4,,0.194,ci,ci3031111,2026-08-18T02:10:22.893Z,"The 1992 Landers, California Earthquake",earthquake,,0.31,,0,reviewed,ci,ci
+1999-10-16T09:46:44.460Z,34.6033333,-116.265,13.73,7.1,mw,73,57,,0.31,ci,ci9108652,2026-08-11T02:24:04.126Z,"The 1999 Hector Mine, California Earthquake",earthquake,0.35,31.61,,0,reviewed,ci,ci
+2010-04-04T22:40:42.360Z,32.2861667,-115.2953333,9.987,7.2,mw,10,239,0.5137,0.11,ci,ci14607652,2026-05-26T02:57:40.282Z,"The 2010 Sierra El Mayor, B.C., Mexico Earthquake",earthquake,1.81,31.61,,0,reviewed,ci,ci
+2019-07-06T03:19:53.040Z,35.7695,-117.5993333,8,7.1,mw,77,43,0.04616,0.22,ci,ci38457511,2026-07-28T13:22:37.753Z,"Ridgecrest Earthquake Sequence",earthquake,0.19,31.61,0.028,126,reviewed,ci,ci

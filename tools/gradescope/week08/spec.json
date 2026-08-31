@@ -1,0 +1,41 @@
+{
+  "week": 8,
+  "notebook_stem": "08_wrong_or_unlucky",
+  "homework_heading": "## Homework",
+  "parts": [
+    {
+      "name": "Part 1 — the two halves",
+      "marker": "✓ the two halves",
+      "checks": [
+        "assert len(first) + len(second) == len(sea), \"every month belongs to exactly one half\""
+      ],
+      "check_points": 30,
+      "code_points": 5
+    },
+    {
+      "name": "Part 2 — your own fitting range",
+      "marker": "✓ your own fitting range",
+      "checks": [
+        "assert edges[0] != 4.0 or edges[-1] != 5.5, \"change the range — this is class's fit, not a choice\"",
+        "assert len(my_counts) == 2000, \"one simulated world per resample — re-run the whole loop on your range\""
+      ],
+      "check_points": 30,
+      "code_points": 5
+    }
+  ],
+  "released": {
+    "w08-c052": "# ── Checkpoint ── run this if you restarted the kernel or fell behind ──\nedges = np.arange(4.0, 5.6, 0.1).round(1)\n\n\ndef predicted_m7(mags):\n    \"\"\"Fit Gutenberg-Richter to these magnitudes and read off the expected number of M7+.\"\"\"\n    counts = []\n    for edge in edges:\n        counts.append((mags >= edge).sum())\n    line = LinearRegression().fit(edges.reshape(-1, 1), np.log10(counts))\n    return 10 ** (line.intercept_ + line.coef_[0] * 7.0)",
+    "w08-q06-answer": "# ← your answer here\n\n\nassert len(first) + len(second) == len(sea), \"every month belongs to exactly one half\"\nprint(\"✓ the two halves — first\", round(first_low, 2), \"to\", round(first_high, 2),\n      \", second\", round(second_low, 2), \"to\", round(second_high, 2),\n      \"; overlapping:\", first_high > second_low)",
+    "w08-q07-answer": "# ← your answer here\n\n\nassert edges[0] != 4.0 or edges[-1] != 5.5, \"change the range — this is class's fit, not a choice\"\nassert len(my_counts) == 2000, \"one simulated world per resample — re-run the whole loop on your range\"\nprint(\"✓ your own fitting range — magnitude\", edges[0], \"to\", edges[-1],\n      \", 5 or more reached in\", round(100 * my_fraction, 1), \"% of simulated worlds\")"
+  },
+  "hygiene": {
+    "points": 5
+  },
+  "manual": {
+    "parts": 1,
+    "points_each": 25,
+    "points": 25,
+    "note": "Part 3 of 3 is answered in prose and is marked by hand. Add a 25-point manual rubric item in Gradescope; the autograder is out of 75."
+  },
+  "autograder_max": 75
+}

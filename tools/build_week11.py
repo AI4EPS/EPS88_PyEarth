@@ -7,9 +7,10 @@ Emits both notebooks from one source so they cannot drift:
     docs/notebooks/11_where_magma.ipynb            the same file with the answers deleted
 
 It also writes the week's one data asset, data/week11_vermeesch_basalts.csv, byte-identical to the
-Vermeesch (2006) compilation that has shipped with every EPS 88 offering since 2019. The notebook
-reads that compilation from the archived Fall 2024 offering, pinned by commit, and falls back to
-the copy in data/ — so the cached CSV MUST BE PUSHED before the notebook is released.
+Vermeesch (2006) compilation that has shipped with every EPS 88 offering since 2019. That
+compilation has no upstream — it ships with the course — so the notebook reads it straight out of
+data/ with `weekkit.asset_setup_cell` and no live/cached fallback: the CSV MUST BE PUSHED before
+the notebook is released, because there is nothing else for it to read.
 
 Every number that appears in prose or in a model answer is computed HERE, by the same code the
 notebook runs, and formatted in. Nothing is typed from memory or copied from the plan.
@@ -39,11 +40,10 @@ OUT = ROOT / "docs/notebooks"
 SLUG = "11_where_magma"
 CACHE_NAME = "week11_vermeesch_basalts.csv"
 SOURCE = ROOT.parent / "offerings/2024-fall_zhu_solutions/docs/exercises/data/Vermeesch2006.csv"
-# The archived Fall 2024 offering of this course, pinned by commit so the file cannot change under
-# us. Verified 2026-08-31: it is byte-identical (md5 6e3941d63759f81ae4a45a771065a9b8) to the copy
-# that has shipped with every offering since 2019.
-LIVE_URL = ("https://raw.githubusercontent.com/AI4EPS/EPS88_PyEarth/fa6317df/"
-            "docs/scripts/data/Vermeesch2006.csv")
+# Verified 2026-08-31: byte-identical (md5 6e3941d63759f81ae4a45a771065a9b8) to the copy that has
+# shipped with every offering of this course since 2019. There is no live source to point at — the
+# only copies on the internet are other commits of this same repository — so the notebook reads
+# data/ directly rather than dressing one repo path up as a live read and another as its fallback.
 
 course = yaml.safe_load((ROOT / "course.yml").read_text())
 WEEK = next(s for s in course["schedule"] if s["n"] == 11)
@@ -118,6 +118,10 @@ M["baseline"] = float(counts.max() / len(basalts))
 
 M["n_ti_v"], M["ti_v_tree"] = longhand(TI_V)
 M["n_zr_y"], M["zr_y_tree"] = longhand(ZR_Y)
+
+M["p2o5_missing"] = float(missing["P2O5(wt%)"])
+M["n_neither_iron"] = int(basalts[["FeO_wt_percent", "Fe2O3_wt_percent"]].isna().all(axis=1).sum())
+M["neither_iron_share"] = M["n_neither_iron"] / len(basalts)
 
 M["n_complete"] = int((missing == 0).sum())
 M["n_half_empty"] = int((missing > 0.5).sum())
@@ -241,7 +245,7 @@ model which columns it actually used.
 *Your turn*, with an empty cell under it.
 """)
 
-code(weekkit.setup_cell(
+code(weekkit.asset_setup_cell(
     imports=("from sklearn.model_selection import train_test_split\n"
              "from sklearn.impute import SimpleImputer\n"
              "from sklearn.preprocessing import StandardScaler\n"
@@ -250,11 +254,9 @@ code(weekkit.setup_cell(
              "from sklearn.svm import SVC\n"),
     figsize="(7, 4)",
     cache_base=CACHE_BASE,
-    docstring="Read the Vermeesch (2006) compilation; fall back to the copy stored with the course.",
-    url_expr=f'"{LIVE_URL}"',
-    cache_expr=f'"{CACHE_NAME}"',
-    unpack='''
-basalts = load()
+    unpack=f'''
+# the Vermeesch (2006) compilation, which ships with the course, so there is nothing to fetch
+basalts = pd.read_csv(CACHE + "/{CACHE_NAME}")
 
 feature_columns = []
 for name in basalts.columns:
@@ -334,9 +336,10 @@ md("""
 Geochemists have been separating these three settings by hand since the 1970s, and they did it with
 two elements at a time on a piece of graph paper. Pearce, J.A. and Cann, J.R. (1973), *Tectonic
 setting of basic volcanic rocks determined using trace element analyses*, Earth and Planetary
-Science Letters 19, 290–300, used titanium, zirconium and yttrium; Shervais, J.W. (1982), *Ti-V
-plots and the petrogenesis of modern and ophiolitic lavas*, Earth and Planetary Science Letters 59,
-101–118, used titanium against vanadium. Start where they did.
+Science Letters 19, 290–300, used titanium, zirconium and yttrium in one diagram and titanium,
+zirconium and strontium in another; Shervais, J.W. (1982), *Ti-V plots and the petrogenesis of
+modern and ophiolitic lavas*, Earth and Planetary Science Letters 59, 101–118, used titanium
+against vanadium. Start where they did.
 """)
 
 code(f"""
@@ -548,24 +551,33 @@ print("TiO2 and V, filling the holes instead:", round(filled_score, 3), "on", le
 
 md(f"""
 The same two elements and the same tree score {M['ti_v_filled']:.3f} rather than
-{M['ti_v_tree']:.3f} once every sample is included. Nothing about the rocks changed. The
-{M['n_ti_v_extra']} extra samples are exactly the ones with a hole in titanium or vanadium, they
-have arrived with a median in place of a measurement, and the tree has almost nothing to go on for
-them. `.dropna()` was not solving that difficulty; it was hiding it, by quietly grading itself on
-the easy rocks only.
+{M['ti_v_tree']:.3f} once every sample is included — and those two are exactly the kind of pair you
+were just told not to compare, because the second was tested on rocks the first never saw. Which is
+the point. Nothing about the rocks changed; what changed is which rocks were allowed into the exam.
+The {M['n_ti_v_extra']} extra samples are exactly the ones with a hole in titanium or vanadium,
+they have arrived with a median in place of a measurement, and the tree has almost nothing to go on
+for them. `.dropna()` was not solving that difficulty; it was hiding it, by quietly grading itself
+on the easy rocks only, and the drop is the size of what it was hiding.
 
 From here every number comes out of `accuracy`, so every number is measured on the same
 {M['n_rows']} samples and the same held-out third of them, and they can be compared.
 """)
 
 # --- section 4 -------------------------------------------------------------
-md("""
+md(f"""
 ## Ten oxides, or all fifty-one
 
-The **major oxides** are the ten measurements that account for nearly the whole weight of the rock:
-its silicon, titanium, aluminium, iron, calcium, magnesium, manganese, potassium and sodium. They
+The **major oxides** are the measurements that account for nearly the whole weight of the rock —
+its silicon, titanium, aluminium, iron, calcium, magnesium, manganese, potassium and sodium. That
+is nine elements and ten columns, because this file reports iron twice, as FeO and as Fe2O3. They
 are the first thing anybody measures, so if tectonic setting is written anywhere it should be
 written there.
+
+There is an eleventh oxide in the file, phosphorus, and it is worth a moment because of how it is
+written: `P2O5(wt%)`, in a naming style nobody else in the table uses, and blank
+{pct(M['p2o5_missing'])} percent of the time. That is what a compilation of hundreds of published
+tables looks like from the inside. We hold to the ten below, so that "the majors" means one fixed
+list for the rest of the week, and phosphorus goes in with everything else.
 """)
 
 code("""
@@ -576,10 +588,12 @@ major_oxides = ["SiO2_wt_percent", "TiO2_wt_percent", "Al2O3_wt_percent", "Fe2O3
 print(missing[major_oxides].round(3))
 """)
 
-md("""
-Eight of the ten are missing from about one sample in eight. The two iron columns are missing from
-more than half: this file keeps FeO and Fe2O3 as separate columns rather than adding them together,
-and most of its samples carry neither. So even the best-measured ten are not a complete ten.
+md(f"""
+Eight of the ten are missing from about one sample in eight. The two iron columns are the
+exception, missing from more than half: this file keeps FeO and Fe2O3 as separate columns rather
+than adding them together, and {M['n_neither_iron']} of the {M['n_rows']} samples
+({pct(M['neither_iron_share'])} percent) carry neither. So even the best-measured ten are not a
+complete ten.
 
 Three models on those ten columns, one call each.
 """)
@@ -615,10 +629,11 @@ md(f"""
 ### Predict before you run
 
 There are {M['n_features']} chemistry columns in this file and you have just used ten of them. The
-other {M['n_features'] - 10} are trace elements and isotope ratios, and you counted them a moment
-ago: {M['n_half_empty']} of the {M['n_features']} are more than half empty, one of them
-({M['worst_column']}) is missing {pct(M['worst_missing'])} percent of the time, and every hole in
-every one of them is about to be filled in with a median that no laboratory ever measured.
+other {M['n_features'] - 10} are trace elements, isotope ratios and the phosphorus you left behind,
+and you counted them a moment ago: {M['n_half_empty']} of the {M['n_features']} are more than half
+empty, one of them ({M['worst_column']}) is missing {pct(M['worst_missing'])} percent of the time,
+and every hole in every one of them is about to be filled in with a median that no laboratory ever
+measured.
 
 Hand the forest all {M['n_features']} columns instead of the ten. Better, or worse? Commit to a
 number before you run anything — you will write it down in the next cell.
@@ -720,12 +735,15 @@ which owes nothing to subduction, is the niobium-rich one. `{M['top'][1][0]}` an
 plotting by hand in the 1970s. The model has, on its own, arrived at the elements a petrologist
 would have nominated.
 
-It has also done something a petrologist would flag. Strontium and potassium are *mobile*: seawater
-and low-grade metamorphism move them around long after the rock has solidified, which is exactly
-why the 1970s diagrams were built on titanium, zirconium, yttrium and niobium and deliberately
-avoided strontium and potassium. The forest has no such scruples. It found strontium the single
-most useful column in the file, and on this compilation of mostly fresh samples that works — but it
-is a reason to be careful about handing this model an altered ocean-floor basalt.
+It has also leaned hard on something a petrologist would want flagged. Strontium and potassium are
+*mobile*: seawater and low-grade metamorphism move them around long after the rock has solidified,
+so a mobile element can be telling you about the rock's later life rather than about the melt it
+came from. Pearce and Cann used strontium anyway — titanium, zirconium and strontium was the second
+of their two diagrams — and said in the same paper that alteration moves it, which is why titanium,
+zirconium and yttrium is the diagram people trust on a rock that has sat under the ocean. The
+forest cannot tell an altered rock from a fresh one. It found strontium the single most useful
+column in the file, and on this compilation that works — but it is a reason to be careful about
+handing this model an altered ocean-floor basalt.
 
 And notice what is *not* in the top ten. The most useful of the {M['n_half_empty']} columns that are
 more than half empty is `{M['sparse_best']}`, ranked {M['sparse_best_rank']}; between them those
@@ -795,9 +813,10 @@ nowhere near the {M['all_forest']:.3f} of the real model, but hugely above the
 {M['baseline']:.3f} you get by guessing, so the pattern of blanks really is telling it which
 setting a sample came from. That means the {M['all_forest']:.3f} is not purely chemistry: some
 unknown part of it is the model recognising which study a row came from, because the median-filled
-holes leave that fingerprint behind in the numbers. The ten major oxides do not have this problem —
-their blanks alone give {M['oxide_blank_forest']:.3f}, barely above the baseline, because nearly
-every study measures them. So the number I would hand a geochemist is the ten-oxide
+holes leave that fingerprint behind in the numbers. The ten major oxides have much less of this
+problem — their blanks alone give {M['oxide_blank_forest']:.3f}, above the {M['baseline']:.3f}
+baseline but far short of what all {M['n_features']} columns' blanks give, because eight of the ten
+are measured by nearly everybody. So the number I would hand a geochemist is the ten-oxide
 {M['oxide_forest']:.3f}, quoted as chemistry, with the all-columns {M['all_forest']:.3f} beside it
 and the warning that part of that extra {M['gap']:.3f} is bookkeeping rather than rock.
 """)
@@ -940,9 +959,9 @@ Print how many rows survive `basalts.dropna(subset=major_oxides)` and how many s
 `basalts.dropna(subset=feature_columns)`.
 
 Then, in the cell after, write two or three sentences using **your own two counts**: what would you
-have concluded about the trace elements — the {n} columns that are not major oxides — if `.dropna()`
-were the only tool you knew? Say what you would have measured, what you would have reported, and
-which of this week's three takeaways that story would have broken.
+have concluded about the {n} columns outside `major_oxides` — mostly trace elements and isotope
+ratios — if `.dropna()` were the only tool you knew? Say what you would have measured, what you
+would have reported, and which of this week's three takeaways that story would have broken.
 
 **Use these names**, because the self-check looks for them: `rows_left_oxides`, `rows_left_all`.
 """.replace("{n}", str(M["n_features"] - 10)))
