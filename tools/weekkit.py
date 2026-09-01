@@ -9,7 +9,7 @@ here; do not restate it in a prompt or in TEMPLATE.md.
 takeaway or a definition has one wording across the whole course. Import it; do not reimplement
 it per week.
 """
-import pathlib, re, yaml
+import contextlib, json, os, pathlib, re, shutil, subprocess, sys, tempfile, yaml
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
@@ -76,6 +76,10 @@ STANDARDS = [
     (2, "no plot cell carries a line that does not change what the reader learns", False),
     (2, "the code is plain enough to imitate: simplest form that works, English names, one job per "
         "cell", False),
+    (2, "a function of ten or more lines names its steps in comments — a docstring says what it "
+        "is FOR, not what the middle of it is doing", True),
+    (2, "fewer names is a PROXY and not the goal: where a smaller count and a clearer notebook "
+        "disagree, clarity wins", False),
     (2, "the axis labels carry units, and every figure title carries its sample size", False),
     (2, "built to the target of 50 cells and 8 questions, not to the 60/9 ceiling", False),
     (2, "every map OF EARTH draws data/coastlines.csv", True),
@@ -149,13 +153,15 @@ plt.rcParams.update({{"figure.figsize": {figsize}, "figure.dpi": 110,
 
 CACHE = "{cache_base}"
 
-def load({signature}):
-    \"\"\"{docstring}\"\"\"
+def {fname}({signature}):
+    \"\"\"{docstring}\"\"\"{guard}
+    # Ask the live archive first. If it is down, or you are offline, read the copy stored with
+    # the course instead, so the notebook still runs.
     try:
-        return pd.read_csv({url_expr})
+        {assign} pd.read_csv({url_expr})
     except Exception as e:
         print("live source unreachable, using the cached copy:", type(e).__name__)
-        return pd.read_csv(CACHE + "/" + {cache_expr})
+        {assign} pd.read_csv(CACHE + "/" + {cache_expr}){result}
 
 {unpack}
 """
@@ -168,9 +174,17 @@ def setup_cell(**kw):
     KeyError until it was rerun — a shared template that grows a slot must not invalidate the
     scripts that predate it. Defaults here mean a new slot is opt-in.
     """
+    # fname/guard/result exist for the ONE week whose public data function is not `load`. Week 1
+    # reached the catalogue through `load` and then a second function `column` that called it, so
+    # a student who never calls `load` still met it, ten lines deep, as the first `def` in the
+    # course. Folding the two into one is a real reduction for a beginner -- and doing it with
+    # slots keeps the shape in this template rather than sending week 1 back to hand-writing its
+    # setup cell, which is the drift this template exists to prevent. Every default reproduces
+    # the previous text exactly, so no other week's output moves.
     defaults = {"imports": "", "figsize": "(7, 4)", "signature": "", "cache_expr": '""',
                 "docstring": "Read the live source; fall back to the copy stored with the course.",
-                "url_expr": '""', "unpack": "", "cache_base": ""}
+                "url_expr": '""', "unpack": "", "cache_base": "",
+                "fname": "load", "guard": "", "assign": "return", "result": ""}
     return SETUP_CELL.format(**{**defaults, **kw})
 
 
@@ -206,6 +220,75 @@ def asset_setup_cell(**kw):
     return ASSET_SETUP_CELL.format(**{**defaults, **kw})
 
 
+# The third shape: an asset too big to keep beside the notebook, fetched once from a release of
+# the course repository and then kept. It is not `setup_cell` — there is no live archive and no
+# cache to fall back to, only a file that is either already on disk or is not yet. It is not
+# `asset_setup_cell` either, because that one reads a file the repository ships.
+#
+# Week 13 and track T8 each hand-wrote this cell, and the two came out byte-identical down to
+# the docstring — which is not reassuring, it is the definition of drift waiting to happen: the
+# next one to be edited would have been the only one edited. `pd` is deliberately absent; both
+# users read arrays, and an unused pandas import is exactly the kind of thing the code-quality
+# check exists to catch.
+DOWNLOAD_SETUP_CELL = """{imports}import matplotlib.pyplot as plt
+
+# house style, set once, so every plot cell below holds only what matters
+plt.rcParams.update({{"figure.figsize": {figsize}, "figure.dpi": 110,
+                     "axes.grid": True, "grid.alpha": 0.3, "axes.axisbelow": True}})
+
+{const} = ("{url}")
+
+
+def load():
+    \"\"\"{docstring}\"\"\"
+    try:
+        return {reader}("{filename}")
+    except FileNotFoundError:
+        torch.hub.download_url_to_file({const}, "{filename}", progress=False)
+        return {reader}("{filename}")
+
+
+{unpack}
+"""
+
+
+def download_setup_cell(**kw):
+    """Fill DOWNLOAD_SETUP_CELL: the setup cell for a week whose data arrives from a release.
+
+    `torch.hub.download_url_to_file` is the downloader because torch is already one of the six
+    libraries and every user of this cell is a week that trains something; adding `requests` to
+    the student environment to save one import would be the wrong trade.
+    """
+    defaults = {"imports": "", "figsize": "(7, 4)", "unpack": "", "const": "DATA",
+                "reader": "np.load", "url": "", "filename": "",
+                "docstring": "Read the data file, downloading it from the course release the "
+                             "first time."}
+    return DOWNLOAD_SETUP_CELL.format(**{**defaults, **kw})
+
+
+def dedupe_ids(cells):
+    """Make sure no cell id was issued twice. Returns `cells`, so it can wrap a return.
+
+    Every id scheme in this course keys a cell by its ROLE, which assumes each role occurs once
+    per question window. Week 7 broke that the day a second assert-bearing cell appeared inside
+    one, shipping `w07-q03-check` twice; track T2 broke it the same day when its Predict cell
+    became two cells and both matched the same branch. A duplicate id is invalid nbformat, and
+    because Gradescope keys a submission off cell ids it is exactly how a cell grades as
+    "missing from your notebook" — a false zero, on a student who did the work.
+
+    `stable_ids` has this built in. The seven tracks each carry their OWN `track_ids`, so they
+    did not; rather than seven copies of the same four lines, they end `return
+    weekkit.dedupe_ids(cells)`. The FIRST cell keeps the plain id, so anything already released
+    stays stable.
+    """
+    seen = {}
+    for c in cells:
+        seen[c["id"]] = seen.get(c["id"], 0) + 1
+        if seen[c["id"]] > 1:
+            c["id"] = f'{c["id"]}-{seen[c["id"]]}'
+    return cells
+
+
 def stable_ids(cells, week_n):
     """Give every cell an id that survives a rebuild — and give the GRADED cells one that also
     survives reordering.
@@ -215,7 +298,7 @@ def stable_ids(cells, week_n):
     every cell, silently, mid-term. Graded cells (an answer stub, a self-check) are keyed to the
     question they belong to, so inserting a paragraph above them changes nothing.
     """
-    q = 0
+    q, p = 0, 0
     for i, c in enumerate(cells):
         s = "".join(c.get("source", []))
         if c["cell_type"] == "markdown" and re.search(r"(?m)^\s*(#{1,4}\s*)?✏️", s):
@@ -225,11 +308,28 @@ def stable_ids(cells, week_n):
             c["id"] = f"w{week_n:02d}-q{q:02d}-answer"
         elif c["cell_type"] == "markdown" and "Double-click" in s:
             c["id"] = f"w{week_n:02d}-q{q:02d}-prose"
+        # The Predict pair carries an assert but is not a question's self-check: it sits BEFORE
+        # the first ✏️, so the generic branch below would key it to `q00` and collide with the
+        # loading check, which is the real q00. Both cells get their own ids, numbered because
+        # week 10 has two pairs. The guess cell matches in both copies -- solution `= 0.70`,
+        # student `= None` -- which is what keeps a submission graded against the release.
+        elif c["cell_type"] == "code" and re.search(r"(?m)^my_guess\w*\s*=", s):
+            p += 1
+            c["id"] = f"w{week_n:02d}-predict{p:02d}"
+        elif c["cell_type"] == "code" and re.search(r"assert my_guess\w* is not None", s):
+            c["id"] = f"w{week_n:02d}-predict{p:02d}-check"
         elif c["cell_type"] == "code" and "assert " in s:
             c["id"] = f"w{week_n:02d}-q{q:02d}-check"
         else:
             c["id"] = f"w{week_n:02d}-c{i:03d}"
-    return cells
+    # BACKSTOP. Every branch above keys a cell by its ROLE, which assumes each role occurs once
+    # per question window -- and week 7 broke that assumption the day a second assert-bearing
+    # cell appeared inside one, shipping `w07-q03-check` twice. A duplicate id is invalid
+    # nbformat, and because Gradescope keys a submission off cell ids it is exactly how a cell
+    # grades as "missing from your notebook". The dedicated predict branch above fixes the case
+    # that caused it; this catches the next one, whatever it turns out to be. The FIRST cell
+    # keeps the plain id, so anything already released stays stable.
+    return dedupe_ids(cells)
 
 
 def stop_list():
@@ -319,6 +419,94 @@ def modules_upto(week_n, inclusive):
             for m in s["modules"]]
 
 
+def predict_cell(guess, summary, name="my_guess", label="committed"):
+    """A "Predict before you run" cell, as TWO (solution, student) pairs — assign, then check.
+
+    The device only works if the student commits to a number BEFORE seeing the answer. Sixteen of
+    the twenty built notebooks shipped the guess already filled in, byte-identical in both copies,
+    so most of 46 freshmen pressed shift-enter and committed to nothing -- and in three of them
+    the pre-filled value was effectively the answer (week 3's 0.70 against a true 0.711, T5's 0.31
+    against +0.309, week 6's intercept of 0, which is the whole discovery).
+
+    WHY TWO CELLS, since one looks tidier and the first version of this helper emitted one. A
+    single cell that assigns the name and then asserts on it fails two existing rules, and neither
+    can be satisfied without splitting: `check_asserts` registers a cell's assignments only AFTER
+    reading its asserts, so a name bound in the same cell is invisible to it -- and a predict cell
+    sits before the first ✏️, so the prompt-names-it escape hatch is empty too; and
+    `check_conventions` requires any cell containing `assert` to print the course's ✓ line. Both
+    rules are written for a self-check. Two cells also match what a student physically does:
+    change the number, run on.
+
+    Returns [(sol, stu), (sol, stu)]. The second pair is identical in both copies.
+    """
+    check = (f'assert {name} is not None, \\\n'
+             f'    "write a number into {name} in the cell above — the commitment is the point, "\\\n'
+             f'    "and a guess you made before you saw the answer is the only one that can '
+             f'teach you anything"\n'
+             f'print("✓ {label} — I think", {name}, "{summary}")')
+    return [(f"{name} = {guess}", f"{name} = None    # ← your number, written down before you look"),
+            (check, check)]
+
+
+@contextlib.contextmanager
+def pinned_kernel():
+    """Make the notebook kernel BE the interpreter running this build, and yield the env for it.
+
+    `ipykernel` writes its kernelspec `argv` as a bare `"python"`, so whatever starts a kernel —
+    nbconvert in a subprocess, or `NotebookClient` in process — resolves the interpreter from
+    PATH rather than from `sys.executable`. On this machine PATH is the shared base env, which
+    has no torch, so a build launched correctly as `.venv/bin/python tools/build_week13.py`
+    still died on `import torch` INSIDE the notebook, with nothing in the traceback pointing at
+    the kernelspec.
+
+    Both drivers resolve kernelspecs through JUPYTER_PATH, so one temporary spec fixes both.
+    Pinning by argv beats prefixing PATH (which `build_track_T1.py` had grown independently)
+    because it names the interpreter instead of hoping the search finds it, and it beats editing
+    the venv's own kernel.json because that file is inside a gitignored directory: it protects
+    nobody who clones this repository and does not survive rebuilding the venv.
+    """
+    spec_dir = pathlib.Path(tempfile.mkdtemp(prefix="weekkit-kernel-"))
+    kernel = spec_dir / "kernels" / "python3"
+    kernel.mkdir(parents=True)
+    (kernel / "kernel.json").write_text(json.dumps(
+        {"argv": [sys.executable, "-m", "ipykernel_launcher", "-f", "{connection_file}"],
+         "display_name": "Python 3", "language": "python"}))
+    old = os.environ.get("JUPYTER_PATH")
+    os.environ["JUPYTER_PATH"] = str(spec_dir)
+    try:
+        yield {**os.environ, "JUPYTER_PATH": str(spec_dir)}
+    finally:
+        if old is None:
+            os.environ.pop("JUPYTER_PATH", None)
+        else:
+            os.environ["JUPYTER_PATH"] = old
+        shutil.rmtree(spec_dir, ignore_errors=True)
+
+
+def execute(path, timeout=600, cwd=None, env=None):
+    """Execute a notebook in place. The ONE way eighteen of the twenty builds run their solution.
+
+    There were two shapes and several spellings: `-m jupyter nbconvert` in most, `-m nbconvert`
+    in the two that needed torch, a PATH prefix in one, a hand-written kernelspec in two. That is
+    one job done several ways inside the tooling that enforces "one operation, one call shape" on
+    the notebooks themselves. `-m nbconvert` rather than `-m jupyter nbconvert` because the
+    latter dispatches through the `jupyter` launcher, which finds `jupyter-nbconvert` on PATH —
+    one more chance to run the wrong interpreter. The kernel is pinned by `pinned_kernel`.
+
+    Weeks 1 and 2 drive `NotebookClient` in process instead, because they hold the solution as an
+    nbformat object rather than a file; they use `pinned_kernel` directly, so the interpreter is
+    settled the same way in all twenty.
+    """
+    with pinned_kernel() as kernel_env:
+        return subprocess.run(
+            [sys.executable, "-m", "nbconvert", "--to", "notebook", "--execute", "--inplace",
+             f"--ExecutePreprocessor.timeout={timeout}", str(path)],
+            capture_output=True, text=True, cwd=cwd or ROOT,
+            # JUPYTER_PATH last so a caller-supplied full environ (T7 passes
+            # dict(os.environ, IPYTHONDIR=...)) cannot shadow the spec just written.
+            env={**kernel_env, **(env or {}), "JUPYTER_PATH": kernel_env["JUPYTER_PATH"]})
+
+
 def gate(week_n, variant=""):
     """The two gates a build must pass. Called at the END of every build_weekNN.py.
 
@@ -326,7 +514,6 @@ def gate(week_n, variant=""):
     to run: it lives in the build script and exits non-zero. Judging whether the notebook is
     GOOD is a separate job, done by an agent that did not write it.
     """
-    import json, subprocess, sys
     root = ROOT
     slug = next(s["slug"] for s in _course()["schedule"] if s["n"] == week_n)
     sol = root / f"docs/notebooks{variant}" / f"{slug}_solution.ipynb"
@@ -368,6 +555,34 @@ def gate(week_n, variant=""):
         print(r2.stdout.rstrip())
         if r2.returncode:
             bad.append("the week uses something the course has not taught yet (above)")
+
+    # THE GRADED CONTRACT. A rebuild that renames a self-check silently invalidates the week's
+    # Gradescope spec, and the autograder then zeroes every part whose assert it no longer
+    # recognises -- "The self-check in this cell is not the one the assignment ships." A model
+    # answer scored 40/100 that way on the week-1 branch, through a build that printed
+    # "gates passed", because only check_all.py ever regenerated the specs and a builder does
+    # not run check_all.py. So the build regenerates ITS OWN week and says whether that changed
+    # anything. It does not restore: the new spec IS the correct one for the notebook just
+    # built, and leaving the stale one behind is the defect. Reported, never silent.
+    if not variant:
+        spec = root / "tools/gradescope" / f"week{week_n:02d}" / "spec.json"
+        before = spec.read_bytes() if spec.exists() else None
+        subprocess.run([sys.executable, str(root / "tools/make_gradescope.py"), str(week_n)],
+                       capture_output=True, cwd=root)
+        after = spec.read_bytes() if spec.exists() else None
+        if after != before:
+            print(f"  regenerated {spec.relative_to(root)} — this build changed the graded "
+                  f"contract. If week {week_n} is already released, that is BREAKING and the "
+                  f"spec must be re-uploaded to Gradescope before the next submission is marked.")
+        # Regenerating is not the same as CHECKING. A freshly generated spec can still be
+        # ungradeable — that is exactly how a model answer scored 40/100 — so grade the model
+        # answer against the bundle and fail the build if it does not come out full marks.
+        # Scoped to this week: the corner cases are about the bundle machinery, not the week.
+        r3 = subprocess.run([sys.executable, str(root / "tools/selftest_gradescope.py"),
+                             str(week_n)], capture_output=True, text=True, cwd=root)
+        if r3.returncode:
+            print(r3.stdout.rstrip())
+            bad.append("the autograder does not score this week's own model answer correctly")
 
     if bad:
         print("\nBUILD REJECTED:")

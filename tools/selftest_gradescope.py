@@ -5,13 +5,19 @@ Written after the grader was found to be unrunnable and, once running, to give 9
 submission that deleted every assert and pasted a fabricated tick. A grader nobody has attacked
 is a formality; these are the attacks.
 
-    python tools/selftest_gradescope.py
+    python tools/selftest_gradescope.py        # every built week, plus the corner cases
+    python tools/selftest_gradescope.py 3      # just week 3's calibration
 """
 import json, os, pathlib, subprocess, sys, tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 GS = ROOT / "tools" / "gradescope"
 fails = []
+# One week, for weekkit.gate() to run at the end of a build. A FRESHLY GENERATED spec can still
+# be ungradeable -- that is the failure that scored a model answer 40/100 -- so regenerating is
+# not the same as checking. With a week number the corner cases and container tests are skipped:
+# they are about the bundle machinery, not about this week, and a build must stay quick.
+ONLY = int(sys.argv[1]) if len(sys.argv) > 1 else None
 
 
 def run(bundle, files):
@@ -59,6 +65,8 @@ print("per-week calibration")
 for d in sorted(GS.glob("week*/")):
     spec = json.loads((d / "spec.json").read_text())
     stem, n = spec["notebook_stem"], spec["week"]
+    if ONLY is not None and n != ONLY:
+        continue
     sol = ROOT / "docs/notebooks" / f"{stem}_solution.ipynb"
     stu = ROOT / "docs/notebooks" / f"{stem}.ipynb"
     if not sol.exists():
@@ -79,6 +87,13 @@ if not _sol_path.exists():
     # release policy is in force.
     print("\ncorner cases skipped: no solution notebooks in this checkout")
     print(f"\n{'all checks pass' if not fails else str(len(fails)) + ' FAILED'}")
+    sys.exit(1 if fails else 0)
+
+if ONLY is not None:
+    # Scoped to one week for a build gate: everything below is about the BUNDLE machinery
+    # (attacks, submission shapes, container isolation), which no single week's rebuild
+    # can change. The full run still covers them.
+    print(f"\n{'all checks pass' if not fails else str(len(fails)) + ' FAILED'} (week {ONLY} only)")
     sys.exit(1 if fails else 0)
 
 print("\ncorner cases, on week 1")

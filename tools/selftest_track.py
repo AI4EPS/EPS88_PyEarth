@@ -18,6 +18,8 @@ import check_track as T
 
 MD = lambda s: {"cell_type": "markdown", "source": [s]}
 CODE = lambda s: {"cell_type": "code", "source": [s]}
+OUT = lambda s, t: {"cell_type": "code", "source": [s],
+                    "outputs": [{"output_type": "stream", "text": [t]}]}
 
 TRACK = {"id": "TX", "open_question": "Numbers the plan recalled. Is the thing knowable at all?"}
 STUB = CODE("# ← your answer here\n")
@@ -31,6 +33,26 @@ def run(fn, *a):
     C.errs.clear(); C.warns.clear()
     fn(*a)
     return list(C.errs)
+
+
+def leak(cells, sol_cells):
+    """check_closing_does_not_answer is the one rule here that WARNS rather than errors, and the
+    CASES loop reads `errs`. Promote its warnings so "did it fire?" is asked the same way for
+    every rule -- the alternative is a second loop that would itself need proving."""
+    C.warns.clear()
+    T.check_closing_does_not_answer(cells, sol_cells)
+    C.errs.extend(C.warns)
+
+
+def reveal(cells, sol_cells):
+    """Warns, like the closing rule, so promote the warnings for the shared CASES loop."""
+    C.warns.clear()
+    T.check_reveal_does_not_answer(cells, sol_cells)
+    C.errs.extend(C.warns)
+
+
+def spine(cells):
+    return run(C.check_spine, cells, T.TRACK_SPINE_SKIP)
 
 
 def open_q(cells):
@@ -78,6 +100,42 @@ CASES = [
           "random slice of itself each time.")],), False),
     ("...and not one that never introduces the idea", T.check_bound_wording,
      ([MD("We bootstrap by volcano.")],), False),
+
+    # --- the spine, with a track's frame skipped rather than a week's -------------------------
+    # check_spine is check_notebook's, and selftest_checks already proves the rule. What is
+    # track-specific and therefore proven HERE is the skip list: a track's four questions sit
+    # among seven frame headings a week does not have, and if TRACK_SPINE_SKIP misses one of
+    # them the count comparison fails on every track at once. That is a silent-pass risk in the
+    # other direction too — a skip list that swallowed a real section would hide a missing one.
+    ("a track whose spine promises a section it does not ship", spine,
+     ([MD("## What you'll be able to do\n\n1. A?\n2. B?\n3. C?"),
+       MD("## A?"), MD("## B?"), MD("## The open question")],), True),
+    # --- the closing must not answer the prompts ----------------------------------------------
+    # A WARN rule, so `run` (which returns errs) cannot see it -- `leak` reads warns instead.
+    ("a closing that prints a number from a stubbed cell's output", leak,
+     ([Q, STUB, MD("## The question, answered\n\nThe gap is +0.222.")],
+      [Q, OUT("print(gap)", "+0.222\n"), MD("x")]), True),
+    ("...but not one that names the quantity instead of the value", leak,
+     ([Q, STUB, MD("## The question, answered\n\nThe gap is the number you found.")],
+      [Q, OUT("print(gap)", "+0.222\n"), MD("x")]), False),
+    ("...and not a number the notebook GAVE, which is in no stub's output", leak,
+     ([Q, CODE("print(1)"), MD("## The open question\n\n2348 traces carry a label.")],
+      [Q, OUT("print(1)", "1\n"), MD("x")]), False),
+
+    # --- a mid-notebook reveal must not answer the empty cell above it -----------------------
+    ("a markdown reveal that states the answer to the stub above it", reveal,
+     ([Q, STUB, MD("Nothing about volcanoes puts 390 eruptions on the 16th.")],
+      [Q, OUT("print(peak)", "390\n"), MD("x")]), True),
+    ("...but not one that names the finding without the number", reveal,
+     ([Q, STUB, MD("Nothing about volcanoes distinguishes the 16th from the 15th.")],
+      [Q, OUT("print(peak)", "390\n"), MD("x")]), False),
+
+    ("...but not one where the frame headings are the only extras", spine,
+     ([MD("## How this notebook is different"),
+       MD("## What you'll be able to do\n\n1. A?\n2. B?\n3. C?"),
+       MD("## Setup"), MD("## A?"), MD("## B?"), MD("## C?"),
+       MD("## The question, answered"), MD("## What track TX leans on"),
+       MD("## What your project must contain"), MD("## The open question")],), False),
 ]
 
 bad = 0

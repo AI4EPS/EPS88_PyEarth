@@ -10,6 +10,7 @@ below carries the smallest input that must trip it, and one that must not.
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import check_notebook as C
+import weekkit as W
 
 MD = lambda s: {"cell_type": "markdown", "source": [s]}
 SP = ("## What you'll be able to do\n\nsome prose.\n\n"
@@ -154,6 +155,31 @@ CASES = [
     ("a notebook with no Predict cell", C.check_predict, [MD("## 1. Something")], True),
     ("...but not one that has the conventional heading", C.check_predict,
      [MD("### Predict before you run\n\nHow many do you expect?")], False),
+
+    # A long function with no signpost inside it. Twenty-one of twenty-one such functions in the
+    # built course had a docstring and no comment when this rule was written.
+    ("a twelve-line function with no comment in it", C.check_long_functions_are_commented,
+     [CODE('def f(a):\n    """what it is for"""\n' + "".join(f"    x{i} = {i}\n" for i in range(12))
+           + "    return a")], True, "warn"),
+    ("...but not the same function once its steps are named",
+     C.check_long_functions_are_commented,
+     [CODE('def f(a):\n    """what it is for"""\n    # 1. set them up\n'
+           + "".join(f"    x{i} = {i}\n" for i in range(12)) + "    return a")], False, "warn"),
+    ("...and not a short one", C.check_long_functions_are_commented,
+     [CODE('def f(a):\n    """what it is for"""\n    return a + 1')], False, "warn"),
+
+    # A Predict cell that answers itself. 16 of 20 notebooks shipped one.
+    ("a student copy shipping a filled-in guess", C.check_predict_is_not_prefilled,
+     [CODE("my_guess = 0.70\nprint('you guessed:', my_guess)")], True),
+    ("...but not one left blank for the student", C.check_predict_is_not_prefilled,
+     [CODE("my_guess = None\nassert my_guess is not None, 'commit to a number first'")], False),
+
+    # Not a check_notebook rule, but the same contract: stable_ids must never issue an id twice.
+    # A duplicate is invalid nbformat and grades a cell as "missing from your notebook".
+    ("stable_ids issuing one id twice", lambda cells: (
+        None if len(set(c["id"] for c in W.stable_ids(cells, 7))) == len(cells)
+        else C.errs.append("stable_ids issued a duplicate id")),
+     [MD("### ✏️ Your turn 1"), CODE("assert a == 1"), CODE("assert b == 3")], False),
 ]
 
 bad = 0

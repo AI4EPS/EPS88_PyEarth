@@ -181,6 +181,20 @@ for tr in c['project']['tracks']:
             errs.append(f"track {tr['id']} {k}: carries a correction note, and the notebook "
                         f"quotes it verbatim — move it to {k}_note:")
 
+# notes/defects.yml is the ledger every agent brief is drawn from, and `scope` decides which
+# reader sees an entry: agent_brief.past_defects() reads `build` and nothing else. Two lessons
+# were filed today under `content` and one under `plan` -- scopes invented on the spot, consumed
+# by nobody -- so three lessons written to stop a repeat were recorded where no builder would
+# ever read them. A typo does the same thing silently. The vocabulary is closed; check it.
+DEFECT_SCOPES = {"build", "spec", "process", "docs"}
+_d = ROOT.parent / "notes" / "defects.yml"
+if _d.exists():
+    for x in yaml.safe_load(_d.read_text())["defects"]:
+        if x.get("scope") not in DEFECT_SCOPES:
+            errs.append(f"defect {x['id']}: scope {x.get('scope')!r} is not one of "
+                        f"{sorted(DEFECT_SCOPES)} — only `build` reaches an agent brief, so an "
+                        f"unknown scope files the lesson where nobody reads it")
+
 if sum(c['grading'].values()) != 100:            errs.append("grading does not sum to 100")
 if sum(c['project']['rubric'].values()) != 100:  errs.append("rubric does not sum to 100")
 

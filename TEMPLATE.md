@@ -61,6 +61,12 @@ The class/homework split is about **when**, not whose work it is:
    repository, the except branch can only fire in conditions that would kill the fallback too, and
    the docstring promising to "fall back to the copy stored with the course" is false, because the
    try branch already is that copy. Week 11 shipped exactly that before anyone noticed.
+   **A file too big to ship — tens of megabytes of waveforms — is the third shape, and takes
+   `weekkit.download_setup_cell()`**: fetched once from a release of the course repository with
+   `torch.hub.download_url_to_file` and kept, so the try/except turns on whether the file is on
+   disk yet rather than on whether a network is up. Week 13 and track T8 each hand-wrote this cell
+   and the two came out identical down to the docstring, which is not reassurance — it is the
+   drift this helper exists to prevent, since the next one edited would have been the only one.
 4. **Sections** — prose → a worked example typed together → a question. Roughly every 8–10
    minutes. A section that needs state from an earlier one opens with `weekkit.CHECKPOINT`.
 5. **The buffer.** `modules.yml` calls it `extension`; it is a budget for you, not a section for
@@ -377,6 +383,23 @@ as the prose. Write it to be **copied**, not admired.
   unpackings under seven different prefixes: `times`, `my_times`, `day_times`, `week_times`,
   `month_times`, `all_times`, `low_times`. **Forty-two names for one idea**, in the week that
   assumes no programming. Every other week has zero, because they use a dataframe directly.
+- **The count is a proxy. The test is whether a student is confused.** Counting helpers is how
+  you FIND the problem; it is not what you are solving, and pushed past its range it starts
+  making things worse. Merging two clear eight-line functions into one dense sixteen-line one
+  removes a name and adds a wall — a trade that looks like progress in the count and is not.
+  Judge a change at the CALL SITE and at the point of reading: does the line a student writes get
+  easier to say out loud, and does the body they may open still read at a glance? Fewer names,
+  shorter code and clearer code usually agree; where they disagree, clarity wins and the count
+  loses.
+- **A long function must name its steps.** A docstring says what a function is FOR; it does not
+  say what the middle of it is doing, and a fifteen-line body with no signposts is a wall however
+  well written. Measured the day this rule was added: **twenty-one of twenty-one** functions of
+  ten or more lines in the built course had a docstring and not one internal comment — including
+  `check_planet`, `train_picker` and `network_says_up`, which are the functions beginners most
+  need to follow. `check_notebook.py` warns on this now. Not a length limit: a training loop is
+  the length it is. What is owed is the sentence every few lines saying which step this is and
+  why it is here. This applies to the setup cell too — students are told they are not expected
+  to follow it, and the ones who read it anyway are the ones to write it for.
   If a return value forces an unpacking at every call site, the return value is wrong.
 
 - **A large binary asset has exactly one door.** A `.npz` or similar too big for `data/` goes to
@@ -385,13 +408,18 @@ as the prose. Write it to be **copied**, not admired.
   which is closed. Wrap it in the same try/except shape as `SETUP_CELL`, write no `data/` copy,
   and add the filename to `.gitignore`: the notebook downloads it into the working directory, and
   nothing else stops 42 MB being committed into a repo nbgitpuller clones onto 46 accounts.
-- **It is graded as a PDF.** Students export the notebook and upload it to Canvas, and it is read
-  on screen, not run. So everything that earns marks has to be legible in print: no output wider
-  than the page (a printed line clipped at the right margin is ungradeable, and a twenty-column
-  DataFrame is exactly that), figures readable at page width and never relying on colour alone,
-  and every self-check ending in a `print` that states the student's own numbers — that line is
-  what the grader actually reads. The ✏️ headings and the identical answer cells are what make
-  46 PDFs navigable; they are not decoration.
+- **It is graded from the notebook a student submits, and read without being re-run.** They
+  upload the `.ipynb` itself to Gradescope — NOT a PDF; every notebook says so, and an autograder
+  reads the file. This paragraph used to say "graded as a PDF … upload it to Canvas", which was
+  the same mistake as the URGENT one fixed in the notebooks themselves on 2026-08-31, surviving
+  one level up in the rules; a reviewer found it while judging a figure against it.
+  What follows from it is unchanged, because the grader still READS rather than runs: everything
+  that earns marks has to be legible as saved output — no output wider than the page (a line
+  clipped at the right margin is ungradeable, and a twenty-column DataFrame is exactly that),
+  figures readable at page width and never relying on colour alone, and every self-check ending
+  in a `print` that states the student's own numbers, because that line is what a human marker
+  actually reads. The ✏️ headings and the identical answer cells are what make 46 submissions
+  navigable; they are not decoration.
 - **Only the libraries in `course.yml`'s `platform: libraries:`** — that list is the data, and
   `check_notebook.py` reads it from there. A ceiling on the whole course; the standard library is
   not a loophole.

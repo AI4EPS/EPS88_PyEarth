@@ -384,7 +384,7 @@ def check_weak_asserts(cells, solution_cells=()):
 SPINE_SKIP = ("What you'll", "The question", "Week ", "Homework", "Setup")
 
 
-def check_spine(cells):
+def check_spine(cells, skip=SPINE_SKIP):
     """The 3-4 spine questions are the section headings, one for one.
 
     TEMPLATE 1 asks for a bare numbered list after "What you'll be able to do" AND for every
@@ -402,7 +402,7 @@ def check_spine(cells):
             break
     heads = [src(c).split("\n")[0][3:].strip() for c in cells
              if c["cell_type"] == "markdown" and src(c).startswith("## ")]
-    body = [h for h in heads if not any(h.startswith(k) for k in SPINE_SKIP)]
+    body = [h for h in heads if not any(h.startswith(k) for k in skip)]
 
     if not spine:
         errs.append("no spine: TEMPLATE 1 asks for the 3-4 questions that lead the class as a "
@@ -498,6 +498,75 @@ def check_imports(cells):
                 errs.append(f"cell {i}: imports `{top}`, which is not one of the six libraries")
             if code and i != code[0][0]:
                 warns.append(f"cell {i}: import outside the setup cell")
+
+
+def check_predict_is_not_prefilled(cells, solution_cells=()):
+    """A "Predict before you run" cell must not hand the student the guess.
+
+    The whole device is that a student commits to a number BEFORE seeing the answer, so that
+    being wrong costs them something and being right means something. Measured the day this rule
+    was written: SIXTEEN of the twenty built notebooks shipped `my_guess = <a number>` in the
+    STUDENT copy, byte-identical to the solution. Most of 46 freshmen press shift-enter and never
+    commit to anything.
+
+    In three of them the pre-filled value is essentially the answer: week 3 ships `my_guess = 0.70`
+    against a true 0.711 and then prints "you guessed 0.7 / this grid says 0.660", framing a
+    correct guess as a miss; T5 ships 0.31 against a measured r of +0.309; and week 6 ships
+    `my_guess_intercept = 0`, where zero is the physically correct intercept that the whole week
+    exists to make them discover.
+
+    The fix is `my_guess = None` in the student copy with `assert my_guess is not None` beside it,
+    so the notebook asks for the commitment it is built around.
+    """
+    for i, c in enumerate(cells):
+        if c["cell_type"] != "code":
+            continue
+        s_ = src(c)
+        m = re.search(r"^(my_guess\w*)\s*=\s*([^\n#]+)", s_, re.M)
+        if not m or m.group(2).strip() in ("None", "___"):
+            continue
+        # Only a defect in the STUDENT copy; the solution is meant to carry a guess.
+        if solution_cells and i < len(solution_cells) and s_ != src(solution_cells[i]):
+            continue
+        errs.append(f"cell {i}: the student copy ships `{m.group(1)} = {m.group(2).strip()}` "
+                    f"already filled in — a Predict cell that answers itself is not a "
+                    f"prediction. Ship `{m.group(1)} = None` and assert it was changed.")
+
+
+def check_long_functions_are_commented(cells):
+    """A function long enough to need reading must say what its steps are.
+
+    Measured across the built course the day this rule was written: TWENTY-ONE of twenty-one
+    functions of ten or more lines carried a docstring and NOT ONE internal comment -- including
+    `check_planet` (week 2, 15 lines), `train_picker` (week 13, 21) and `network_says_up`
+    (T8, 25), which are exactly the functions a beginner most needs to follow. A docstring says
+    what a function is FOR; it does not say what the middle of it is doing, and a fifteen-line
+    body with no signposts is a wall whether or not it is well written.
+
+    This is deliberately not a length limit. Some of these functions are the right length --
+    a training loop is a training loop. What is missing is the sentence every few lines that
+    says which step this is and why it is there.
+
+    A WARN: ten lines is a proxy, and a genuinely obvious ten-liner exists. It puts the function
+    in front of a human, which is all it is for.
+    """
+    for i, c in enumerate(cells):
+        if c["cell_type"] != "code":
+            continue
+        lines = src(c).split("\n")
+        try:
+            tree = ast.parse(src(c))
+        except SyntaxError:
+            continue
+        for n in ast.walk(tree):
+            if not isinstance(n, ast.FunctionDef):
+                continue
+            body = lines[n.lineno - 1:n.end_lineno]
+            code_lines = [l for l in body if l.strip() and not l.strip().startswith("#")]
+            if len(code_lines) >= 10 and not any(l.strip().startswith("#") for l in body):
+                warns.append(f"cell {i}: `{n.name}` is {len(code_lines)} lines with no comment "
+                             f"inside it — a docstring says what it is FOR, not what the middle "
+                             f"of it is doing. Name its steps.")
 
 
 def check_code_quality(cells, solution_cells=()):
@@ -724,6 +793,8 @@ def main():
     # checked for labels or coastlines, because only the student copy was passed in.
     check_figures(cells); check_figures(sol_cells)
     check_code_quality(cells, sol_cells); check_summary_is_generated(cells, n)
+    check_long_functions_are_commented(sol_cells or cells)
+    check_predict_is_not_prefilled(cells, sol_cells)
     check_checkpoints_rebuild(cells, sol_cells)
     scope = "" if solution else " · student only (no solution in this checkout)"
     print(f"week {n} · {len(cells)} cells · {len(qs)} questions · {figs} figures{scope}")

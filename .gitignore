@@ -22,3 +22,24 @@ build/
 # Raw downloads a build keeps only to derive the real cached asset beside them.
 # The underscore marks them intermediate; the artifact students read has no prefix.
 data/_*
+
+# The build environment. torch is not in the shared base env (per-project by policy), and the
+# notebooks execute under whatever kernel the running interpreter provides — so builds run as
+# `.venv/bin/python tools/build_weekNN.py`, never as bare `python`. Rebuild it with:
+#
+#     uv venv --python 3.12 .venv
+#     VIRTUAL_ENV=$PWD/.venv uv pip install -r requirements.txt nbclient nbformat pyyaml
+#
+# requirements.txt alone is NOT enough: it is the STUDENT environment, generated from
+# course.yml's platform.libraries, and must not grow build-only packages. The three extras are
+# what the build scripts themselves import.
+.venv/
+#
+# NOTE for whoever rebuilds .venv: ipykernel writes `"argv": ["python", ...]` into
+# .venv/share/jupyter/kernels/python3/kernel.json, so anything that starts a kernel resolves the
+# interpreter from PATH — which on this machine is ~/.venvs/base, the env WITHOUT torch. Builds
+# no longer care: `weekkit.pinned_kernel()` writes a temporary kernelspec whose argv[0] is
+# `sys.executable` and points JUPYTER_PATH at it, so all twenty build scripts run the notebook
+# under the interpreter that launched them. The copy in this .venv has been patched too, which
+# only matters if you start Jupyter by hand; it is not what the builds rely on and it will come
+# back wrong if you reinstall ipykernel.

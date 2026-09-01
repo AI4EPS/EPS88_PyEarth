@@ -50,6 +50,11 @@ SKIPPED = {
 }
 
 
+TRACK_SPINE_SKIP = ("How this notebook is different", "What you'll", "Setup",
+                    "The question, answered", "What track", "What your project",
+                    "The open question")
+
+
 def load(track_id):
     d = ROOT / "docs/notebooks"
     found = sorted(p for p in d.glob(f"{track_id}_*.ipynb") if "_solution" not in p.name)
@@ -95,8 +100,15 @@ def check_scaffolding_stops(cells, qs):
     anywhere after the first question is that promise broken, and it is the one rule a track needs
     that a week does not.
     """
+    # A "Predict before you run" guard is NOT a safety net on an answer. It checks that the
+    # student wrote a number down, never whether the number was right, so it breaks no promise
+    # this rule protects. Without the exemption a track whose Predict cell sits after the first
+    # question cannot use the same guard as one whose Predict cell sits before it — T2 had to
+    # write `raise ValueError` where T3 writes `assert`, which is two shapes for one idea in
+    # the tooling that enforces one shape on notebooks.
     asserts = [i for i, c in enumerate(cells)
-               if c["cell_type"] == "code" and re.search(r"(?m)^\s*assert\b", cn.src(c))]
+               if c["cell_type"] == "code" and re.search(r"(?m)^\s*assert\b", cn.src(c))
+               and not re.search(r"assert my_guess\w* is not None", cn.src(c))]
     if not asserts:
         cn.errs.append("no self-check at all — the loading step gets exactly one, so a student "
                        "can trust the pipeline before the help stops")
@@ -188,6 +200,141 @@ def check_bound_wording(cells):
                            f"wording — TEMPLATE 5 makes that sentence binding")
 
 
+CLOSING_HEADINGS = ("## The question, answered", "## The open question")
+LEAK_NUM = re.compile(r"[-+]?\d+\.\d+|\b\d{3,}\b")
+
+
+def output_numbers(text):
+    """Every number a cell PRINTED, as floats. Thousands separators stripped."""
+    return {float(t) for t in LEAK_NUM.findall(text.replace(",", ""))}
+
+
+def leaked(markdown, printed):
+    """Which numbers in `markdown` the student was going to have to compute.
+
+    Matching raw tokens missed a whole reveal cell in T3: prose writes `2,977` (which tokenises
+    as `977`) where the output writes `2977`, and rounds `120.19` to `120.2`. The fixer found it
+    by hand. Compare in the direction that has no false positives: take each PROSE figure at the
+    precision the prose itself chose, and ask whether any printed number rounds to exactly that.
+    Generating every rounding of every printed number instead -- the first attempt -- invents
+    tokens like `0.0` and `0.01` out of `0.012` and flags ordinary prose.
+    """
+    # Numbers inside `backticks` or a fenced block are CODE, not a claim about a result: the
+    # `np.percentile(values, [2.5, 97.5])` in T4's reach-back table is an example of the call,
+    # not the answer to anything. Strip them before matching, or every summary table that shows
+    # a function signature reads as a leak.
+    prose = re.sub(r"```.*?```", " ", markdown, flags=re.S)
+    prose = re.sub(r"`[^`]*`", " ", prose)
+    hits = []
+    for tok in LEAK_NUM.findall(prose.replace(",", "")):
+        places = len(tok.split(".")[1]) if "." in tok else 0
+        value = float(tok)
+        if any(round(p, places) == value for p in printed):
+            hits.append(tok)
+    return sorted(set(hits))
+
+
+
+def check_closing_does_not_answer(cells, sol_cells):
+    """The closing sections must not print numbers the student was asked to find.
+
+    A week's closing summarises what the class did together, so quoting its numbers is the
+    point. A track's closing sits under prompts the student answered ALONE, with no self-check
+    anywhere below the load — so it is the only place they can check themselves, and it is
+    therefore the first place they will look. Every number of theirs it prints is a prompt that
+    answers itself.
+
+    "A number the student was asked to find" is measured, not guessed: it is a number in the
+    SOLUTION's output for a cell the build stubbed out. Numbers the notebook GIVES — in the
+    setup output, in a prompt, in prose — do not qualify, because they are not in a stub's
+    output. All seven tracks tripped this when it was first run, and only two of the three
+    reviewers had spotted it, which is why it is a check rather than a note in TEMPLATE.
+
+    A WARN, not an error: a closing may legitimately name a number the notebook reproduced for
+    the student earlier, and this rule cannot see the difference. It puts the cell in front of
+    a human, which is all it is for.
+    """
+    wanted = set()
+    for cs, cl in zip(cells, sol_cells):
+        if cs["cell_type"] == "code" and "your answer here" in cn.src(cs).lower() and cn.src(cs) != cn.src(cl):
+            for o in cl.get("outputs", []):
+                wanted |= output_numbers("".join(o.get("text", [])))
+                for k, v in (o.get("data") or {}).items():
+                    if k == "text/plain":
+                        wanted |= output_numbers("".join(v))
+    starts = [i for i, c in enumerate(cells)
+              if c["cell_type"] == "markdown" and cn.src(c).startswith(CLOSING_HEADINGS)]
+    if not starts or not wanted:
+        return
+    # "What track TN leans on" is GENERATED from modules.yml — a reach-back table of calls and
+    # plain-words definitions. It cannot leak an answer by construction, and it reads as one:
+    # its row for np.percentile says "the bottom and top 2.5%", which is the definition of a
+    # percentile and matched a printed 2.5. Skip the section rather than teach a reader to
+    # ignore the rule.
+    skip = False
+    for i in range(min(starts), len(cells)):
+        if cells[i]["cell_type"] != "markdown":
+            continue
+        head = cn.src(cells[i]).splitlines()[0]
+        if head.startswith("## "):
+            skip = head.startswith("## What track")
+        if skip:
+            continue
+        hit = leaked(cn.src(cells[i]), wanted)
+        if hit:
+            cn.warns.append(f"cell {i}: the closing prints {', '.join(hit)}, which the student "
+                            f"was asked to compute — name the quantity, not the value, or move "
+                            f"the closing above the prompts it summarises")
+
+
+def check_reveal_does_not_answer(cells, sol_cells):
+    """A markdown cell right after an empty answer cell must not print that answer.
+
+    `check_closing_does_not_answer` looks only from the first closing heading onward. Track T3
+    leaked all FIVE of its questions long before that: each prompt is followed by an empty cell,
+    and then by a markdown cell that states the numbers the empty cell was supposed to produce.
+    A student can fill in nothing and still write every section of their report -- while cell 1
+    of that same notebook promises "nothing tells you whether you are right".
+
+    This is the shape a WEEK is built on, and correctly: class does the cell together and the
+    instructor then says the number out loud. Carried into a track it voids the design, which is
+    why the rule lives here and not in check_notebook. T4 and week 10, built to the same spec,
+    leak nothing -- so the rule has a control and is not merely describing T3.
+
+    Same measurement as the closing rule: a number the student must find is one in the SOLUTION's
+    output for a cell the build stubbed out. A WARN, because a reveal may legitimately quote a
+    number the notebook itself printed earlier.
+    """
+    for i, cs in enumerate(cells):
+        if cs["cell_type"] != "code" or "your answer here" not in cn.src(cs).lower():
+            continue
+        if i >= len(sol_cells) or cn.src(cs) == cn.src(sol_cells[i]):
+            continue
+        wanted = set()
+        for o in sol_cells[i].get("outputs", []):
+            wanted |= output_numbers("".join(o.get("text", [])))
+            for k, v in (o.get("data") or {}).items():
+                if k == "text/plain":
+                    wanted |= output_numbers("".join(v))
+        # The next markdown cell, skipping further code. Two things are NOT reveals and were
+        # both reported as such on the first run: the next ✏️ PROMPT (prompt, stub, prompt is
+        # the ordinary rhythm, and a prompt may legitimately quote a threshold that happens to
+        # round to a printed value), and a closing section, which check_closing_does_not_answer
+        # already owns — reporting it twice makes two rules look like two problems.
+        for j in range(i + 1, min(i + 4, len(cells))):
+            if cells[j]["cell_type"] != "markdown":
+                continue
+            head = cn.src(cells[j])
+            if "✏️" in head or head.startswith(CLOSING_HEADINGS):
+                break
+            hit = leaked(cn.src(cells[j]), wanted)
+            if hit:
+                cn.warns.append(f"cell {j}: this markdown states {', '.join(hit)}, which the "
+                                f"empty cell {i} above it was asked to produce — a student who "
+                                f"writes nothing can still read the answer")
+            break
+
+
 def main():
     track_id = sys.argv[1]
     track = next(t for t in course["project"]["tracks"] if t["id"] == track_id)
@@ -206,11 +353,18 @@ def main():
     cn.check_figures(cells)
     cn.check_figures(sol_cells)
     cn.check_code_quality(cells, sol_cells)
+    cn.check_long_functions_are_commented(sol_cells or cells)
+    # The spine rule carries over UNCHANGED in substance — 3-4 questions, each one a section
+    # heading — but a track's frame is not a week's: it opens with "How this notebook is
+    # different" and closes with three sections a week does not have. Only the skip list moves.
+    cn.check_spine(cells, skip=TRACK_SPINE_SKIP)
     check_scaffolding_stops(cells, qs)
     check_no_worked_answer(cells, sol_cells)
     check_required_sections(cells)
     check_open_question(cells, track)
     check_bound_wording(cells)
+    check_closing_does_not_answer(cells, sol_cells)
+    check_reveal_does_not_answer(cells, sol_cells)
 
     scope = "" if solution else " · student only (no solution in this checkout)"
     print(f"track {track_id} · {len(cells)} cells · {len(qs)} questions · {figs} figures{scope}")
