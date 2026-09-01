@@ -135,22 +135,45 @@ def predict_count(values, levels, target):
     return 10 ** model.predict([[target]])[0]
 
 
-quakes = fetch(EQ_URL, EQ_CACHE)
-big_history = fetch(HIST_URL, HIST_CACHE)
+quakes_returned = fetch(EQ_URL, EQ_CACHE)
+big_history_returned = fetch(HIST_URL, HIST_CACHE)
 eruptions = fetch(GVP, GVP_CACHE, volatile=True)
 GVP_READ_DATE = datetime.date.fromtimestamp(
     (ROOT / "data" / GVP_CACHE).stat().st_mtime).isoformat()
 
-# `mags` is EVERY magnitude the slice returned, the five magnitude 7s included. A count labelled
+# THE SLICE IS NOT ALL EARTHQUAKES. The USGS query carries no `eventtype`, so what comes back is
+# every seismic event the network located inside the box: 6,263 earthquakes, 16 underground
+# nuclear tests at the Nevada Test Site, 6 quarry blasts and 2 sonic booms. Eight of the tests are
+# magnitude 5.0 or larger, which is the thin top end of every fitting range this week uses, so they
+# flattened the line: the three M7 predictions were 1.49/1.87/2.21 with them in and are
+# 1.37/1.59/2.15 with them out, and the headline shortfall 2.3x-3.4x becomes 2.3x-3.6x. They are
+# DROPPED here, and dropped VISIBLY in the notebook rather than silently in the URL: week 10 is
+# "Earthquake or explosion — how does the world verify a nuclear test ban?", and these are the
+# very events it is about, so a student who meets them here as rows to remove meets them again
+# there as the subject. Keeping the query unfiltered also keeps the shipped cache valid.
+quakes = quakes_returned[quakes_returned["type"] == "earthquake"]
+big_history = big_history_returned[big_history_returned["type"] == "earthquake"]
+
+# `mags` is EVERY magnitude left after that drop, the five magnitude 7s included. A count labelled
 # "at or above this magnitude" has to be that count: dropping the large events made the level-6.0
 # point read 16 where the catalogue holds 21, steepened the line, and manufactured part of the
 # very shortfall this week argues about. What is held back is the RANGE the line is fitted over
-# (course.yml, pinned: training_range), never the events. `big` is the same five events, picked
-# out so the reveal has something to print.
+# (course.yml, pinned: training_range), never the earthquakes. `big` is the same five events,
+# picked out so the reveal has something to print.
 big = quakes[quakes["mag"] >= 7.0]
 mags = quakes["mag"].values
 
+TYPES = quakes_returned["type"].value_counts()
+nukes = quakes_returned[quakes_returned["type"] == "nuclear explosion"]
+
 M = {}
+M["n_rows"] = len(quakes_returned)
+M["n_dropped"] = M["n_rows"] - len(quakes)
+M["n_nuclear"] = int(TYPES.get("nuclear explosion", 0))
+M["nuke_mag_lo"] = float(nukes["mag"].min())
+M["nuke_mag_hi"] = float(nukes["mag"].max())
+M["nuke_first_year"] = min(t[:4] for t in nukes["time"])
+M["nuke_last_year"] = max(t[:4] for t in nukes["time"])
 M["n_quakes"] = len(quakes)
 M["n_big"] = len(big)
 M["mean_mag"] = round(float(mags.mean()), 3)
@@ -161,6 +184,16 @@ M["max_mag"] = float(mags.max())
 M["energy_ratio"] = float(round(ENERGY_PER_STEP ** (M["max_mag"] - mags.mean()), -4))
 M["places"] = list(big["place"])
 M["big_years"] = [t[:4] for t in big["time"]]
+
+# The two of the five that sit on plate boundaries rather than in the fault interior — the fourth
+# explanation the class prose offers for the M7 shortfall. Named from the catalogue, not from
+# memory, and the build fails if either leaves the slice.
+for key, needle in (("petrolia_year", "Petrolia"), ("el_mayor_year", "El Mayor")):
+    hit = big[big["place"].str.contains(needle)]
+    assert len(hit) == 1, (f"the class prose names the {needle} earthquake as one of the "
+                           f"plate-boundary events among the {len(big)} magnitude 7s; the slice "
+                           f"now holds {len(hit)} of them, so that sentence must be rewritten")
+    M[key] = hit["time"].iloc[0][:4]
 
 M["n4"] = int(count_at_least(mags, 4.0))
 M["n5"] = int(count_at_least(mags, 5.0))
@@ -210,6 +243,10 @@ M["n_naive_3_8"] = int(count_at_least(mags, naive[3]))
 M["lost_to_float"] = M["n_at_3_8"] - M["n_naive_3_8"]
 
 EQ_RANGES = [(3.5, 5.0), (4.0, 5.5), (4.5, 6.0)]
+# How many of the nuclear tests sit at the TOP of the range the class fits. That is where they do
+# their damage: a cumulative count at the top level rests on a hundred-odd events, so eight extra
+# ones there lift it by a twentieth, flatten the line, and raise what it predicts at magnitude 7.
+M["nuke_at_top"] = int((nukes["mag"] >= EQ_RANGES[0][1]).sum())
 M["eq_predictions"] = [round(float(predict_count(mags, levels_between(lo, hi, 0.1), 7.0)), 2)
                        for lo, hi in EQ_RANGES]
 M["pred_main"] = M["eq_predictions"][0]
@@ -273,6 +310,14 @@ for year in FORK_YEARS:
                        "obs": int(count_at_least(sub, 7))}
 M["fork_factor"] = round(max(M["fork"][y]["pred"] for y in FORK_YEARS)
                          / min(M["fork"][y]["pred"] for y in FORK_YEARS), 1)
+# The homework's self-check asserts this DIRECTION rather than mere inequality, so the build has
+# to have measured it. `!=` passed on any two different numbers and could not catch a student
+# whose loop cut the wrong side; `>` is a claim about the record thinning as it goes back, and it
+# fails if GVP ever stops behaving that way — at which point the check, not the student, is wrong.
+assert M["fork"][FORK_YEARS[0]]["pred"] > M["fork"][FORK_YEARS[1]]["pred"], (
+    f"Your turn 8 asserts that the {FORK_YEARS[0]} window predicts MORE VEI 7 eruptions than the "
+    f"{FORK_YEARS[1]} one, but this GVP table gives "
+    f"{M['fork'][FORK_YEARS[0]]['pred']} and {M['fork'][FORK_YEARS[1]]['pred']}")
 
 
 # ---------------------------------------------------------------------------
@@ -351,7 +396,7 @@ not in your data at all.
 3. Does the line hold where it was never fitted?
 4. So how often does a Tambora happen — and how much is that number worth?
 
-**Eight places where you write something: five in class, three at home.** Each one is headed
+**Nine places where you write something: six in class, three at home.** Each one is headed
 *Your turn*, with an empty cell under it.
 """)
 
@@ -376,13 +421,7 @@ big_history = load(USGS + "&starttime={HIST_START}&endtime={HIST_END}&minmagnitu
                    "{HIST_CACHE}")
 eruptions = load(GVP, "{GVP_CACHE}")
 
-# mags is every magnitude in the box, the largest included: "how many at magnitude 5 or above"
-# has to count the magnitude 7s too, or it is not that count. What we hold back today is the
-# RANGE of magnitudes the line gets fitted over, never the earthquakes themselves.
-mags = quakes["mag"].values
-big = quakes[quakes["mag"] >= 7.0]      # the same events again, gathered so we can look at them
-
-print("California catalogue:", quakes.shape, "  eruption catalogue:", eruptions.shape)
+print("California query returned:", quakes.shape, "  eruption catalogue:", eruptions.shape)
 print("magnitude 7 and above in the same box since 1810:", len(big_history))
 '''.strip("\n"))
 code(setup)
@@ -430,12 +469,42 @@ catalogue on Earth is a seismic network, so we go there first.
 md(f"""
 ## How many small earthquakes for each large one?
 
-`quakes` is every earthquake of magnitude {EQ_FLOOR} and above that the USGS recorded between
+`quakes` is every **event** of magnitude {EQ_FLOOR} and above that the USGS recorded between
 {EQ_START} and {EQ_END} inside a box around California: latitude 32 to 42 north, longitude 125 to
-114 west. That box is a rectangle, not a state — it reaches into Nevada and into Baja California —
-and it holds {M['n_quakes']:,} earthquakes, whose magnitudes are all in `mags`.
+114 west. That box is a rectangle, not a state — it reaches into Nevada and into Baja California.
 
-Start with the plainest possible picture of them.
+Event, not earthquake, and the difference is not pedantry. A seismometer records ground shaking and
+has no opinion about what caused it, so a seismic catalogue is a list of things that shook the
+ground. This one holds {M['n_dropped']} rows out of {M['n_rows']:,} that are not earthquakes at all,
+and {M['n_nuclear']} of those are underground **nuclear tests** at the Nevada Test Site, magnitude
+{M['nuke_mag_lo']} to {M['nuke_mag_hi']}, fired between {M['nuke_first_year']} and
+{M['nuke_last_year']}; the rest are quarry blasts and sonic booms. They are in the file because the
+rectangle reaches into Nevada, and they are not small — {M['nuke_at_top']} of them are magnitude
+{EQ_RANGES[0][1]} or above, which is the top of the range this section is about to fit a line
+through. That is exactly where they would do damage: the count at that top level rests on
+{M['n_at_5_0']} earthquakes, so {M['nuke_at_top']} more events there is enough to flatten the line
+and change what it predicts at magnitude 7.
+
+Telling an explosion from an earthquake is a whole week's work, and it is week 10's — *"Earthquake
+or explosion — how does the world verify a nuclear test ban?"* — so you will meet these same events
+again as the subject rather than as a nuisance. Today they are simply not the thing being counted.
+Look at what is here, drop everything that is not an earthquake, and then take the plainest possible
+picture of what is left.
+""")
+
+code(f"""
+print(quakes["type"].value_counts())
+
+n_rows = len(quakes)
+quakes = quakes[quakes["type"] == "earthquake"]                   # the line that does it
+big_history = big_history[big_history["type"] == "earthquake"]    # same rule, same catalogue
+print("\\nkept", len(quakes), "earthquakes out of", n_rows, "rows")
+
+# mags is every magnitude that survived, the largest included: "how many at magnitude 5 or above"
+# has to count the magnitude 7s too, or it is not that count. What we hold back today is the
+# RANGE of magnitudes the line gets fitted over, never the earthquakes themselves.
+mags = quakes["mag"].values
+big = quakes[quakes["mag"] >= 7.0]      # the same events again, gathered so we can look at them
 """)
 
 code(f"""
@@ -660,10 +729,13 @@ Then print `model.coef_[0]` as `slope`, print `model.intercept_`, print the R-sq
 `model.score(...)` on the same two arguments, and finally print `10 ** -slope` — which is how many
 times fewer earthquakes there are for each whole step up in magnitude.
 
+Then say in a comment at the end of your cell what your slope means for a town that has just felt a
+magnitude 4: how many magnitude 5s should it expect for it?
+
 **Use these names**, because the self-check looks for them: `model`, `slope`.
 """)
 
-answer("""
+answer(f"""
 model = LinearRegression()
 model.fit(mag_levels.reshape(-1, 1), np.log10(counts))
 slope = model.coef_[0]
@@ -672,6 +744,12 @@ print("slope:    ", round(slope, 3))
 print("intercept:", round(model.intercept_, 3))
 print("R squared:", round(model.score(mag_levels.reshape(-1, 1), np.log10(counts)), 5))
 print("times fewer per whole magnitude:", round(10 ** -slope, 2))
+
+{note(f"The slope says magnitude 4s outnumber magnitude 5s by about {M['step_factor']} to one, so "
+       f"a town that has just felt a magnitude 4 should expect about one magnitude 5 for every "
+       f"{round(M['step_factor'])} magnitude 4s it feels — a rate, not a countdown: the magnitude "
+       f"4 does not make the magnitude 5 any more likely, it just tells you how busy the ground "
+       f"under that town is.")}
 """, """
 assert -1.5 < slope < -0.5, ("a slope near -1 is expected here; if yours is far from that, "
                              "check that you fitted np.log10(counts) and not counts")
@@ -741,9 +819,7 @@ plt.ylabel("number of earthquakes at or above this magnitude")
 plt.title("California, {M['n_quakes']:,} earthquakes and the line fitted to {len(MAG_LEVELS)} levels")
 plt.legend()
 plt.show()
-""")
 
-code("""
 predicted_7 = 10 ** model.predict([[7.0]])[0]
 print("the line expects", round(predicted_7, 2), "earthquakes at magnitude 7 or above")
 """)
@@ -755,14 +831,18 @@ The line, which was measured between magnitude 3.5 and 5.0 and never asked about
 says to expect about {M['pred_main']} earthquakes of magnitude 7 or above in this box in these
 {WINDOW} years.
 
-How many actually happened? Write your guess into `my_guess` below before you run the cell. `big`
-holds them, gathered in the setup cell and not looked at since.
+How many actually happened? Put a number into `my_guess` in the next cell before you run the one
+after it — that one will refuse to run until you have. `big` holds them, gathered when we dropped
+the explosions and not looked at since.
 """)
 
-code("""
-my_guess = 2
+CELLS.append(("code", "my_guess = 2",
+              "my_guess = None      # ← replace None with your guess, then run this cell"))
 
-print("you guessed:", my_guess)
+code("""
+assert my_guess is not None, "put a number into my_guess in the cell above, then run this one"
+print("✓ committed — you guessed", my_guess)
+
 print("the catalogue holds:", len(big))
 print(big[["time", "mag", "place"]].to_string(index=False))
 """)
@@ -827,6 +907,37 @@ print("✓ three defensible choices — the line expects",
       "at magnitude 7, against", len(big), "that happened")
 """)
 
+ask(f"""
+### ✏️ Your turn 5
+
+You now have three numbers, from three choices any seismologist would accept, and one count of what
+actually happened. Nobody is going to tell you which of the three to quote.
+
+Two or three sentences in the cell below, in your own words and using your own output:
+
+- **which of the three fitting ranges would you quote, and why that one?**
+- **does your choice close the gap between the line and the {M['n_big']} magnitude 7s?** Give the
+  factor, from your own numbers.
+- **what do you think is most likely to be wrong** — the line, the {WINDOW}-year window, or the box
+  — and what would you need in order to find out?
+
+There is no settled answer here, and the cell after yours will not hand you one. It lists what could
+be true and why this notebook cannot choose between them, which is a different thing. Commit first.
+""")
+
+answer_prose(f"""
+I would quote the {EQ_RANGES[0][0]} to {EQ_RANGES[0][1]} range, because it is the one with the most
+earthquakes under it — {M['n_at_3_5']:,} at the bottom level against {M['n_at_4_5']} at 4.5 — so it
+is the fit least at the mercy of a handful of counts, even though it is also the one extrapolating
+furthest. It does not close the gap. It expects {M['pred_main']} magnitude 7s and {M['n_big']}
+happened, a factor of {M['under_by']}, and the most generous of the three ranges still expects only
+{max(M['eq_predictions'])}, a factor of {round(M['n_big'] / max(M['eq_predictions']), 1)} — so the
+shortfall survives every choice I am allowed to make, which means it is not about the choice. My
+guess is that the {WINDOW}-year window is doing some of it: {M['n_big']} is a small count and small
+counts wobble, so I would want the same box over a much longer stretch of years before I blamed the
+line itself.
+""")
+
 md(f"""
 The three defensible ranges land between {min(M['eq_predictions'])} and
 {max(M['eq_predictions'])}, and {M['n_big']} happened. The choice does matter: the highest of the
@@ -836,14 +947,19 @@ this one. What it does not do is close the gap. Every range falls short of {M['n
 of between {round(M['n_big'] / max(M['eq_predictions']), 1)} and
 {round(M['n_big'] / min(M['eq_predictions']), 1)}, so whatever is missing is missing from all three.
 
-Three things could be true, and this notebook cannot tell them apart. {WINDOW} years may simply be
+Four things could be true, and this notebook cannot tell them apart. {WINDOW} years may simply be
 too short a window for an event this rare, so we are looking at an unlucky draw. Or California may
 genuinely make more large earthquakes than its small ones imply: the small events come from cracked
 crust everywhere, while the magnitude 7s come from a handful of very long faults rupturing along
 most of their length, and whether those long faults deliver more big earthquakes than the
-small-event line allows is a live argument in seismology rather than a settled question. Or the
-counting could be off. Hold the question open; the first part of the homework goes after the first
-of those three.
+small-event line allows is a live argument in seismology rather than a settled question. Or the box
+may be holding more than one kind of crust: the {M['petrolia_year']} Petrolia earthquake sits at the
+Mendocino triple junction and the {M['el_mayor_year']} Sierra El Mayor earthquake sits on the Gulf
+of California spreading boundary, two settings whose earthquakes behave differently
+from the fault interior that supplies most of the small events — and a Gutenberg–Richter line fitted
+across more than one tectonic regime is the textbook reason a cumulative curve bends up at the top.
+Or the counting could be off. Hold the question open; the first part of the homework goes after the
+first of those four.
 """)
 
 md(f"""
@@ -896,7 +1012,7 @@ the file — and nobody files a report on a VEI 1 eruption in an uninhabited par
 """)
 
 ask(f"""
-### ✏️ Your turn 5
+### ✏️ Your turn 6
 
 Fit the line to VEI 2, 3 and 4 only, and ask it about VEI 7.
 
@@ -922,7 +1038,7 @@ print("✓ the volcano line — it expects", round(vei_predicted, 2),
       "at VEI 7 and the catalogue holds", count_at_least(vei, 7))
 """)
 
-code("""
+code(f"""
 all_levels = levels_between(0, 7, 1)
 
 vei_counted = []
@@ -932,9 +1048,7 @@ for level in all_levels:
     vei_on_the_line.append(predict_count(vei, vei_levels, level))
     print("VEI", level, " counted", vei_counted[-1],
           "  the line says", round(vei_on_the_line[-1], 2))
-""")
 
-code(f"""
 plt.scatter(all_levels, vei_counted, label="counted")
 plt.plot(all_levels, vei_on_the_line, color="firebrick", label="the line fitted to VEI 2, 3, 4")
 plt.yscale("log")
@@ -1037,7 +1151,7 @@ md(weekkit.week_cheatsheet(7))
 md(f"""
 ## Homework
 
-Three parts, on the same two catalogues. Part 1 goes after the first of the three explanations class
+Three parts, on the same two catalogues. Part 1 goes after the first of the four explanations class
 left open for California; part 2 makes you choose a window for the volcanoes and live with the
 consequence; part 3 puts the two together. If you have restarted since class, run the setup cell at
 the top first, then the checkpoint below.
@@ -1056,7 +1170,7 @@ def levels_between(lowest, highest, step):
 vei_levels = levels_between(2, 4, 1)"""))
 
 ask(f"""
-### ✏️ Your turn 6
+### ✏️ Your turn 7
 
 Class found {M['n_big']} earthquakes of magnitude 7 or above in {WINDOW} years, against a line that
 expected {M['pred_main']}. The first explanation on the list was that {WINDOW} years is too short a
@@ -1099,7 +1213,7 @@ print("✓ six windows — counts", np.array(window_counts), "with a mean of",
 """)
 
 ask(f"""
-### ✏️ Your turn 7
+### ✏️ Your turn 8
 
 Class fitted the volcano line to eruptions since {VOLCANO_FROM}. That start year was a choice, and
 two others are just as defensible: {FORK_YEARS[0]}, which buys more eruptions at the cost of a
@@ -1135,14 +1249,16 @@ for start_year in {FORK_YEARS}:
        f"of {M['fork_factor']}.")}
 """, """
 assert len(fork_predictions) == 2, "two start years, two predictions"
-assert fork_predictions[0] != fork_predictions[1], \\
-    "identical predictions mean the same eruptions went in twice — check the cut inside the loop"
+assert fork_predictions[0] > fork_predictions[1], \\
+    ("the earlier start year reaches back into a thinner record, so its line is shallower and it "
+     "must expect MORE at VEI 7, not the same and not fewer — equal predictions mean the same "
+     "eruptions went in twice, and a reversed pair means the cut kept the wrong side")
 print("✓ the window is a choice — the two start years predict",
       round(fork_predictions[0], 2), "and", round(fork_predictions[1], 2), "VEI 7 eruptions")
 """)
 
 ask(f"""
-### ✏️ Your turn 8
+### ✏️ Your turn 9
 
 Two or three sentences, using your own numbers from parts 1 and 2, on this question: **does anything
 you computed rescue the California line, and does anything you computed threaten the volcano line?**
@@ -1196,9 +1312,7 @@ def main():
     sol_path.write_text(json.dumps(sol, indent=1) + "\n")
 
     print(f"executing {sol_path.name} ...")
-    r = subprocess.run([sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook",
-                        "--execute", "--inplace", "--ExecutePreprocessor.timeout=900",
-                        str(sol_path)], capture_output=True, text=True, cwd=ROOT)
+    r = weekkit.execute(sol_path, timeout=900)
     if r.returncode:
         print(r.stderr[-4000:])
         sys.exit("the solution did not execute")
@@ -1222,6 +1336,17 @@ def main():
     print(f"earthquake prose is pinned by date range ({EQ_START} to {EQ_END}, M{EQ_FLOOR}) and "
           f"reproduces; the energy ratio is quoted to two figures "
           f"({M['energy_ratio']:,.0f}) because the 32 is two figures.")
+    print(f"event types: the query returns {M['n_rows']:,} rows and {M['n_quakes']:,} of them are "
+          f"earthquakes. Dropped: {dict(TYPES.drop('earthquake'))}. The {M['n_nuclear']} nuclear "
+          f"tests are at the Nevada Test Site, M{M['nuke_mag_lo']}-{M['nuke_mag_hi']}, "
+          f"{M['nuke_first_year']}-{M['nuke_last_year']}, {M['nuke_at_top']} of them at or above "
+          f"M{EQ_RANGES[0][1]}, the top of the class fitting range where the count is thinnest and "
+          f"the slope is decided. The drop is made in the NOTEBOOK, visibly, not in the "
+          f"URL: the query stays unfiltered so the shipped cache remains valid, and week 10 "
+          f"('Earthquake or explosion') gets these same events as its subject. Fits after the "
+          f"drop: {dict(zip([f'M{lo}-{hi}' for lo, hi in EQ_RANGES], M['eq_predictions']))}; "
+          f"{M['n_big']} M7+ occurred, a shortfall of "
+          f"{round(M['n_big'] / max(M['eq_predictions']), 1)}x to {M['under_by']}x.")
 
 
 if __name__ == "__main__":

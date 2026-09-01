@@ -6,7 +6,8 @@ Emits both notebooks from one source so they cannot drift:
     docs/notebooks/08_wrong_or_unlucky_solution.ipynb   executed, every output saved
     docs/notebooks/08_wrong_or_unlucky.ipynb            the same file with the answers deleted
 
-It also writes the three cached fallbacks the week reads, into data/.
+It also writes the cached fallbacks the week reads, into data/ — except the small-earthquake
+catalogue, which is week 7's file read again rather than a second copy of the same query.
 
 Every number that appears in prose or in a model answer is computed HERE, by running the same
 code the notebook runs, with the same seed. Nothing is typed from memory or copied from the plan.
@@ -60,9 +61,21 @@ SEA_CACHE = "week08_sf_sea_level_1900_2025.csv"
 
 FDSN = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&orderby=time-asc"
 CA_BOX = "&minlatitude=32&maxlatitude=42&minlongitude=-125&maxlongitude=-114"
+# NO `maxmagnitude`. This query used to carry `&maxmagnitude=6.9`, which the dataset audit names
+# and forbids: "a cumulative count is a property of the CATALOGUE, not of a subsample ... at
+# magnitude 6 the truncated data reads 16 where California holds 21. Worse, dropping the M7s
+# steepens the line and lowers the predicted M7 count, manufacturing part of the very shortfall
+# the week exists to argue about" (notes/dataset-audit/usgs-fdsn.md §4.2). What is held back is
+# the FITTING RANGE — the line is measured over 4.0-5.5 and then asked about 7.0, which is what
+# makes magnitude 7 an extrapolation — never the earthquakes. Truncating cost 0.25 of an event:
+# the shipped forecast was 1.64 where the same fit on the whole catalogue gives 1.87.
+#
+# It is BYTE-FOR-BYTE week 7's query, so it reads week 7's cache rather than shipping a second
+# copy of a 1.2 MB file under a week08_ name. Same box, same dates, same floor, same catalogue
+# the class fitted last week — which is the point the week's opening paragraph makes anyway.
 EQ_URL = (FDSN + "&starttime=1990-01-01&endtime=2026-01-01"
-                 "&minmagnitude=3.5&maxmagnitude=6.9" + CA_BOX)
-EQ_CACHE = "week08_ca_1990_2026_M3.5-6.9.csv"
+                 "&minmagnitude=3.5" + CA_BOX)
+EQ_CACHE = "week07_california_1990-01-01_2026-01-01_M3.5.csv"
 BIG_URL = FDSN + "&starttime=1918-01-01&endtime=2026-01-01&minmagnitude=7.0" + CA_BOX
 BIG_CACHE = "week08_ca_1918_2026_M7.csv"
 # The same query with the threshold moved one notch down, which is the week's threshold-
@@ -81,7 +94,7 @@ REFRESH = "--refresh" in sys.argv
 STALE_DAYS = 30     # after this NOAA may hold months the cached copy does not
 
 
-def cache(url, name, volatile=False):
+def cache(url, name, volatile=False, owned_by=None):
     """Fetch a live source, store it byte-for-byte as the week's fallback, return the path.
 
     The cache used to be downloaded once and then never again, which is the quiet way a week
@@ -90,8 +103,15 @@ def cache(url, name, volatile=False):
     queries are pinned by date range and magnitude floor and reproduce; NOAA's monthly means are
     `volatile`, because a missing month can be filled in inside a window that is already closed,
     so an old cache of them warns.
+
+    `owned_by` marks a file another week downloads and this one only reads. `--refresh` leaves it
+    alone: the query is pinned by date range and magnitude floor and reproduces, and rewriting
+    another week's cache from here would replace its normalised CSV with raw USGS bytes behind
+    its back. Refresh it by rebuilding that week.
     """
     out = ROOT / "data" / name
+    if owned_by and out.exists():
+        return out
     if REFRESH or not out.exists():
         print(f"downloading {name}")
         out.write_bytes(urllib.request.urlopen(url, timeout=180).read())
@@ -112,11 +132,34 @@ sea.columns = sea.columns.str.strip()
 sea["year"] = sea["Year"] + (sea["Month"] - 0.5) / 12
 sea["sea_mm"] = sea["MSL"] * 1000
 
-quakes = pd.read_csv(cache(EQ_URL, EQ_CACHE))
+returned = pd.read_csv(cache(EQ_URL, EQ_CACHE, owned_by="week 7"))
 big = pd.read_csv(cache(BIG_URL, BIG_CACHE))
 big69 = pd.read_csv(cache(BIG69_URL, BIG69_CACHE))
 
+# THE SLICE IS NOT ALL EARTHQUAKES. The query carries no `eventtype`, so what comes back is every
+# seismic event the network located inside the box: 16 underground nuclear tests at the Nevada
+# Test Site, 6 quarry blasts and 2 sonic booms among the earthquakes. Eight of the tests are
+# magnitude 5.2 or larger, which is inside the 4.0-5.5 range this week fits, so they flatten the
+# line and raise what it predicts at magnitude 7. They are DROPPED, and dropped VISIBLY in the
+# notebook rather than silently by adding `&eventtype=earthquake` to the URL — week 7 made the
+# same drop the same way, and week 10 is "Earthquake or explosion — how does the world verify a
+# nuclear test ban?", so a student meets these rows twice as a nuisance before meeting them as
+# the subject. Keeping the query unfiltered also keeps week 7's shipped cache valid for both.
+TYPES = returned["type"].value_counts()
+nukes = returned[returned["type"] == "nuclear explosion"]
+quakes = returned[returned["type"] == "earthquake"]
+big = big[big["type"] == "earthquake"]
+big69 = big69[big69["type"] == "earthquake"]
+
 M = {}
+M["n_rows"] = len(returned)
+M["n_dropped"] = M["n_rows"] - len(quakes)
+M["n_nuclear"] = int(TYPES.get("nuclear explosion", 0))
+M["nuke_mag_lo"] = float(nukes["mag"].min())
+M["nuke_mag_hi"] = float(nukes["mag"].max())
+M["nuke_first_year"] = min(t[:4] for t in nukes["time"])
+M["nuke_last_year"] = max(t[:4] for t in nukes["time"])
+M["n_big_in_slice"] = int((quakes["mag"] >= 7.0).sum())
 M["n_months"] = len(sea)
 M["first_year"], M["last_year"] = int(sea["Year"].min()), int(sea["Year"].max())
 M["n_years_sea"] = M["last_year"] - M["first_year"] + 1
@@ -217,6 +260,14 @@ def predicted_m7(mags, edges=EDGES):
 
 
 M["rate"] = float(predicted_m7(quakes["mag"]))
+# How many of the non-earthquakes sit inside the range the line is fitted over. That is where
+# they do their damage: the count at the top of the range rests on a few dozen events.
+M["nuke_in_range"] = int(((nukes["mag"] >= EDGES[0]) & (nukes["mag"] <= EDGES[-1])).sum())
+# What each of the two faults cost, measured rather than asserted, for the closing report: the
+# shipped week fitted a catalogue truncated at 6.9 with the blasts still in it.
+M["rate_as_shipped"] = float(predicted_m7(
+    returned[returned["mag"] <= 6.9]["mag"]))
+M["rate_blasts_in"] = float(predicted_m7(returned["mag"]))
 
 
 def rate_bootstrap(mags, edges=EDGES, seed=SEED, n=B):
@@ -264,7 +315,17 @@ def short_name(place):
 
 closest = int(day_gaps.iloc[1:].idxmin())
 M["pair"] = [short_name(ordered["place"][closest - 1]), short_name(ordered["place"][closest])]
+# The caveat about independence used to add "and the three window counts scatter more than a
+# Poisson process allows, their variance 1.63 times their mean". Three counts cannot show that.
+# Under a Poisson process with this mean, three counts are at least this dispersed 21% of the
+# time — measured here so the claim is not made again. What carries the caveat instead is the
+# catalogue's own clock: two of these events are four minutes apart.
+np.random.seed(SEED)
+_trio = np.random.poisson(np.mean(M["window_counts"]), (200_000, M["n_windows"]))
 M["dispersion"] = float(np.var(M["window_counts"], ddof=1) / np.mean(M["window_counts"]))
+with np.errstate(invalid="ignore", divide="ignore"):
+    M["p_dispersion"] = float(
+        (_trio.var(1, ddof=1) / _trio.mean(1) >= M["dispersion"]).mean())
 
 # Week 5 counted events, turned the count into a rate, and turned the rate into a chance. This
 # week's exercise is that chance with an interval on it.
@@ -307,6 +368,35 @@ for lo, hi in HALVES:
         "lo": lo, "hi": hi, "n": len(part),
         "slope": float(LinearRegression().fit(part[["year"]], part["sea_mm"]).coef_[0]),
         "low": float(np.percentile(s, 2.5)), "high": float(np.percentile(s, 97.5))})
+
+# WHY the two halves come out alike, measured rather than guessed at. The model answer used to
+# say "each half averages slow decades in with fast ones", which is true of the first half and
+# false of the second: cut the halves on the same 25-year grid the class used and the second
+# half's pieces run fast, yet the half fits BELOW two of the three. A 63-year least-squares line
+# is not the average of its pieces — the record steps back down between them, so the pieces rise
+# further between them than the half does in total.
+SUB_EDGES = [[1900, 1925, 1950, 1963], [1963, 1975, 2000, 2026]]
+
+
+def piece(lo, hi):
+    part = sea[(sea["year"] >= lo) & (sea["year"] < hi)]
+    line = LinearRegression().fit(part[["year"]], part["sea_mm"])
+    return (float(line.coef_[0]), float(line.predict([[lo]])[0]),
+            float(line.predict([[hi]])[0]))
+
+
+for half, cuts in zip(M["halves"], SUB_EDGES):
+    pieces = [piece(lo, hi) for lo, hi in zip(cuts, cuts[1:])]
+    half["cuts"] = cuts
+    half["sub_slopes"] = [p[0] for p in pieces]
+    half["above"] = sum(1 for s in half["sub_slopes"] if s > half["slope"])
+    half["piece_rise"] = sum(p[2] - p[1] for p in pieces)
+    whole = piece(half["lo"], half["hi"])
+    half["own_rise"] = whole[2] - whole[1]
+    # the largest downward step between one piece's fitted end and the next piece's fitted start
+    half["biggest_step"] = min(pieces[k + 1][1] - pieces[k][2] for k in range(len(pieces) - 1))
+M["decade_means"] = {d: float(sea[(sea["year"] >= d) & (sea["year"] < d + 10)]["sea_mm"].mean())
+                     for d in (1990, 2000, 2010)}
 
 FORKS = {"low": np.arange(3.5, 5.1, 0.1).round(1), "high": np.arange(4.5, 6.1, 0.1).round(1)}
 M["forks"] = {}
@@ -427,15 +517,16 @@ datahub = (f"{PLATFORM['datahub']}/hub/user-redirect/git-pull"
            f"&branch={PLATFORM['branch']}"
            f"&urlpath=lab%2Ftree%2FEPS88_PyEarth%2F{PLATFORM['notebook_dir']}%2F{SLUG}.ipynb")
 
-HOOK = """
+HOOK = f"""
 You have already fitted Gutenberg-Richter to California's small earthquakes and used the line to
-predict how many magnitude-7 events the state should expect in thirty-six years. The line said
-about one and a half. Five happened. You were asked to write down whether you thought your model
-had failed, and the honest answer was that you could not tell — because 1.6 and 5 are two bare
-numbers, and two bare numbers cannot be compared.
+predict how many magnitude-7 events the state should expect in thirty-six years. Depending which
+of three defensible ranges you fitted it over, the line said somewhere between {LO['rate']:.2f}
+and {HI['rate']:.2f}. Five happened. You were asked to write down whether you thought your model
+had failed, and the honest answer was that you could not tell — because {M['rate']:.2f} and 5 are
+two bare numbers, and two bare numbers cannot be compared.
 
-What is missing is a sense of how far that 1.6 would have moved if the earthquakes had fallen
-slightly differently. Today you build it, out of nothing but the data you already have. You will
+What is missing is a sense of how far that {M['rate']:.2f} would have moved if the earthquakes had
+fallen slightly differently. Today you build it, out of nothing but the data you already have. You will
 practise on something slower — a hundred and twenty-six years of sea level in San Francisco Bay,
 where the question is whether the water is rising at all — and then take the same six lines back
 to the earthquakes and settle the argument.
@@ -463,18 +554,19 @@ together. You will put an error bar on a fitted slope, which is something a sing
 3. Was the forecast wrong, or were we unlucky?
 4. What did we assume without saying so?
 
-**Nine places where you write something: six in class, three at home.** Each one is headed
-*Your turn*, with an empty cell under it.
+**Nine turns where you write something: six in class, three at home.** Each one is headed *Your
+turn*, with an empty cell under it — turn 5 has two, one for code and one for your verdict in
+words.
 """)
 
 code(weekkit.setup_cell(
     imports="import numpy as np\nfrom sklearn.linear_model import LinearRegression\n",
     figsize="(7, 4)",
     cache_base=CACHE_BASE,
-    signature="url, cached",
+    signature="url, cache_name",
     docstring="Read one live source; fall back to the copy stored with the course.",
     url_expr="url",
-    cache_expr="cached",
+    cache_expr="cache_name",
     unpack=f'''
 sea = load("{SEA_URL}",
            "{SEA_CACHE}")
@@ -486,7 +578,7 @@ FDSN = "{FDSN}"
 CA_BOX = "{CA_BOX}"
 
 quakes = load(FDSN + "&starttime=1990-01-01&endtime=2026-01-01"
-                     "&minmagnitude=3.5&maxmagnitude=6.9" + CA_BOX,
+                     "&minmagnitude=3.5" + CA_BOX,        # the same query as last week's
               "{EQ_CACHE}")
 big = load(FDSN + "&starttime=1918-01-01&endtime=2026-01-01&minmagnitude=7.0" + CA_BOX,
            "{BIG_CACHE}")
@@ -639,6 +731,9 @@ Then read the middle 95% off it: `np.percentile(slopes, [2.5, 97.5])` returns th
 cut off the bottom 2.5% and the top 2.5%. Print the slope, the two ends, and how many of your
 {B:,} slopes came out at zero or below — `(slopes <= 0).sum()`.
 
+Then, as a comment at the end of your cell: **how many of your {B:,} resamples make the Bay flat,
+and what does that let you say that the single number {M['slope']:.2f} did not?**
+
 **Use these names**, because the self-check looks for them: `slopes`, `ci_low`, `ci_high`.
 """)
 
@@ -656,6 +751,11 @@ ci_low, ci_high = np.percentile(slopes, [2.5, 97.5])
 print("slope:", round(slope, 3), "mm/yr")
 print("95% interval:", round(ci_low, 3), "to", round(ci_high, 3), "mm/yr")
 print("resamples at zero or below:", (slopes <= 0).sum(), "out of", len(slopes))
+
+{note(f"{M['n_below_zero']} of my {B:,} resamples make the Bay flat, so a rise of zero is not "
+       f"something this record can be made to say by redrawing it; {M['slope']:.2f} on its own "
+       f"could not rule that out, because a single number carries no information about how far "
+       f"it would have moved had the months fallen differently.")}
 """, f"""
 assert slopes.min() > 0, \\
     "no resample of this record makes the Bay flat — check you fitted sea_mm against year"
@@ -710,8 +810,9 @@ for start in [{CHUNK_STARTS[0]}, {CHUNK_STARTS[-1]}]:
         boot = chunk.sample(len(chunk), replace=True)
         chunk_boot.append(LinearRegression().fit(boot[["year"]], boot["sea_mm"]).coef_[0])
 
-    low, high = np.percentile(chunk_boot, [2.5, 97.5])
-    print(start, "-", start + 25, ": 95% interval", round(low, 2), "to", round(high, 2), "mm/yr")
+    end_low, end_high = np.percentile(chunk_boot, [2.5, 97.5])
+    print(start, "-", start + 25, ": 95% interval",
+          round(end_low, 2), "to", round(end_high, 2), "mm/yr")
 """)
 
 # --- section 3 -------------------------------------------------------------
@@ -795,13 +896,39 @@ md(f"""
 
 Back to the earthquakes, with the same six lines.
 
-`quakes` is every California earthquake between magnitude 3.5 and 6.9 recorded in thirty-six
-years — {M['n_quakes']:,} of them, in the same latitude-longitude box you used before. The
-Gutenberg-Richter recipe is the one you already know: count how many events reached each
-magnitude, plot those counts on a log axis against magnitude, fit a straight line, and read the
-line off at a magnitude you have not observed.
+`quakes` is last week's file, read again: every **event** of magnitude 3.5 and above the USGS
+recorded in the box between 1990 and 2026. Two things about it are worth saying out loud before
+anything is fitted, and you met both last week.
 
-Written as a function it is short enough to call {B:,} times.
+The first is that a seismic catalogue lists things that shook the ground, not earthquakes:
+{M['n_dropped']} of these {M['n_rows']:,} rows are something else, and {M['n_nuclear']} of those
+are underground **nuclear tests** at the Nevada Test Site, magnitude {M['nuke_mag_lo']} to
+{M['nuke_mag_hi']}, fired between {M['nuke_first_year']} and {M['nuke_last_year']}. That matters
+here because {M['nuke_in_range']} of them land inside the magnitudes this section is about to fit
+a line through. Drop them, visibly, and look at what is left — and remember where they went,
+because week 10 is *"Earthquake or explosion — how does the world verify a nuclear test ban?"* and
+these are the events it is about.
+
+The second is that the {M['n_big_in_slice']} magnitude 7s stay **in**. It is tempting to take them
+out, since they are the thing being predicted — and it is wrong: "how many events reached
+magnitude 5" is a fact about the catalogue, and a count that quietly skips the largest events is
+not that count. What today holds back is the *range the line is fitted over*, never the
+earthquakes.
+
+The Gutenberg-Richter recipe is then the one you already know: count how many events reached each
+magnitude, plot those counts on a log axis against magnitude, fit a straight line, and read the
+line off at a magnitude you have not observed. Written as a function it is short enough to call
+{B:,} times.
+""")
+
+code("""
+print(quakes["type"].value_counts())
+
+n_rows = len(quakes)
+quakes = quakes[quakes["type"] == "earthquake"]   # the line that does it
+big = big[big["type"] == "earthquake"]            # same rule, same catalogue
+print("\\nkept", len(quakes), "earthquakes out of", n_rows, "rows")
+print("magnitude 7 and above still in:", (quakes["mag"] >= 7.0).sum())
 """)
 
 # No checkpoint here. This section reads nothing that an earlier SECTION built: `quakes` comes
@@ -829,7 +956,9 @@ print("expected number of M7+ in the same span:", round(predicted_m7(quakes["mag
 
 md(f"""
 {M['rate']:.2f} expected, against five that actually happened. That is where the argument stopped
-when you first fitted the line.
+when you first fitted the line — we fit {EDGES[0]} to {EDGES[-1]} this week rather than
+{LO['lo']} to {LO['hi']}, one of the three defensible ranges you tried last week, which is why
+this is {M['rate']:.2f} and not the {LO['rate']:.2f} you may have written down then.
 
 ### Predict before you run
 
@@ -838,12 +967,9 @@ around it. **How high do you think the top of that interval reaches?** Commit to
 `my_guess` and run it — and then find out.
 """)
 
-code("""
-my_guess = 3.0
-
-print("you guessed the interval reaches:", my_guess, "M7+ earthquakes")
-print("five actually happened")
-""")
+CELLS.extend(("code", s, a) for s, a in
+             weekkit.predict_cell("3.0", "M7+ earthquakes at the top of that interval, "
+                                         "against the five that actually happened"))
 
 ask(f"""
 ### ✏️ Your turn 4
@@ -909,8 +1035,9 @@ world roll once at that rate.
 ask(f"""
 ### ✏️ Your turn 5
 
-Turn the interval on the rate into an interval on the count.
+Two things here: the count, and then the week's question. **(a)** is code, **(b)** is words.
 
+**(a) Turn the interval on the rate into an interval on the count.**
 `np.random.poisson(boot_rates)` draws one Poisson count for every rate in the array at once, so
 this needs no loop: seed with `np.random.seed(88)`, make `boot_counts`, and take
 `np.percentile(boot_counts, [2.5, 97.5])`.
@@ -919,6 +1046,15 @@ Then print the fraction of those simulated worlds that delivered five or more �
 `(boot_counts >= 5).mean()`. That fraction is the answer to *were we unlucky?*
 
 **Use these names**, because the self-check looks for them: `boot_counts`.
+
+**(b) Then answer the question, in the markdown cell under the histogram.** *Was the forecast
+wrong, or were we unlucky?* Two or three sentences, quoting your own numbers — the interval on the
+rate from your turn 4, the interval on the count you have just printed, and the fraction of
+simulated worlds that reached five. Say which of the two words you would use, or say that your
+numbers do not let you choose between them and what it is about them that stops you.
+
+The cell after yours reads the same histogram and reaches its own verdict. Yours is worth more if
+you write it first, so commit before you scroll past it.
 """)
 
 answer("""
@@ -948,6 +1084,22 @@ plt.title(f"{len(boot_counts):,} simulated worlds, 5 observed marked in black")
 plt.show()
 """)
 
+# Your turn 5(b): the decision cell. It carries no ✏️ heading of its own — the pencil above owns
+# both halves of turn 5 — so the notebook still has nine turns and the homework keeps its own
+# prose part, which is the one that is hand-marked. What matters is the ORDER: the student's
+# verdict is written between the histogram and the paragraph that reads it, so the notebook
+# cannot hand them the word before they have chosen it.
+answer_prose(f"""
+I would say unlucky rather than wrong, but only just. The interval on the *rate* is
+[{M['rate_low']:.2f}, {M['rate_high']:.2f}] and five is nowhere near it, which on its own looks
+damning; once the Poisson scatter is folded in, though, the interval on the *count* runs
+[{M['count_low']}, {M['count_high']}] and five sits on its top edge, with
+{100 * M['frac_5']:.1f}% of my simulated worlds delivering five or more. That is about one
+thirty-six-year stretch in {round(1 / M['frac_5']):.0f}, which is unlikely enough to be worth
+explaining and far too common to call a broken model — so what my numbers really say is that a
+single window of this length cannot separate the two, not that I have chosen between them.
+""")
+
 md(f"""
 The picture is completely different. Once the counting noise is in, worlds with five **or more**
 large earthquakes do turn up: {100 * M['frac_5']:.1f}% of them, and the busiest reached
@@ -975,19 +1127,13 @@ for start in {WINDOW_STARTS}:
     inside = (big["when"] >= f"{{start}}-01-01") & (big["when"] < f"{{start + {WINDOW_YEARS}}}-01-01")
     window_counts.append(inside.sum())
     print(start, "-", start + {WINDOW_YEARS}, ":", inside.sum(), "M7+ earthquakes")
-""")
 
-md(f"""
-{M['window_counts'][0]}, {M['window_counts'][1]}, {M['observed']}. The forecast of {M['rate']:.2f}
-per {WINDOW_YEARS} years is an excellent description of the two earlier windows and a poor one of
-the most recent. So the last cell: if the rate really is what Gutenberg-Richter says, and it held
-for all {M['span_years']} years, how often do you get {M['total_big']} or more in total?
-""")
-
-code(f"""
+# and then the same question asked of all {M['span_years']} years at once: if the rate really is
+# what Gutenberg-Richter says, how often does a stretch this long deliver as many as we saw?
 np.random.seed(88)
 long_counts = np.random.poisson(boot_rates * {M['n_windows']})
 
+print()
 print("expected over", {M['span_years']}, "years:", round({M['n_windows']} * predicted_m7(quakes["mag"]), 2))
 print("observed:", sum(window_counts))
 print("fraction of simulated worlds reaching that:",
@@ -995,9 +1141,13 @@ print("fraction of simulated worlds reaching that:",
 """)
 
 md(f"""
-{M['total_big']} against an expected {M['n_windows'] * M['rate']:.1f}, and {100 * M['frac_total']:.0f}%
-of simulated {M['span_years']}-year worlds do at least that well. On the long record the forecast
-is not in trouble at all.
+{M['window_counts'][0]}, {M['window_counts'][1]}, {M['observed']}. The forecast of {M['rate']:.2f}
+per {WINDOW_YEARS} years is an excellent description of the two earlier windows and a poor one of
+the most recent — but stop treating the most recent one as the whole story. Over all
+{M['span_years']} years, {M['total_big']} large earthquakes happened against an expected
+{M['n_windows'] * M['rate']:.1f}, and {100 * M['frac_total']:.0f}% of simulated
+{M['span_years']}-year worlds do at least that well. On the long record the forecast is not in
+trouble at all.
 """)
 
 ask(f"""
@@ -1052,9 +1202,8 @@ exceptional, not more.
 The third is an assumption every `np.random.poisson` above made without saying so: that
 large earthquakes arrive **independently**, one roll of the dice each. The gaps you printed say
 they do not. The shortest is {M['shortest_gap']} days — {M['pair'][0]} in April and
-{M['pair'][1]} in June, two months apart in a record whose typical gap is years — and the three
-window counts scatter more than a Poisson process allows, their variance
-{M['dispersion']:.2f} times their mean where Poisson holds the two equal. Clustered events make a
+{M['pair'][1]} in June, two months apart in a record whose typical gap is years — and in a moment
+you will meet a pair four minutes apart. Clustered events make a
 count scatter *more* than Poisson, so the true share of thirty-six-year worlds reaching five or
 more is **larger** than the {100 * M['frac_5']:.1f}% you computed, not smaller. That is the same
 direction as the caveat before it, and it leaves the verdict standing — but it is an assumption,
@@ -1070,6 +1219,7 @@ roughly magnitude 7 — and count the same three windows again.
 code(f"""
 big69 = load(FDSN + "&starttime=1918-01-01&endtime=2026-01-01&minmagnitude=6.9" + CA_BOX,
              "{BIG69_CACHE}")
+big69 = big69[big69["type"] == "earthquake"]     # same rule as before, though none are dropped
 big69["when"] = pd.to_datetime(big69["time"])
 print("days from each one to the next:", sorted(big69["when"].diff().dropna().dt.days))
 
@@ -1129,9 +1279,7 @@ block_low, block_high = np.percentile(block_slopes, [2.5, 97.5])
 
 print("resampling months:", round(ci_low, 2), "to", round(ci_high, 2), "mm/yr")
 print("resampling years: ", round(block_low, 2), "to", round(block_high, 2), "mm/yr")
-""")
 
-code("""
 bins = np.arange(min(slopes.min(), block_slopes.min()),               # ONE set of bins for both,
                  max(slopes.max(), block_slopes.max()) + 0.01, 0.01)  # or the bar widths compare
 
@@ -1139,7 +1287,7 @@ plt.hist(slopes, bins=bins, label="months resampled")
 plt.hist(block_slopes, bins=bins, alpha=0.6, label="whole years resampled")
 plt.xlabel("bootstrap slope (mm per year)")
 plt.ylabel("number of resamples")
-plt.title(f"{len(slopes):,} resamples each, the same record")
+plt.title(f"{{len(slopes):,}} resamples each, the same record")
 plt.legend()
 plt.show()
 """)
@@ -1188,8 +1336,8 @@ md("""
 
 Three parts on the two datasets you already have loaded. Part 1 goes back to the Bay and asks
 something class did not; parts 2 and 3 make you re-run the earthquake argument on a fitting range
-you choose yourself. If you have restarted since class, run the setup cell at the top first, then
-the checkpoint just below.
+you choose yourself, and say what that does to the verdict you committed to in class. If you have
+restarted since class, run the setup cell at the top first, then the checkpoint just below.
 """)
 
 code(weekkit.CHECKPOINT.format(body=REBUILD_FORECAST))
@@ -1253,8 +1401,22 @@ print("do the intervals overlap?", first_high > second_low)
 {note(f"My two halves overlap — {M['halves'][0]['low']:.2f} to "
        f"{M['halves'][0]['high']:.2f} against {M['halves'][1]['low']:.2f} to "
        f"{M['halves'][1]['high']:.2f} mm/yr — so a cut that uses every month does not on its "
-       f"own show the rise changing: each half averages slow decades in with fast ones, and "
-       f"the change class saw lives inside the second half rather than between the two.")}
+       f"own show the rise changing, but that is not because either half is slow: cut my "
+       f"second half on the same quarter-century grid class used and its pieces run "
+       f"{', '.join(f'{s:.2f}' for s in M['halves'][1]['sub_slopes'])} mm/yr, "
+       f"{M['halves'][1]['above']} of the {len(M['halves'][1]['sub_slopes'])} of them above the "
+       f"{M['halves'][1]['slope']:.2f} the half itself fits at. A "
+       f"{M['halves'][1]['hi'] - M['halves'][1]['lo']}-year least-squares line is not the "
+       f"average of its pieces: those pieces rise "
+       f"{M['halves'][1]['piece_rise']:.0f} mm between them while the half rises only "
+       f"{M['halves'][1]['own_rise']:.0f} mm, because the record steps back down where one "
+       f"piece ends and the next begins — the decade mean fell from "
+       f"{M['decade_means'][1990]:.0f} mm in the 1990s to {M['decade_means'][2000]:.0f} mm in "
+       f"the 2000s before reaching {M['decade_means'][2010]:.0f} mm in the 2010s. Nor does the "
+       f"change class saw sit inside one half: it ran from the "
+       f"{CHUNK_STARTS[0]}-{CHUNK_STARTS[0] + 25} chunk to the "
+       f"{CHUNK_STARTS[-1]}-{CHUNK_STARTS[-1] + 25} chunk, which straddles the "
+       f"{HALVES[0][1]} cut, so both halves get a share of it and neither can show it alone.")}
 """, """
 assert len(first) + len(second) == len(sea), "every month belongs to exactly one half"
 assert first_low < first_slope < first_high, \\
@@ -1317,31 +1479,32 @@ print("\u2713 your own fitting range \u2014 magnitude", edges[0], "to", edges[-1
 """)
 
 ask("""
-### ✏️ Your turn 9
+### \u270f\ufe0f Your turn 9
 
 Two or three sentences, quoting your own numbers from your turn 8.
 
-Class's fitting range put five large earthquakes at the top edge of the interval. Say what your
-range put it at, and whether your choice changes the verdict — whether a reader of your notebook
-would come away thinking the forecast is broken, or thinking the last thirty-six years were busy.
-Then say what would have to be true for a single thirty-six-year count to settle the question
-either way.
+In class you committed to a verdict \u2014 *wrong* or *unlucky* \u2014 using the fitting range class chose.
+Say what your own range does to it: where five falls against your interval on the count, and
+whether a reader of your notebook would come away thinking the forecast is broken or thinking the
+last thirty-six years were busy. Then say what would have to be true for a single thirty-six-year
+count to settle the question either way.
 """)
 
 answer_prose(f"""
 Fitting between {LO['lo']} and {LO['hi']} gives a forecast of {LO['rate']:.2f} M7+ earthquakes, a
 95% interval on the count topping out at {LO['count_high']}, and five or more in only
-{100 * LO['frac_5']:.1f}% of simulated worlds — so on my choice five is *outside* the interval and
-the forecast does look broken. Class's range, 4.0 to 5.5, gave {100 * M['frac_5']:.1f}%, with five
-sitting on the edge rather than beyond it, and the third choice, {HI['lo']} to {HI['hi']}, has only
-{M['count_at_55']} events above magnitude 5.5 left to fit, so its interval is wider still. The
-verdict therefore turns on a choice nobody can defend as the only right one, and the answer moves
-more when I change my fitting range than the observation moves it. For a single thirty-six-year
-count to settle the question, it would have to fall outside the interval under *every* defensible
-fitting range — five does not — or the window would have to be long enough that the Poisson
-scatter, which is roughly the square root of the expected count, became small beside the gap being
-argued about.
+{100 * LO['frac_5']:.1f}% of simulated worlds \u2014 so on my choice five is *outside* the interval and
+the forecast does look broken, where in class I called it unlucky. Class's range, 4.0 to 5.5, gave
+{100 * M['frac_5']:.1f}%, with five sitting on the edge rather than beyond it, and the third
+choice, {HI['lo']} to {HI['hi']}, has only {M['count_at_55']} events above magnitude 5.5 left to
+fit, so its interval is wider still. The verdict therefore turns on a choice nobody can defend as
+the only right one, and the answer moves more when I change my fitting range than the observation
+moves it. For a single thirty-six-year count to settle the question, it would have to fall outside
+the interval under *every* defensible fitting range \u2014 five does not \u2014 or the window would have to
+be long enough that the Poisson scatter, which is roughly the square root of the expected count,
+became small beside the gap being argued about.
 """)
+
 
 
 # ---------------------------------------------------------------------------
@@ -1372,9 +1535,7 @@ def main():
     sol_path.write_text(json.dumps(sol, indent=1) + "\n")
 
     print(f"executing {sol_path.name} ...")
-    r = subprocess.run([sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook",
-                        "--execute", "--inplace", "--ExecutePreprocessor.timeout=900",
-                        str(sol_path)], capture_output=True, text=True, cwd=ROOT)
+    r = weekkit.execute(sol_path, timeout=900)
     if r.returncode:
         print(r.stderr[-4000:])
         sys.exit("the solution did not execute")
@@ -1383,7 +1544,26 @@ def main():
     print(f"wrote {SLUG}.ipynb ({len(CELLS)} cells) and the executed solution")
     for name in (SEA_CACHE, EQ_CACHE, BIG_CACHE, BIG69_CACHE):
         read = datetime.date.fromtimestamp((ROOT / "data" / name).stat().st_mtime)
-        print(f"cache: data/{name}, downloaded {read}")
+        owner = " (week 7's file — this week only reads it)" if name == EQ_CACHE else ""
+        print(f"cache: data/{name}, downloaded {read}{owner}")
+    print(f"catalogue: the query returns {M['n_rows']:,} rows and {M['n_quakes']:,} of them are "
+          f"earthquakes. Dropped: {dict(TYPES.drop('earthquake'))}. The {M['n_nuclear']} nuclear "
+          f"tests are at the Nevada Test Site, M{M['nuke_mag_lo']}-{M['nuke_mag_hi']}, "
+          f"{M['nuke_first_year']}-{M['nuke_last_year']}, {M['nuke_in_range']} of them inside the "
+          f"M{EDGES[0]}-{EDGES[-1]} fitting range. The drop is made in the NOTEBOOK, visibly, not "
+          f"in the URL — same choice week 7 made, and week 10 gets these events as its subject. "
+          f"The {M['n_big_in_slice']} M7+ events stay IN the counted catalogue: the query no "
+          f"longer carries &maxmagnitude=6.9, which notes/dataset-audit/usgs-fdsn.md §4.2 forbids "
+          f"by name. Forecast at M{EDGES[0]}-{EDGES[-1]}: truncated with blasts in (as shipped) "
+          f"{M['rate_as_shipped']:.2f}, untruncated with blasts in {M['rate_blasts_in']:.2f}, "
+          f"clean {M['rate']:.2f} — the two faults pushed in opposite directions, which is why "
+          f"the shipped number looked plausible.")
+    print(f"independence caveat: the claim that the three window counts {M['window_counts']} "
+          f"'scatter more than a Poisson process allows' is GONE. Their dispersion is "
+          f"{M['dispersion']:.3f}, and three Poisson counts with this mean are at least that "
+          f"dispersed {100 * M['p_dispersion']:.0f}% of the time. The caveat now rests on the "
+          f"{M['pair_69'][0]} / {M['pair_69'][1]} pair, {M['pair_69_minutes']} minutes apart, and "
+          f"on the {M['shortest_gap']}-day {M['pair'][0]}-to-{M['pair'][1]} gap.")
     print(f"NOAA file: {M['n_months']:,} monthly means, {M['first_year']}-{M['last_year']}, "
           f"{M['n_missing']} months missing ({', '.join(M['missing_months'])})")
     print("prose: every count that NOAA can move is printed by a notebook cell at run time, not "

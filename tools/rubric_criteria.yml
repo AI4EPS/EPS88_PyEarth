@@ -40,8 +40,8 @@
 
 7:
   items:
-    - "Quotes the six window counts (3, 2, 2, 1, 2, 5) and their mean of 2.5 against the 1.49 the line expected, taken from their own turn 6 output rather than from the summary table."
-    - "Gives a two-sided verdict on the California line: 1990-2026 with its 5 really was the busiest of the six windows, so part of class's shortfall was an unlucky draw, but the long-run mean of 2.5 is still about 1.7 times the expected 1.49, so bad luck does not account for all of it."
+    - "Quotes the six window counts (3, 2, 2, 1, 2, 5) and their mean of 2.5 against the 1.37 the line expected, taken from their own turn 6 output rather than from the summary table."
+    - "Gives a two-sided verdict on the California line: 1990-2026 with its 5 really was the busiest of the six windows, so part of class's shortfall was an unlucky draw, but the long-run mean of 2.5 is still about 1.8 times the expected 1.37, so bad luck does not account for all of it."
     - "Quotes both part 2 predictions against the counts that went with them: 1.43 expected at VEI 7 from 1700 with 1 occurring, and 0.74 expected from 1900 with 0 occurring."
     - "Names the problem those two predictions expose: the volcano line agrees comfortably with every window, including the one that holds no eruption at all, so none of them is testing it. Agreement this cheap is not evidence, and an answer that reports the volcano line as confirmed does not earn this item."
 
@@ -49,7 +49,7 @@
   items:
     - "Names which fitting range they took, 3.5 to 5.0 or 4.5 to 6.0, and quotes the three numbers their own range printed: the forecast, the top end of the 95% interval on the count, and the fraction of simulated worlds reaching five. Either fork is valid; the numbers must be theirs."
     - "Says where five falls under their range, outside the interval or on and inside it, and states the verdict a reader of their notebook would come away with. Both verdicts are correct answers when they follow from the student's own printed fraction."
-    - "Sets their result against class's range (4.0 to 5.5, five on the edge, 2.9% of simulated worlds) and makes the point that the verdict turns on a choice nobody can defend as the only right one, so the answer moves more with the fitting range than with the observation."
+    - "Sets their result against class's range (4.0 to 5.5, five on the edge, 3.1% of simulated worlds) and makes the point that the verdict turns on a choice nobody can defend as the only right one, so the answer moves more with the fitting range than with the observation."
     - "Answers the last clause with a stated condition rather than a wish: five would have to fall outside the interval under every defensible fitting range, or the window would have to be long enough that the Poisson scatter, roughly the square root of the expected count, became small beside the gap being argued about."
 
 9:
