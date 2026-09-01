@@ -48,4 +48,4 @@ all — it is which curve I chose to draw through the same points.
 
 1. Too simple misses the pattern; too flexible memorises the noise.
 2. Hold out data you already have, then check — it is the cheapest honest test there is.
-3. The CO2 curve is bending, and which model you choose decides the decade by which it crosses 500 ppm.
+3. The CO2 curve is bending: a straight line fitted to the whole record starts ten ppm below the record's own first year.

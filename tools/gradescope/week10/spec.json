@@ -31,16 +31,16 @@
       "name": "Part 2 — your window",
       "marker": "✓ your window",
       "checks": [
-        "assert (my_low, my_high) != (10, 17), \"pick one of the two windows offered, not the one class used\""
+        "assert (my_low, my_high) == (7, 19) or (my_low, my_high) == (11, 15), \"pick one of the two windows offered — wide is 7 to 19, narrow is 11 to 15 — not the 10 to 17 class used\""
       ],
       "check_points": 30,
       "code_points": 5
     }
   ],
   "released": {
-    "w10-c049": "# ── Checkpoint ── run this if you restarted the kernel or fell behind ──\nevents = pd.concat([quakes, blasts], ignore_index=True)\nevents[\"is_blast\"] = events[\"type\"] == \"quarry blast\"\nlocal = pd.to_datetime(events[\"time\"]).dt.tz_convert(\"US/Pacific\")\nevents[\"hour\"] = local.dt.hour\nevents[\"weekday\"] = local.dt.dayofweek\nfeatures = ['latitude', 'longitude', 'depth', 'mag', 'hour', 'weekday']\nX = events[features]\ny = events[\"is_blast\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42,\n                                                    stratify=y)",
-    "w10-q06-answer": "# ← your answer here\n\n\nassert \"depth\" not in features_no_depth, \"the point of this part is to leave depth out\"\nprint(\"✓ without depth — logistic regression F1\", round(f1_lr_no_depth, 4),\n      \"and naive Bayes F1\", round(f1_nb_no_depth, 4))",
-    "w10-q07-answer": "# ← your answer here\n\n\nassert (my_low, my_high) != (10, 17), \"pick one of the two windows offered, not the one class used\"\nprint(\"✓ your window —\", my_low, \"to\", my_high, \"gives precision\",\n      round(precision_score(y_test, my_rule), 4), \"and recall\",\n      round(recall_score(y_test, my_rule), 4))"
+    "w10-c053": "# ── Checkpoint ── run this if you restarted the kernel or fell behind ──\nevents = pd.concat([quakes, blasts], ignore_index=True)\nevents[\"is_blast\"] = events[\"type\"] == \"quarry blast\"\nlocal = pd.to_datetime(events[\"time\"]).dt.tz_convert(\"US/Pacific\")\nevents[\"hour\"] = local.dt.hour\nevents[\"weekday\"] = local.dt.dayofweek\nfeatures = ['latitude', 'longitude', 'depth', 'mag', 'hour', 'weekday']\nX = events[features]\ny = events[\"is_blast\"]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42,\n                                                    stratify=y)\n\n\ndef two_condition_rule(rows, low, high):\n    \"\"\"True where a row is at or above sea level AND its hour falls inside the window.\"\"\"\n    return (rows[\"depth\"] <= 0) & (rows[\"hour\"] >= low) & (rows[\"hour\"] < high)",
+    "w10-q06-answer": "# ← your answer here\n\n\nassert \"depth\" not in features_no_depth, \"the point of this part is to leave depth out\"\nprint(\"✓ without depth — logistic regression F1\", round(f1_logistic_no_depth, 4),\n      \"and naive Bayes F1\", round(f1_bayes_no_depth, 4))",
+    "w10-q07-answer": "# ← your answer here\n\n\nassert (my_low, my_high) == (7, 19) or (my_low, my_high) == (11, 15), \"pick one of the two windows offered — wide is 7 to 19, narrow is 11 to 15 — not the 10 to 17 class used\"\nprint(\"✓ your window —\", my_low, \"to\", my_high, \"gives precision\",\n      round(precision_score(y_test, my_rule), 4), \"and recall\",\n      round(recall_score(y_test, my_rule), 4))"
   },
   "hygiene": {
     "points": 5

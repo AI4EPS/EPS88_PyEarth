@@ -32,16 +32,16 @@
       "marker": "✓ the window is a choice",
       "checks": [
         "assert len(fork_predictions) == 2, \"two start years, two predictions\"",
-        "assert fork_predictions[0] != fork_predictions[1], \\"
+        "assert fork_predictions[0] > fork_predictions[1], \\"
       ],
       "check_points": 30,
       "code_points": 5
     }
   ],
   "released": {
-    "w07-c051": "# ── Checkpoint ── run this if you restarted the kernel or fell behind ──\n# Re-run your own count_at_least (Your turn 2) and predict_count (Your turn 4) cells as well.\n# Those two are your code, so this cell cannot rebuild them for you; every part below uses them.\nrated = eruptions.dropna(subset=[\"ExplosivityIndexMax\"])\n\n\ndef levels_between(lowest, highest, step):\n    \"\"\"The levels lowest, lowest + step, ... highest, built from whole numbers.\"\"\"\n    return np.arange(round(lowest * 10), round(highest * 10) + 1, round(step * 10)) / 10\n\n\nvei_levels = levels_between(2, 4, 1)",
-    "w07-q06-answer": "# ← your answer here\n\n\nassert sum(window_counts) == len(big_history), \\\n    \"every event should land in exactly one window — check for < rather than <= at the top edge\"\nprint(\"✓ six windows — counts\", np.array(window_counts), \"with a mean of\",\n      round(np.mean(window_counts), 2))",
-    "w07-q07-answer": "# ← your answer here\n\n\nassert len(fork_predictions) == 2, \"two start years, two predictions\"\nassert fork_predictions[0] != fork_predictions[1], \\\n    \"identical predictions mean the same eruptions went in twice — check the cut inside the loop\"\nprint(\"✓ the window is a choice — the two start years predict\",\n      round(fork_predictions[0], 2), \"and\", round(fork_predictions[1], 2), \"VEI 7 eruptions\")"
+    "w07-c053": "# ── Checkpoint ── run this if you restarted the kernel or fell behind ──\n# Re-run your own count_at_least (Your turn 2) and predict_count (Your turn 4) cells as well.\n# Those two are your code, so this cell cannot rebuild them for you; every part below uses them.\nrated = eruptions.dropna(subset=[\"ExplosivityIndexMax\"])\n\n\ndef levels_between(lowest, highest, step):\n    \"\"\"The levels lowest, lowest + step, ... highest, built from whole numbers.\"\"\"\n    return np.arange(round(lowest * 10), round(highest * 10) + 1, round(step * 10)) / 10\n\n\nvei_levels = levels_between(2, 4, 1)",
+    "w07-q07-answer": "# ← your answer here\n\n\nassert sum(window_counts) == len(big_history), \\\n    \"every event should land in exactly one window — check for < rather than <= at the top edge\"\nprint(\"✓ six windows — counts\", np.array(window_counts), \"with a mean of\",\n      round(np.mean(window_counts), 2))",
+    "w07-q08-answer": "# ← your answer here\n\n\nassert len(fork_predictions) == 2, \"two start years, two predictions\"\nassert fork_predictions[0] > fork_predictions[1], \\\n    (\"the earlier start year reaches back into a thinner record, so its line is shallower and it \"\n     \"must expect MORE at VEI 7, not the same and not fewer — equal predictions mean the same \"\n     \"eruptions went in twice, and a reversed pair means the cut kept the wrong side\")\nprint(\"✓ the window is a choice — the two start years predict\",\n      round(fork_predictions[0], 2), \"and\", round(fork_predictions[1], 2), \"VEI 7 eruptions\")"
   },
   "hygiene": {
     "points": 5

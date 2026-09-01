@@ -11,9 +11,14 @@ The autograder scores the two code parts. This is the part it cannot: mark it in
 Two of the pictures in this notebook are counts on a log axis: the eruptions by VEI, and your own
 magnitudes from part 6. One of them falls off at its low end and the other does not.
 
-In three or four sentences, and using your own printed numbers — the three shortest VEI bars from
-class, and the first two numbers in your `counts` array — say which chart has the broken low end,
-and explain what is different about how the two catalogues were made. Your answer should say what
+The numbers you need are these. From class, the three smallest VEI classes hold 1,019 at
+VEI 0, 1,441 at VEI 1 and 4,030 at VEI 2. From part 6, the two smallest magnitude
+bins are `counts[0]` and `counts[1]`, which the self-check printed for you; if part 6 did not run,
+they came out 8,973 and 2,688 on the copy of the catalogue stored with
+the course, so use those and say that is what you did.
+
+In three or four sentences, using those numbers, say which chart has the broken low end and
+explain what is different about how the two catalogues were made. Your answer should say what
 would have to be true for the *other* chart's low end to break as well.
 
 ## Criteria

@@ -77,9 +77,14 @@ The autograder scores the two code parts. This is the part it cannot: mark it in
 Two of the pictures in this notebook are counts on a log axis: the eruptions by VEI, and your own
 magnitudes from part 6. One of them falls off at its low end and the other does not.
 
-In three or four sentences, and using your own printed numbers — the three shortest VEI bars from
-class, and the first two numbers in your `counts` array — say which chart has the broken low end,
-and explain what is different about how the two catalogues were made. Your answer should say what
+The numbers you need are these. From class, the three smallest VEI classes hold 1,019 at
+VEI 0, 1,441 at VEI 1 and 4,030 at VEI 2. From part 6, the two smallest magnitude
+bins are `counts[0]` and `counts[1]`, which the self-check printed for you; if part 6 did not run,
+they came out 8,973 and 2,688 on the copy of the catalogue stored with
+the course, so use those and say that is what you did.
+
+In three or four sentences, using those numbers, say which chart has the broken low end and
+explain what is different about how the two catalogues were made. Your answer should say what
 would have to be true for the *other* chart's low end to break as well.
 
 ## Criteria
@@ -290,12 +295,12 @@ The autograder scores the two code parts. This is the part it cannot: mark it in
 
 ## What the student was asked
 
-### ✏️ Your turn 8
+### ✏️ Your turn 9
 
 Two or three sentences, using your own numbers from parts 1 and 2, on this question: **does anything
 you computed rescue the California line, and does anything you computed threaten the volcano line?**
 
-Quote the six window counts and their mean against the 1.49 the line expected, and quote
+Quote the six window counts and their mean against the 1.37 the line expected, and quote
 both of your part 2 predictions against the counts that went with them. Do not answer from the
 summary table; answer from your output.
 
@@ -303,8 +308,8 @@ summary table; answer from your output.
 
 | Points | A full-credit answer does this |
 |---:|---|
-| 6 | Quotes the six window counts (3, 2, 2, 1, 2, 5) and their mean of 2.5 against the 1.49 the line expected, taken from their own turn 6 output rather than from the summary table. |
-| 6 | Gives a two-sided verdict on the California line: 1990-2026 with its 5 really was the busiest of the six windows, so part of class's shortfall was an unlucky draw, but the long-run mean of 2.5 is still about 1.7 times the expected 1.49, so bad luck does not account for all of it. |
+| 6 | Quotes the six window counts (3, 2, 2, 1, 2, 5) and their mean of 2.5 against the 1.37 the line expected, taken from their own turn 6 output rather than from the summary table. |
+| 6 | Gives a two-sided verdict on the California line: 1990-2026 with its 5 really was the busiest of the six windows, so part of class's shortfall was an unlucky draw, but the long-run mean of 2.5 is still about 1.8 times the expected 1.37, so bad luck does not account for all of it. |
 | 6 | Quotes both part 2 predictions against the counts that went with them: 1.43 expected at VEI 7 from 1700 with 1 occurring, and 0.74 expected from 1900 with 0 occurring. |
 | 7 | Names the problem those two predictions expose: the volcano line agrees comfortably with every window, including the one that holds no eruption at all, so none of them is testing it. Agreement this cheap is not evidence, and an answer that reports the volcano line as confirmed does not earn this item. |
 
@@ -316,7 +321,7 @@ The six windows hold 3, 2, 2, 1, 2, 5 earthquakes of magnitude 7 and
 above, a mean of 2.5. So 1990-2026 really
 was the busiest of the six, and part of class's shortfall was an unlucky window — but only part of
 it, because the long-run mean of 2.5 is still about
-1.7 times the 1.49 the line expected, and the
+1.8 times the 1.37 the line expected, and the
 older windows lean on historical accounts rather than instruments, so if anything they undercount.
 Something beyond bad luck is missing from the extrapolation. The volcano line goes the other way and
 is worse off for it: starting from 1700 it expects 1.43 VEI
@@ -346,11 +351,11 @@ The autograder scores the two code parts. This is the part it cannot: mark it in
 
 Two or three sentences, quoting your own numbers from your turn 8.
 
-Class's fitting range put five large earthquakes at the top edge of the interval. Say what your
-range put it at, and whether your choice changes the verdict — whether a reader of your notebook
-would come away thinking the forecast is broken, or thinking the last thirty-six years were busy.
-Then say what would have to be true for a single thirty-six-year count to settle the question
-either way.
+In class you committed to a verdict — *wrong* or *unlucky* — using the fitting range class chose.
+Say what your own range does to it: where five falls against your interval on the count, and
+whether a reader of your notebook would come away thinking the forecast is broken or thinking the
+last thirty-six years were busy. Then say what would have to be true for a single thirty-six-year
+count to settle the question either way.
 
 ## Criteria
 
@@ -358,25 +363,25 @@ either way.
 |---:|---|
 | 6 | Names which fitting range they took, 3.5 to 5.0 or 4.5 to 6.0, and quotes the three numbers their own range printed: the forecast, the top end of the 95% interval on the count, and the fraction of simulated worlds reaching five. Either fork is valid; the numbers must be theirs. |
 | 6 | Says where five falls under their range, outside the interval or on and inside it, and states the verdict a reader of their notebook would come away with. Both verdicts are correct answers when they follow from the student's own printed fraction. |
-| 6 | Sets their result against class's range (4.0 to 5.5, five on the edge, 2.9% of simulated worlds) and makes the point that the verdict turns on a choice nobody can defend as the only right one, so the answer moves more with the fitting range than with the observation. |
+| 6 | Sets their result against class's range (4.0 to 5.5, five on the edge, 3.1% of simulated worlds) and makes the point that the verdict turns on a choice nobody can defend as the only right one, so the answer moves more with the fitting range than with the observation. |
 | 7 | Answers the last clause with a stated condition rather than a wish: five would have to fall outside the interval under every defensible fitting range, or the window would have to be long enough that the Poisson scatter, roughly the square root of the expected count, became small beside the gap being argued about. |
 
 ## The model answer
 
 Not a template to match word for word — a student who reaches the same conclusions from their own numbers, in their own words, has answered it.
 
-Fitting between 3.5 and 5.0 gives a forecast of 1.41 M7+ earthquakes, a
+Fitting between 3.5 and 5.0 gives a forecast of 1.37 M7+ earthquakes, a
 95% interval on the count topping out at 4, and five or more in only
-1.4% of simulated worlds — so on my choice five is *outside* the interval and
-the forecast does look broken. Class's range, 4.0 to 5.5, gave 2.9%, with five
-sitting on the edge rather than beyond it, and the third choice, 4.5 to 6.0, has only
-57 events above magnitude 5.5 left to fit, so its interval is wider still. The
-verdict therefore turns on a choice nobody can defend as the only right one, and the answer moves
-more when I change my fitting range than the observation moves it. For a single thirty-six-year
-count to settle the question, it would have to fall outside the interval under *every* defensible
-fitting range — five does not — or the window would have to be long enough that the Poisson
-scatter, which is roughly the square root of the expected count, became small beside the gap being
-argued about.
+1.2% of simulated worlds — so on my choice five is *outside* the interval and
+the forecast does look broken, where in class I called it unlucky. Class's range, 4.0 to 5.5, gave
+3.1%, with five sitting on the edge rather than beyond it, and the third
+choice, 4.5 to 6.0, has only 57 events above magnitude 5.5 left to
+fit, so its interval is wider still. The verdict therefore turns on a choice nobody can defend as
+the only right one, and the answer moves more when I change my fitting range than the observation
+moves it. For a single thirty-six-year count to settle the question, it would have to fall outside
+the interval under *every* defensible fitting range — five does not — or the window would have to
+be long enough that the Poisson scatter, which is roughly the square root of the expected count,
+became small beside the gap being argued about.
 
 ## The week's takeaways, for context
 
@@ -437,7 +442,7 @@ all — it is which curve I chose to draw through the same points.
 
 1. Too simple misses the pattern; too flexible memorises the noise.
 2. Hold out data you already have, then check — it is the cheapest honest test there is.
-3. The CO2 curve is bending, and which model you choose decides the decade by which it crosses 500 ppm.
+3. The CO2 curve is bending: a straight line fitted to the whole record starts ten ppm below the record's own first year.
 
 
 ---

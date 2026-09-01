@@ -32,7 +32,7 @@
       "marker": "✓ the slab",
       "checks": [
         "assert len(arc) > 0, \"no earthquakes in that box — check the four numbers\"",
-        "assert section.get_offsets()[:, 1].max() <= 0, \\",
+        "assert points.get_offsets()[:, 1].max() <= 0, \\",
         "assert 1 < abs(deep_lon - shallow_lon) < 15, \\"
       ],
       "check_points": 30,
@@ -41,7 +41,7 @@
   ],
   "released": {
     "w04-q06-answer": "# ← your answer here\n\n\nassert counts.sum() == len(quakes), \"every earthquake should land in a bin — check your edges\"\nprint(\"✓ magnitudes on a log axis — the smallest bin holds\", counts[0],\n      \"earthquakes and the next one\", counts[1])",
-    "w04-q07-answer": "# ← your answer here\n\n\nassert len(arc) > 0, \"no earthquakes in that box — check the four numbers\"\nassert section.get_offsets()[:, 1].max() <= 0, \\\n    \"the deepest events are drawn at the TOP — plot -arc[\\\"depth\\\"], so that down the page is down\"\nassert 1 < abs(deep_lon - shallow_lon) < 15, \\\n    \"the two medians should be a few degrees apart; a gap of nearly nothing usually means both \" \\\n    \"were taken over the same depth class\"\nprint(\"✓ the slab —\", len(arc), \"earthquakes; deep median longitude minus shallow is\",\n      round(deep_lon - shallow_lon, 1), \"degrees\")"
+    "w04-q07-answer": "# ← your answer here\n\n\nassert len(arc) > 0, \"no earthquakes in that box — check the four numbers\"\nassert points.get_offsets()[:, 1].max() <= 0, \\\n    \"the deepest events are drawn at the TOP — plot -arc[\\\"depth\\\"], so that down the page is down\"\nassert 1 < abs(deep_lon - shallow_lon) < 15, \\\n    \"the two medians should be a few degrees apart; a gap of nearly nothing usually means both \" \\\n    \"were taken over the same depth class\"\nprint(\"✓ the slab —\", len(arc), \"earthquakes; deep median longitude minus shallow is\",\n      round(deep_lon - shallow_lon, 1), \"degrees\")"
   },
   "hygiene": {
     "points": 5
