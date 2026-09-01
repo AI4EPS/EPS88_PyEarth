@@ -338,14 +338,20 @@ setup = weekkit.setup_cell(
     imports="import numpy as np\nfrom sklearn.linear_model import LinearRegression\n",
     figsize="(7, 4)",
     cache_base=CACHE_BASE,
-    signature="archive_path, cached_name",
+    signature="url, cache_name",
     docstring=("Read one of this week's tables from the archive it came from; fall back to "
                "the copy stored with the course."),
-    url_expr=f'f"{SOURCE}{{archive_path}}"',
-    cache_expr="cached_name",
+    url_expr="url",
+    cache_expr="cache_name",
+    # `load(url, cache_name)` in every week that reads more than one table -- weeks 4, 7 and 8
+    # and tracks T2, T3, T4, T5. This week used to take `(archive_path, cached_name)` and glue
+    # the host on inside the function, which is a fourth spelling of one signature AND hides
+    # where the data comes from. The host is a named constant in the cell instead, so the call
+    # sites keep their shape and the student can see the address.
     unpack=f'''
-STARS = "Week08_Age_of_the_Universe/Data/"
-RIDGES = "Week05_Seafloor_Spreading/data/"
+ARCHIVE = "{SOURCE}"
+STARS = ARCHIVE + "Week08_Age_of_the_Universe/Data/"
+RIDGES = ARCHIVE + "Week05_Seafloor_Spreading/data/"
 
 sn = load(STARS + "Freedman2000_Supernova1a.csv", "{CACHED[SN_PATH]}")
 par = load(RIDGES + "PAR_east_age_dist.csv", "{CACHED[PAR_PATH]}")
@@ -479,9 +485,11 @@ here, no distance away at all. What number should that be? Commit to it in the n
 you run it.
 """)
 
-code(f"""
-my_guess_intercept = 0        # ← change this to whatever you think, then run the cell
+CELLS.extend(("code", s, a) for s, a in
+             weekkit.predict_cell("0", "km/s at a distance of zero",
+                                  name="my_guess_intercept"))
 
+code(f"""
 model = LinearRegression().fit(sn[["D(Mpc)"]], sn["VCMB"])
 
 print("you guessed: ", my_guess_intercept, "km/s")
@@ -1230,9 +1238,7 @@ def main():
     sol_path.write_text(json.dumps(sol, indent=1) + "\n")
 
     print(f"executing {sol_path.name} ...")
-    r = subprocess.run([sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook",
-                        "--execute", "--inplace", "--ExecutePreprocessor.timeout=600",
-                        str(sol_path)], capture_output=True, text=True, cwd=ROOT)
+    r = weekkit.execute(sol_path, timeout=600)
     if r.returncode:
         print(r.stderr[-4000:])
         sys.exit("the solution did not execute")

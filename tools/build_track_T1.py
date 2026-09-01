@@ -28,6 +28,7 @@ Needs torch, which the shared base environment does not carry; run it with an in
 has torch, numpy, pandas, matplotlib, sklearn, pyyaml and nbconvert.
 """
 import json
+import os
 import pathlib
 import re
 import subprocess
@@ -76,6 +77,7 @@ R_MAX = 200                  # km; beyond this a European flatfile is mostly tri
 PSEUDO_DEPTH = 8             # km, the h in sqrt(R^2 + h^2); the audit's value, refitted below
 G_CM_S2 = 981.0              # rotd50_pga arrives in cm/s^2
 SEED = 88                    # the course number, fixed before anything was run
+CI_Z = 1.96                  # the multiplier that really is "nineteen times in twenty"
 N_BOOT = 2000                # station-block bootstrap resamples
 EPOCHS = 200                 # passes over the training data for the small network
 BATCH = 512
@@ -172,9 +174,9 @@ _lp = (M["b0"] + M["bM"] * _demo_M
        + M["bR"] * np.log10(np.sqrt(_demo_R ** 2 + PSEUDO_DEPTH ** 2))
        + M["bV"] * np.log10(_demo_V))
 M["demo_pga"] = float(10 ** _lp)
-M["demo_lo"] = float(10 ** (_lp - 2 * M["sigma"]))
-M["demo_hi"] = float(10 ** (_lp + 2 * M["sigma"]))
-M["demo_factor"] = float(10 ** (2 * M["sigma"]))
+M["demo_lo"] = float(10 ** (_lp - CI_Z * M["sigma"]))
+M["demo_hi"] = float(10 ** (_lp + CI_Z * M["sigma"]))
+M["demo_factor"] = float(10 ** (CI_Z * M["sigma"]))
 M["demo_span"] = M["demo_hi"] / M["demo_lo"]
 
 # the pseudo-depth sweep, so the h in the formula is a measured choice and not a borrowed constant
@@ -184,19 +186,27 @@ for h in (4, 6, 8, 10, 12):
                        "log_r": np.log10(np.sqrt(shaking["R"] ** 2 + h ** 2)),
                        "log_vs30": shaking["log_vs30"]})
     M["h_sweep"][h] = float(LinearRegression().fit(_X, y).score(_X, y))
+M["h_spread"] = max(M["h_sweep"].values()) - min(M["h_sweep"].values())
 
 
 # --- the fork: four ways to split, and the machinery the notebook hands over ---
 def hold_out_quarter(labels, seed=SEED):
     """True for the rows to TRAIN on."""
+    # 1. Count how many records each label owns, then shuffle that list. Without the shuffle the
+    #    biggest earthquakes would be held out every time, which asks a different question.
     counts = pd.Series(labels).value_counts().sample(frac=1, random_state=seed)
     held_out = []
     rows_out = 0
+    # 2. Move whole labels into the test set until a quarter of the RECORDS have gone. Counting
+    #    records rather than labels keeps the test set the same size whichever column you split on.
     for name, n_rows in counts.items():
         if rows_out >= 0.25 * len(labels):
             break
         held_out.append(name)
         rows_out = rows_out + n_rows
+    # 3. Every record carrying a held-out label leaves together. That is the point of splitting
+    #    this way: if two records from one earthquake sat on opposite sides of the split, the
+    #    model could half-remember the answer instead of having to predict it.
     return ~np.isin(labels, held_out)
 
 
@@ -205,15 +215,37 @@ def r_squared(predicted, actual):
     return 1 - ((actual - predicted) ** 2).sum() / ((actual - actual.mean()) ** 2).sum()
 
 
+def rmse(predicted, actual):
+    """The typical miss, in the units of the thing being predicted."""
+    return np.sqrt(((actual - predicted) ** 2).mean())
+
+
 def held_out_predictions(model, is_train):
-    """Fit the model on the training records; hand back what it predicts for the held-out ones."""
-    model.fit(X[is_train], y[is_train])
-    return model.predict(X[~is_train])
+    """Fit the model on the training records; hand back what it predicts for the held-out ones.
+
+    `model` is either a scikit-learn estimator — anything with `.fit` and `.predict` — or a plain
+    function of `is_train` that does its own fitting and returns the held-out predictions. The
+    second form is what a torch model needs, and taking both here is what lets every model in
+    this notebook be scored by the same call.
+    """
+    # A scikit-learn model is fitted and then asked; a torch model brings its own training loop
+    # and so arrives as a function. Asking whether the object has a `.fit` tells the two apart.
+    if hasattr(model, "fit"):
+        # The model is shown the training records only. It never sees `X[~is_train]` while it is
+        # learning, which is what makes the score below a test rather than a memory check.
+        model.fit(X[is_train], y[is_train])
+        return model.predict(X[~is_train])
+    return model(is_train)
 
 
 def held_out_r2(model, is_train):
     """Fit on the training records, score on the held-out ones."""
     return r_squared(held_out_predictions(model, is_train), y[~is_train])
+
+
+def held_out_rmse(model, is_train):
+    """Fit on the training records, and how far off it typically is on the held-out ones."""
+    return rmse(held_out_predictions(model, is_train), y[~is_train])
 
 
 SPLITS = {"at random": hold_out_quarter(np.arange(len(shaking))),
@@ -224,17 +256,25 @@ SPLITS = {"at random": hold_out_quarter(np.arange(len(shaking))),
 
 def network_predictions(is_train, epochs=EPOCHS, seed=0):
     """Train the small network on the training records; predict the held-out ones."""
+    # 1. Put the three features on the same scale. A network learns by nudging its weights, and
+    #    an unscaled column would be nudged far harder than the others for no good reason. The
+    #    scaler is fitted on the TRAINING records and only then applied to the held-out ones, so
+    #    nothing the model is about to be tested on leaks into how it was trained.
     scaler = StandardScaler()
     x_train = torch.tensor(scaler.fit_transform(X[is_train]), dtype=torch.float32)
     x_test = torch.tensor(scaler.transform(X[~is_train]), dtype=torch.float32)
     y_train = torch.tensor(y[is_train].values, dtype=torch.float32).reshape(-1, 1)
 
+    # 2. Fix the random numbers before the layers are built, so the network starts from the same
+    #    weights every run and the numbers repeat.
     torch.manual_seed(seed)
     net = nn.Sequential(nn.Linear(len(FEATURES), WIDTH), nn.ReLU(),
                         nn.Linear(WIDTH, WIDTH), nn.ReLU(),
                         nn.Linear(WIDTH, 1))
     optimiser = torch.optim.Adam(net.parameters(), lr=0.01)
     loss_function = nn.MSELoss()
+    # 3. Train: `epochs` passes over the training records, and a fresh random order each pass so
+    #    the network cannot pick anything up from the order the records happen to sit in.
     for epoch in range(epochs):
         order = torch.randperm(len(x_train))
         for start in range(0, len(x_train), BATCH):
@@ -243,6 +283,7 @@ def network_predictions(is_train, epochs=EPOCHS, seed=0):
             loss = loss_function(net(x_train[batch]), y_train[batch])
             loss.backward()
             optimiser.step()
+    # 4. `detach` drops the bookkeeping torch keeps in order to train, leaving plain numbers.
     return net(x_test).detach().numpy().ravel()
 
 
@@ -257,18 +298,75 @@ for name, is_train in SPLITS.items():
                           .isin(shaking["station"][is_train]).mean())
     line = held_out_r2(LinearRegression(), is_train)
     trees = held_out_r2(forest, is_train)
-    net = r_squared(network_predictions(is_train), actual)
+    net = held_out_r2(network_predictions, is_train)
     TABLE[name] = {
         "n_train": int(is_train.sum()), "n_test": int((~is_train).sum()),
         "share_event": share_event, "share_station": share_station,
         "mean": float(r_squared(y[is_train].mean(), actual)),
         "line": float(line), "forest": float(trees), "net": float(net),
         "forest_gap": float(trees - line), "net_gap": float(net - line),
+        # R2 is MSE divided by the test set's OWN spread, so four R2 on four different test sets
+        # are four different quantities. These three are what make them comparable again: the
+        # spread each R2 was divided by, and the miss itself in the units of the thing predicted.
+        "sd": float(actual.std()),
+        "rmse_line": float(held_out_rmse(LinearRegression(), is_train)),
+        "rmse_forest": float(held_out_rmse(forest, is_train)),
+        "median_r": float(shaking["R"][~is_train].median()),
     }
 
 M["importances"] = {f: float(v) for f, v in
                     zip(FEATURES, RandomForestRegressor(n_estimators=200, min_samples_leaf=5,
                                                         random_state=0).fit(X, y).feature_importances_)}
+
+# --- is the border reversal about the border? hold out each big country in turn ---------------
+# The mechanism the plan records — the forest memorising site terms — is testable and fails: the
+# station split ALREADY has zero station overlap and the forest is still ahead there. So the
+# reversal has to be something the border does that the station split does not, and the way to
+# find out is to move the border. Four countries, largest first.
+COUNTRIES = {}
+for _country in ("GR", "IT", "TR", "RO"):
+    _is_train = (shaking["st_nation_code"] != _country).values
+    _line = held_out_r2(LinearRegression(), _is_train)
+    _trees = held_out_r2(forest, _is_train)
+    # How far outside the training data's own range the held-out records sit, on the three
+    # features the models can see — and the depth, which is NOT one of them and turns out to be
+    # what separates the two hold-outs that reverse.
+    _lo, _hi = X[_is_train].quantile(0.05), X[_is_train].quantile(0.95)
+    _outside = ((X[~_is_train] < _lo) | (X[~_is_train] > _hi)).any(axis=1)
+    COUNTRIES[_country] = {
+        "n_test": int((~_is_train).sum()), "line": float(_line), "forest": float(_trees),
+        "gap": float(_trees - _line), "median_r": float(shaking["R"][~_is_train].median()),
+        "rmse_line": float(held_out_rmse(LinearRegression(), _is_train)),
+        "rmse_forest": float(held_out_rmse(forest, _is_train)),
+        "outside": float(_outside.mean()),
+        "median_depth": float(shaking["ev_depth_km"][~_is_train].median()),
+        "median_depth_train": float(shaking["ev_depth_km"][_is_train].median()),
+    }
+
+# Trained IN Italy and tested everywhere else: the other direction of the same border.
+_reverse = (shaking["st_nation_code"] == "IT").values
+REVERSE = {"n_train": int(_reverse.sum()), "n_test": int((~_reverse).sum()),
+           "line": float(held_out_r2(LinearRegression(), _reverse)),
+           "forest": float(held_out_r2(forest, _reverse))}
+REVERSE["gap"] = REVERSE["forest"] - REVERSE["line"]
+
+# --- what a piecewise-constant model cannot do: leave the region it was trained in -------------
+# A forest predicts the average of training records that fell in the same leaf, so its output is
+# bounded by the training targets and flattens at the edge of the training cloud. A line has no
+# such bound. Measured on the border split, where the test set sits at the near-distance edge.
+_border = SPLITS["across a border"]
+_train_r, _test_r = shaking["log_r"][_border], shaking["log_r"][~_border]
+_q05 = float(_train_r.quantile(0.05))
+EDGE = {
+    "median_r_test": float(shaking["R"][~_border].median()),
+    "median_r_train": float(shaking["R"][_border].median()),
+    "below_q05": float((_test_r < _q05).mean()),
+    "actual_hi": float(y[~_border].max()),
+    "line_hi": float(held_out_predictions(LinearRegression(), _border).max()),
+    "forest_hi": float(held_out_predictions(forest, _border).max()),
+    "sd_line": float(np.std(y[~_border].values - held_out_predictions(LinearRegression(), _border))),
+    "sd_forest": float(np.std(y[~_border].values - held_out_predictions(forest, _border))),
+}
 
 # --- how big is the gap, next to the noise in the test set itself ---
 BOOT = {}
@@ -316,6 +414,10 @@ for name in TABLE:
     print(f"  measured  {name:>18} : {TABLE[name]}")
 for name in BOOT:
     print(f"  bootstrap {name:>18} : {BOOT[name]}")
+for name in COUNTRIES:
+    print(f"  hold out  {name:>18} : {COUNTRIES[name]}")
+print(f"  measured  {'Italy -> elsewhere':>18} = {REVERSE}")
+print(f"  measured  {'border edge':>18} = {EDGE}")
 
 # --- what the plan records, against what the data gives -----------------------
 # A builder does not edit the plan. It prints the mismatch so an orchestrator can.
@@ -338,6 +440,26 @@ if "LOSES by 0.012 split by station" in " ".join(TRACK["open_question"].split())
         f"under the station split is however inside its own bootstrap interval "
         f"[{BOOT['by station']['lo']:+.3f}, {BOOT['by station']['hi']:+.3f}], so 'the advantage "
         f"does not survive a station split' holds; 'it reverses' does not.")
+if "memorising site terms" in " ".join(TRACK["open_question"].split()):
+    PLAN_NOTES.append(
+        f"course.yml T1 `open_question:` attributes the border reversal to 'the forest memorising "
+        f"site terms'. That mechanism is refuted by the notebook's own table: the station split "
+        f"has share-a-station {TABLE['by station']['share_station']:.3f} — no station in the test "
+        f"set was trained on — and the forest is still AHEAD there by "
+        f"{TABLE['by station']['forest_gap']:+.3f}. Nor is it the border as such: holding out "
+        + ", ".join(f"{k} gives {v['gap']:+.3f}" for k, v in COUNTRIES.items())
+        + f". The measured mechanism for Italy is extrapolation: the Italian records are nearer "
+        f"({EDGE['median_r_test']:.0f} km median against {EDGE['median_r_train']:.0f} km outside "
+        f"it, {EDGE['below_q05'] * 100:.0f}% of them below the training set's 5th percentile of "
+        f"log distance) and a piecewise-constant forest cannot leave the region it was trained "
+        f"in — its highest prediction there is {EDGE['forest_hi']:.2f} in log10 PGA against the "
+        f"line's {EDGE['line_hi']:.2f} and an actual maximum of {EDGE['actual_hi']:.2f}. Romania "
+        f"reverses by the same amount for a different reason and should not be folded in: its "
+        f"earthquakes are intermediate-depth ({COUNTRIES['RO']['median_depth']:.0f} km median "
+        f"against {COUNTRIES['RO']['median_depth_train']:.0f} km), depth is not a feature, and "
+        f"the EQUATION's own R2 there is {COUNTRIES['RO']['line']:.3f} — both models fail and the "
+        f"forest fails harder. The conclusion — that ML learns no transferable physics here — "
+        f"survives; the mechanism is extrapolation, not memorisation.")
 for note in PLAN_NOTES:
     print(f"  PLAN DRIFT  {note}")
 
@@ -360,7 +482,7 @@ def fn(module_id, name):
 # The ideas and calls this track leans on, named here and worded there. A track teaches nothing
 # new, so the full module tables would list a hundred functions; these are the ones the notebook
 # and its model answers actually write.
-TRACK_IDEAS = [("ML1", "Linear regression"), ("S3", "Log axes"), ("ML3", "Baseline"),
+TRACK_IDEAS = [("ML1", "Linear regression"), ("D4", "Log axes"), ("ML3", "Baseline"),
                ("ML2", "Train/test split"), ("ML2", "Leakage"), ("ML4", "Random forest"),
                ("ML6", "Neural network"), ("S4", "Bootstrap"), ("S4", "Confidence interval")]
 TRACK_FNS = [("S3", "np.log10(values)"), ("ML2", "np.sqrt(x) / np.mean(x)"),
@@ -396,6 +518,28 @@ def track_summary():
     out += ["", "### Code you will reach back for", "", "| Function | What it does |", "|---|---|"]
     out += [f"| `{f['name']}` | {f['does']} |" for f in (fn(m, n) for m, n in TRACK_FNS)]
     return "\n".join(out)
+
+
+# ---------------------------------------------------------------------------
+# 2b. orderings, derived rather than typed
+# ---------------------------------------------------------------------------
+# The model answers below make claims about RANK — "the leaky split is third of four", "the border
+# split is best on RMSE". A rank is a number like any other and must not be typed from a run: the
+# service adds earthquakes, and a hand-written ordering would go stale silently while every figure
+# beside it stayed right. These derive it.
+ORDINAL = {1: "first", 2: "second", 3: "third", 4: "fourth"}
+
+
+def ranked(key, best="high"):
+    """The four splits listed best-first on one score, as 'name value, name value, ...'."""
+    order = sorted(TABLE.items(), key=lambda kv: kv[1][key], reverse=(best == "high"))
+    return ", ".join(f"{name} {row[key]:.3f}" for name, row in order)
+
+
+def rank_of(name, key, best="high"):
+    """Where one split comes on one score, as a word: 'first', 'second', ..."""
+    order = sorted(TABLE, key=lambda n: TABLE[n][key], reverse=(best == "high"))
+    return ORDINAL[order.index(name) + 1]
 
 
 # ---------------------------------------------------------------------------
@@ -497,7 +641,7 @@ different ways and see the score change without the model changing at all. Put a
 1. How much of the shaking can one straight line explain?
 2. How do you split train from test, and does the choice change the answer?
 3. Does a flexible model beat the physics, or only look like it?
-4. How much of the scatter is irreducible?
+4. What is the leftover scatter made of?
 
 The open question at the end is not on that list. It is the project; the four above are what you
 build to reach it.
@@ -640,7 +784,7 @@ md(f"""
 Now the physics. Shaking grows with magnitude and dies away with distance, and both effects span
 factors of thousands, so neither is visible on ordinary axes.
 
-**Log axes:** {idea('S3', 'Log axes')['words']}
+**Log axes:** {idea('D4', 'Log axes')['words']}
 """)
 
 code(f"""
@@ -676,8 +820,8 @@ Three of those terms are just columns you already have, put on log axes. The fou
 of engineering in the formula: `sqrt(R^2 + h^2)` instead of `R`. An earthquake is not a point, so at
 zero distance `log10(R)` would be minus infinity and the predicted shaking infinite; `h` is a
 made-up depth of a few kilometres that stops that happening. Sweeping it from 4 to 12 km moves the
-fit by less than {max(M['h_sweep'].values()) - min(M['h_sweep'].values()):.3f} in R², so
-{PSEUDO_DEPTH} km is used below, and it is a tunable you are free to refit.
+fit by {M['h_spread']:.4f} in R² — smaller than the spread the four splits below will produce
+without touching the model at all — so {PSEUDO_DEPTH} km is used here, and you may refit it.
 
 **Linear regression:** {idea('ML1', 'Linear regression')['words']}
 """)
@@ -759,8 +903,14 @@ There are at least four defensible answers, and they are the one real decision i
   really doing whenever you apply a European equation in California.
 
 This is the idea the model-selection week called *leakage*: any route by which information about the
-data you are scoring on reaches the model before you score it. Below are the three helpers you
-will need; the four splits are yours to build.
+data you are scoring on reaches the model before you score it. Below are the helpers you will need;
+the four splits are yours to build.
+
+Two scores, not one, and the reason matters. **R² is a ratio**: the miss divided by the spread of
+the very test set it was measured on. Change the test set and you change the denominator, so four
+R² from four different splits are four different quantities and cannot be laid side by side.
+**RMSE is the miss itself**, in log10 units of PGA, and those units mean the same thing in every
+test set. Report both, and where they disagree, believe the one whose units you can name.
 """)
 
 code(f"""
@@ -770,14 +920,21 @@ def hold_out_quarter(labels, seed={SEED}):
     Whole labels go into the test set, in random order, until a quarter of the records are gone —
     so `labels` is where you say what one independent thing is.
     \"\"\"
+    # 1. Count how many records each label owns, then shuffle that list. Without the shuffle the
+    #    biggest earthquakes would be held out every time, which asks a different question.
     counts = pd.Series(labels).value_counts().sample(frac=1, random_state=seed)
     held_out = []
     rows_out = 0
+    # 2. Move whole labels into the test set until a quarter of the RECORDS have gone. Counting
+    #    records rather than labels keeps the test set the same size whichever column you split on.
     for name, n_rows in counts.items():
         if rows_out >= 0.25 * len(labels):
             break
         held_out.append(name)
         rows_out = rows_out + n_rows
+    # 3. Every record carrying a held-out label leaves together. That is the point of splitting
+    #    this way: if two records from one earthquake sat on opposite sides of the split, the
+    #    model could half-remember the answer instead of having to predict it.
     return ~np.isin(labels, held_out)
 
 
@@ -786,15 +943,37 @@ def r_squared(predicted, actual):
     return 1 - ((actual - predicted) ** 2).sum() / ((actual - actual.mean()) ** 2).sum()
 
 
+def rmse(predicted, actual):
+    \"\"\"The typical miss, in the units of the thing being predicted.\"\"\"
+    return np.sqrt(((actual - predicted) ** 2).mean())
+
+
 def held_out_predictions(model, is_train):
-    \"\"\"Fit the model on the training records; hand back what it predicts for the held-out ones.\"\"\"
-    model.fit(X[is_train], y[is_train])
-    return model.predict(X[~is_train])
+    \"\"\"Fit the model on the training records; hand back what it predicts for the held-out ones.
+
+    `model` is either a scikit-learn estimator — anything with `.fit` and `.predict` — or a plain
+    function of `is_train` that does its own fitting and returns the held-out predictions. The
+    second form is the one a torch model needs, and accepting both is what lets every model in
+    this notebook be scored by the same call instead of two.
+    \"\"\"
+    # A scikit-learn model is fitted and then asked; a torch model brings its own training loop
+    # and so arrives as a function. Asking whether the object has a `.fit` tells the two apart.
+    if hasattr(model, "fit"):
+        # The model is shown the training records only. It never sees `X[~is_train]` while it is
+        # learning, which is what makes the score below a test rather than a memory check.
+        model.fit(X[is_train], y[is_train])
+        return model.predict(X[~is_train])
+    return model(is_train)
 
 
 def held_out_r2(model, is_train):
     \"\"\"Fit on the training records, score on the held-out ones.\"\"\"
     return r_squared(held_out_predictions(model, is_train), y[~is_train])
+
+
+def held_out_rmse(model, is_train):
+    \"\"\"Fit on the training records, and how far off it typically is on the held-out ones.\"\"\"
+    return rmse(held_out_predictions(model, is_train), y[~is_train])
 """)
 
 ask(f"""
@@ -809,13 +988,15 @@ fourth is a comparison you write yourself.
     "by station"      hold_out_quarter(shaking["station"])
     "across a border" (shaking["st_nation_code"] != "IT").values
 
-For each split print four things: how many records are in the training and the test set; what
+For each split print six things: how many records are in the training and the test set; what
 **fraction of the held-out records share their earthquake with a record in the training set**;
-what fraction **share their station**; and `held_out_r2(LinearRegression(), is_train)`.
+what fraction **share their station**; the held-out R²; and the held-out RMSE. Print the standard
+deviation of `y` in each test set too — that is the denominator each R² was divided by, and it is
+the reason the two scores will not rank the four splits the same way.
 
-Draw the four held-out R² values as a bar chart.
+Draw the four R² values and the four RMSE values as two bar charts side by side.
 
-Then print two sentences: which one of these four numbers would you put in a paper as "the
+Then print two sentences: which one of these four splits would you put in a paper as "the
 equation's predictive accuracy", and what are the other three measuring instead?
 """)
 
@@ -826,20 +1007,29 @@ splits = {{"at random": hold_out_quarter(np.arange(len(shaking))),
           "across a border": (shaking["st_nation_code"] != "IT").values}}
 
 scores = []
+misses = []
 for name, is_train in splits.items():
     same_event = shaking["esm_event_id"][~is_train].isin(shaking["esm_event_id"][is_train])
     same_station = shaking["station"][~is_train].isin(shaking["station"][is_train])
     scores.append(held_out_r2(LinearRegression(), is_train))
+    misses.append(held_out_rmse(LinearRegression(), is_train))
     print(f"{{name:<16}} train {{is_train.sum():>6}}  test {{(~is_train).sum():>5}}"
           f"   share an earthquake {{same_event.mean():.3f}}"
           f"   share a station {{same_station.mean():.3f}}"
-          f"   R2 {{scores[-1]:.3f}}")
+          f"   sd(y) {{y[~is_train].std():.3f}}"
+          f"   R2 {{scores[-1]:.3f}}   RMSE {{misses[-1]:.3f}}")
 
 plt.bar(list(splits), scores, color="0.4")
 plt.axhline(gmpe.score(X, y), color="firebrick", lw=1.2)
 plt.xlabel("how the held-out quarter was chosen")
 plt.ylabel("R2 on the held-out records")
 plt.title(f"The same equation, scored four ways (n = {{len(shaking)}})")
+plt.show()
+
+plt.bar(list(splits), misses, color="0.4")
+plt.xlabel("how the held-out quarter was chosen")
+plt.ylabel("RMSE, log10 units of PGA")
+plt.title("The same four splits, scored in the units of the thing predicted")
 plt.show()
 
 print("I would report the 'across a border' number, because that is the situation an equation is",
@@ -854,14 +1044,21 @@ print("'By event' measures whether the equation transports to a NEW earthquake a
 ask(f"""
 ### ✏️ Your turn 3
 
-Two or three paragraphs, quoting **your own four R² values and your own two 'share' fractions**.
+Three paragraphs, quoting **your own numbers** — the four R², the four RMSE, the four test-set
+standard deviations and the two 'share' fractions.
 
 1. Only one of the four splits gives a number you could honestly call this equation's predictive
-   accuracy. Say which, and say what each of the other three would overstate or understate, using
-   the share fractions as your evidence rather than as an assertion.
-2. The four R² values differ by much less than you might have expected for four such different
-   tests. What does that tell you about the three-parameter equation itself — and what would you
-   expect to happen to the spread of those four numbers if the model had more freedom?
+   accuracy. Say which, and say what each of the other three has let in, using the share fractions
+   as your evidence rather than as an assertion.
+2. Now check what those splits actually did to the score. Rank the four splits by R², then rank
+   them by RMSE, and account for the difference between the two rankings using the test-set
+   standard deviations — one of these scores is a ratio and one is not. Say plainly whether the
+   split you called leaky came out highest, and if it did not, explain why not rather than
+   explaining it away.
+3. A split that lets information through does not automatically inflate a score; it inflates the
+   score of a model that can use the information. Say what that implies about this particular
+   equation, and predict what should happen to the spread of these four numbers when you give a
+   model more freedom in the next section.
 """)
 
 answer_prose(f"""
@@ -873,31 +1070,52 @@ four share-a-station fractions are {TABLE['at random']['share_station']:.3f},
 {TABLE['across a border']['share_station']:.3f}. Under the random split
 {TABLE['at random']['share_event'] * 100:.0f}% of the records I am scoring on come from an
 earthquake that is already in the training set and
-{TABLE['at random']['share_station'] * 100:.0f}% come from a station that is, so its
-{TABLE['at random']['line']:.3f} is not a prediction — it is a measurement of how well the model
-interpolates between records it has almost already seen, and it overstates. The event split fixes
-one of those and leaves the other ({TABLE['by event']['share_station'] * 100:.0f}% still share a
-station), and the station split fixes the other and leaves the first
+{TABLE['at random']['share_station'] * 100:.0f}% come from a station that is, so whatever it
+returns is not a prediction — it is a measurement of how well the model interpolates between
+records it has almost already seen. The event split fixes one of those and leaves the other
+({TABLE['by event']['share_station'] * 100:.0f}% still share a station), and the station split
+fixes the other and leaves the first
 ({TABLE['by station']['share_event'] * 100:.0f}% still share an earthquake). Only the border split
 takes both away at once — {TABLE['across a border']['share_event'] * 100:.0f}% share an earthquake,
 and those are the border-region events recorded on both sides, which is honest rather than a bug.
 
-What surprised me is how little it mattered:
-{TABLE['at random']['line']:.3f}, {TABLE['by event']['line']:.3f},
-{TABLE['by station']['line']:.3f} and {TABLE['across a border']['line']:.3f}, a spread of
-{max(t['line'] for t in TABLE.values()) - min(t['line'] for t in TABLE.values()):.3f}. The equation
-has four numbers in it and three of them are physics — bigger earthquakes shake harder, distance
-attenuates, soft ground amplifies — so there is very little in it that *could* be specific to one
-earthquake or one site. It cannot memorise, because it has nowhere to put a memory. My trivial
-baseline is the other end of the same argument: guessing the average scores
-{TABLE['across a border']['mean']:.3f} across the border, which is worse than useless, and the
-difference between that and {TABLE['across a border']['line']:.3f} is what the three physical terms
-are worth.
+I expected that to show up as the random split scoring highest, and it does not. Ranked by R² my
+four splits go {ranked('line')} — the split with both kinds of leakage comes
+{rank_of('at random', 'line')} of four, and the border split I called the only honest one scores
+{TABLE['across a border']['line'] - TABLE['at random']['line']:+.3f} *above* it. Ranked by RMSE the
+order is not the same: {ranked('rmse_line', best='low')}, and now the random split is
+{rank_of('at random', 'rmse_line', best='low')} — the worst of the four — while the border split is
+{rank_of('across a border', 'rmse_line', best='low')}. Two rankings of the same four fits cannot
+both be a ranking of accuracy, and the one to distrust is the R². R² is a ratio: the miss divided
+by the spread of whichever records it was scored on, and my four test sets have spreads of
+{TABLE['at random']['sd']:.3f}, {TABLE['by event']['sd']:.3f}, {TABLE['by station']['sd']:.3f} and
+{TABLE['across a border']['sd']:.3f}. Four different denominators make four different quantities,
+and a spread of {max(t['line'] for t in TABLE.values()) - min(t['line'] for t in TABLE.values()):.3f}
+across them is not one thing varying. RMSE is the miss itself, in log10 units of PGA in all four,
+so it is the one I can lay side by side.
 
-I would expect a model with more freedom to spread those four numbers much further apart. Freedom is
-exactly what lets a model record which station a row came from instead of learning why that station
-shakes; a model that has done that will look excellent when the same station appears on both sides
-of the split and will have nothing to say when it does not.
+On RMSE the border result stops being a paradox and becomes a fact about the test set: Italy is
+easier. Its median source distance is {TABLE['across a border']['median_r']:.0f} km against
+{TABLE['at random']['median_r']:.0f} km for a random quarter of the file, and near-field records are
+where a distance-attenuation term is best determined, so the absolute miss there is the smallest of
+the four ({TABLE['across a border']['rmse_line']:.3f}). Italy also has the smallest spread to
+explain ({TABLE['across a border']['sd']:.3f}), which pushes its R² *down* — the two effects work
+against each other and the smaller miss wins.
+
+So the lesson is not that a random split always overstates. It can, and on this equation it does
+not, and the reason is the equation rather than the split. Leakage inflates a score only for a
+model that has somewhere to put what
+leaks through. This one has four numbers and three of them are physics — bigger earthquakes shake
+harder, distance attenuates, soft ground amplifies — so being handed a held-out record whose
+earthquake and whose station are both already in the training set buys it nothing: it has no
+per-event and no per-station parameter to bend. That is the useful result here, and it is a stronger
+statement than "the random split lies", because it says *when* the random split lies. My trivial
+baseline is the other end of the same argument: guessing the average scores
+{TABLE['across a border']['mean']:.3f} across the border, and the difference between that and
+{TABLE['across a border']['line']:.3f} is what the three physical terms are worth. The prediction I
+would carry into the next section is that a model with more freedom will spread these four numbers
+much further apart, because freedom is exactly what lets a model record which station a row came
+from instead of learning why that station shakes.
 """)
 
 # --- SECTION 3 ---------------------------------------------------------------
@@ -941,14 +1159,18 @@ Score `RandomForestRegressor(n_estimators=200, min_samples_leaf=5, random_state=
 `LinearRegression()` on every one of your four splits, using `held_out_r2` for both so that the
 only thing changing between rows is the split.
 
-Print, per split: the equation's R², the forest's R², and the difference. Draw the four differences
-as a bar chart with zero marked, so the sign is visible.
+Print, per split: the equation's R², the forest's R², the difference, and both RMSE values so the
+row is also readable in the units of the thing predicted. Draw the four differences as a bar chart
+with zero marked, so the sign is visible.
 
 Then print `forest.feature_importances_` beside `FEATURES` for a forest fitted on everything.
 
-Finish with two printed sentences on your own numbers: the difference is not the same on all four
-splits — say what the forest is doing that the straight line cannot, and say which of your four
-numbers you would have quoted if you had only ever run the first one.
+Finish with three printed sentences on your own numbers. Say what the forest is doing that the
+straight line cannot. Then check the obvious explanation against your own share fractions: if the
+forest's advantage came from records that share an earthquake or a station with the training set,
+what should the advantage be on the split where the share-a-station fraction is zero, and what is
+it? Last, say which of your four numbers you would have quoted if you had only ever run the first
+one.
 """)
 
 answer(f"""
@@ -959,7 +1181,10 @@ for name, is_train in splits.items():
     line = held_out_r2(LinearRegression(), is_train)
     trees = held_out_r2(forest, is_train)
     gaps.append(trees - line)
-    print(f"{{name:<16}} equation {{line:.3f}}   forest {{trees:.3f}}   forest - equation {{trees - line:+.3f}}")
+    print(f"{{name:<16}} equation {{line:.3f}}   forest {{trees:.3f}}"
+          f"   forest - equation {{trees - line:+.3f}}"
+          f"   RMSE {{held_out_rmse(LinearRegression(), is_train):.3f}}"
+          f" -> {{held_out_rmse(forest, is_train):.3f}}")
 
 plt.bar(list(splits), gaps, color="0.4")
 plt.axhline(0, color="firebrick", lw=1.2)
@@ -972,12 +1197,17 @@ forest.fit(X, y)
 print("what the forest leaned on:")
 print(pd.Series(forest.feature_importances_.round(3), index=FEATURES).to_string())
 
-print("The forest can remember particular combinations of magnitude, distance and Vs30 that it",
-      "has seen before, and Vs30 barely changes for a given station, so remembering a",
-      "(distance, Vs30) corner is very close to remembering a station. The straight line has no",
-      "way to do that: it has four numbers and they apply everywhere. That is why the gain shrinks",
-      "as I take the shared earthquakes and shared stations away, and goes negative once the test",
-      "records are in a country the forest never trained on.")
+print("The forest fits the surface in pieces, so it can bend where the straight line cannot —",
+      "near-field saturation, and magnitude and distance interacting instead of adding. The line",
+      "has four numbers and they apply everywhere.")
+print("The obvious explanation is that the gain is leakage: the forest recognising a station it",
+      "has already been trained on. If that were the whole story the gain should be zero on the",
+      "station split, where the share-a-station fraction is 0.000. It is not zero, it is",
+      round(gaps[2], 3), "- so part of the advantage is genuine curvature and survives having",
+      "every test station withheld. That also means leakage cannot be what makes the border",
+      "column negative, because the station split has none either and is still positive. Whatever",
+      "reverses the sign is something the border does and the station split does not, and I have",
+      "not measured it yet.")
 print("If I had only run the random split I would have quoted", round(gaps[0], 3),
       "as the improvement from machine learning, and it would have been the wrong number by",
       "about", round(abs(gaps[0] - gaps[-1]), 3), "R2.")
@@ -986,30 +1216,25 @@ print("If I had only run the random split I would have quoted", round(gaps[0], 3
 ask(f"""
 ### ✏️ Your turn 5
 
-Now the model the open question is actually about. Write a function
+Now the model the open question is actually about: a small neural network on the same three columns.
 
-    network_predictions(is_train, epochs={EPOCHS}, seed=0)
+**The contract, which is all you are given.** Write a function `network_predictions(is_train)` that
+trains a network on the training records and hands back its predictions for the held-out ones as a
+plain numpy array — so that `held_out_r2(network_predictions, is_train)` scores it by exactly the
+call that scored the equation and the forest. The name and that one argument are what the rest of
+the notebook depends on; everything inside is yours.
 
-that trains a small network on the training records and returns its predictions for the held-out
-ones, so that `r_squared(network_predictions(is_train), y[~is_train])` scores it exactly the way
-`held_out_r2` scores the others. The pieces, in the order you need them:
+The design, in words. The calls are the waveform week's, and every one of them is in the summary
+table at the foot of this notebook.
 
-1. `StandardScaler()`, fitted on the training rows with `fit_transform` and applied to the held-out
-   rows with `transform`. Fit it on the training rows **only** — fitting it on everything is
-   leakage, of a small and famous kind.
-2. `torch.tensor(..., dtype=torch.float32)` for both feature blocks and for the training targets;
-   the targets need `.reshape(-1, 1)` so their shape matches what the network returns.
-3. `torch.manual_seed(seed)`, then the network itself:
-
-       net = nn.Sequential(nn.Linear(3, {WIDTH}), nn.ReLU(),
-                           nn.Linear({WIDTH}, {WIDTH}), nn.ReLU(),
-                           nn.Linear({WIDTH}, 1))
-
-4. `torch.optim.Adam(net.parameters(), lr=0.01)` and `nn.MSELoss()`.
-5. The training loop from the waveform week, unchanged: for each epoch, `torch.randperm` the
-   training rows, walk them in blocks of {BATCH}, and for each block do `zero_grad()`, compute the
-   loss, `backward()`, `step()`.
-6. `net(x_test).detach().numpy().ravel()` to get the predictions back out as a plain array.
+- Standardise the three features first. Fit the scaler on the training rows **only** and apply it
+  to the held-out rows — fitting it on everything is leakage, of a small and famous kind.
+- Two hidden layers of {WIDTH} units with a rectifier between them, and one output. Torch wants
+  float32 tensors, and the targets as a column rather than a row.
+- Mean-squared-error loss, Adam at a learning rate of 0.01, {EPOCHS} passes over the training data
+  in reshuffled minibatches of {BATCH}.
+- Seed the network before you build it, so that rerunning the cell gives you the same answer twice.
+- Bring the predictions back out of torch as a flat numpy array.
 
 Score it on all four splits beside the equation and the forest, and print the three R² values per
 split. It trains in a second or two per split on a laptop; if the third decimal moves when you rerun
@@ -1023,18 +1248,26 @@ and say what your answer would have been if the only split you had run were the 
 answer(f"""
 def network_predictions(is_train, epochs={EPOCHS}, seed=0):
     \"\"\"Train the small network on the training records; predict the held-out ones.\"\"\"
+    # 1. Put the three features on the same scale. A network learns by nudging its weights, and
+    #    an unscaled column would be nudged far harder than the others for no good reason. The
+    #    scaler is fitted on the TRAINING records and only then applied to the held-out ones, so
+    #    nothing the model is about to be tested on leaks into how it was trained.
     scaler = StandardScaler()
     x_train = torch.tensor(scaler.fit_transform(X[is_train]), dtype=torch.float32)
     x_test = torch.tensor(scaler.transform(X[~is_train]), dtype=torch.float32)
     y_train = torch.tensor(y[is_train].values, dtype=torch.float32).reshape(-1, 1)
 
+    # 2. Fix the random numbers before the layers are built, so the network starts from the same
+    #    weights every run and the numbers this cell prints repeat.
     torch.manual_seed(seed)
-    net = nn.Sequential(nn.Linear(3, {WIDTH}), nn.ReLU(),
+    net = nn.Sequential(nn.Linear(len(FEATURES), {WIDTH}), nn.ReLU(),
                         nn.Linear({WIDTH}, {WIDTH}), nn.ReLU(),
                         nn.Linear({WIDTH}, 1))
     optimiser = torch.optim.Adam(net.parameters(), lr=0.01)
     loss_function = nn.MSELoss()
 
+    # 3. Train: `epochs` passes over the training records, and a fresh random order each pass so
+    #    the network cannot pick anything up from the order the records happen to sit in.
     for epoch in range(epochs):
         order = torch.randperm(len(x_train))
         for start in range(0, len(x_train), {BATCH}):
@@ -1044,6 +1277,7 @@ def network_predictions(is_train, epochs={EPOCHS}, seed=0):
             loss.backward()
             optimiser.step()
 
+    # 4. `detach` drops the bookkeeping torch keeps in order to train, leaving plain numbers.
     return net(x_test).detach().numpy().ravel()
 
 
@@ -1051,7 +1285,7 @@ network_gaps = []
 for name, is_train in splits.items():
     line = held_out_r2(LinearRegression(), is_train)
     trees = held_out_r2(forest, is_train)
-    brain = r_squared(network_predictions(is_train), y[~is_train])
+    brain = held_out_r2(network_predictions, is_train)
     network_gaps.append(brain - line)
     print(f"{{name:<16}} equation {{line:.3f}}   forest {{trees:.3f}}   network {{brain:.3f}}"
           f"   network - equation {{brain - line:+.3f}}")
@@ -1066,62 +1300,65 @@ print("Had I only run the random split I would have written that a neural networ
       "The number would have been measuring the wrong thing.")
 """)
 
-# --- SECTION 4 ---------------------------------------------------------------
 md(f"""
-## How much of the scatter is irreducible?
+### Is the difference bigger than the noise in the test set it was measured on?
 
-Two numbers are still missing before any of this is a claim.
-
-The first is the width of the gap you just measured. A difference in R² is itself a measurement made
-on one particular held-out set, and it has a spread like anything else.
+One thing is still missing before any of this is a claim. A difference in R² is itself a
+measurement, made on one particular held-out set, and it has a spread like anything else. The
+station-split gap you just printed is a small number; quoting it with no width beside it is
+reporting a coin flip as a tendency.
 
 **Bootstrap:** {idea('S4', 'Bootstrap')['words']}
 
 **Confidence interval:** {idea('S4', 'Confidence interval')['words']}
-
-The second is what the leftover scatter is made of. A ground-motion equation's sigma is not a
-nuisance — it is the number seismic hazard analysis actually consumes, because a building code
-asks for the shaking that is exceeded once in five hundred years, and that lives in the tail. Sigma
-splits into two pieces with completely different meanings: how much whole *earthquakes* come out
-above or below the equation, and how much *individual recordings* scatter within one earthquake.
 """)
 
 ask(f"""
 ### ✏️ Your turn 6
 
 Put an interval on the forest's advantage, for the **station** split, by resampling the held-out set
-itself. The recipe, in words:
+itself.
 
-1. Take `is_train = splits["by station"]`, and get `predicted_line` and `predicted_forest` from
-   `held_out_predictions` for `LinearRegression()` and the forest. `actual = y[~is_train].values`.
-2. The held-out records are not independent either, so resample **stations**, not rows. Build
-   `held = shaking[~is_train].reset_index(drop=True)`, then a
-   `for station, rows in held.groupby("station"):` loop collecting `rows.index.values` into a list —
-   one entry per held-out station, holding the positions of that station's records.
-3. Make an `rng = np.random.default_rng({SEED})`. Then {N_BOOT} times over: draw
-   `len(positions)` stations with replacement
-   (`rng.integers(0, len(positions), size=len(positions))`), glue their position arrays together
-   with `np.concatenate(parts)`, and record
-   `r_squared(predicted_forest[take], actual[take]) - r_squared(predicted_line[take], actual[take])`.
-4. Report the 2.5th and 97.5th percentiles with `np.percentile(gaps, [2.5, 97.5])`, and the fraction
-   of the {N_BOOT} resamples in which the forest's advantage is zero or negative.
+**The contract.** Produce `gaps`, an array of {N_BOOT} values, each one (forest R² − equation R²)
+recomputed on a resampled version of the same held-out set — with both models fitted once, on the
+real training set, and then left alone. You are resampling what you *scored on*, not what you
+trained on.
 
-Draw the {N_BOOT} differences as a histogram with zero and your observed difference marked. Then do
-the whole thing again for `splits["at random"]`, which takes one changed line.
+Two things decide whether it is right, and both are yours to get right:
 
-Finish with two printed sentences on your own two intervals: is the advantage you measured in *Your
-turn 4* bigger than the noise in the test set it was measured on, and does your answer to that
-depend on which split you ask it about?
+- **Resample stations, not rows.** The held-out records are no more independent than the rest of
+  the file; two records from one station carry nearly one station's worth of information. So one
+  draw is a whole station's block of positions, drawn with replacement until you have as many
+  blocks as there are held-out stations. Resampling rows would give you an interval several times
+  too narrow, which is the whole reason this section exists.
+- **Refit nothing.** The predictions are computed once, before the loop. A bootstrap that refits
+  inside the loop is measuring something else, and takes an hour.
+
+Report the 2.5th and 97.5th percentiles of `gaps`, and the fraction of the {N_BOOT} resamples in
+which the forest's advantage is zero or negative. Draw the {N_BOOT} differences as a histogram with
+zero and your observed difference marked. Then do the whole thing again for the random split.
+
+Finish with two printed sentences on your own two intervals. Is the advantage you measured in *Your
+turn 4* bigger than the noise in the test set it was measured on, and does your answer depend on
+which split you ask it about? Be careful what you claim: with the fits frozen, this interval covers
+the luck of **which held-out stations you happened to score on**. It says nothing about which
+stations went into the training set — changing that would refit both models, and is a different
+experiment.
 """)
 
 answer(f"""
 def gap_interval(split_name):
     \"\"\"The 95% interval on (forest - equation) for one split, resampling held-out stations.\"\"\"
+    # 1. Both models are fitted on the same training records and asked about the same held-out
+    #    ones, so the only thing that differs between the two sets of predictions is the model.
     is_train = splits[split_name]
     actual = y[~is_train].values
     predicted_line = held_out_predictions(LinearRegression(), is_train)
     predicted_forest = held_out_predictions(forest, is_train)
 
+    # 2. Collect the row numbers belonging to each held-out station. Two records from one station
+    #    are not two independent pieces of evidence, so the resampling below moves whole stations
+    #    rather than single records — otherwise the interval comes out far too narrow.
     held = shaking[~is_train].reset_index(drop=True)
     positions = []
     for station, rows in held.groupby("station"):
@@ -1129,6 +1366,9 @@ def gap_interval(split_name):
 
     rng = np.random.default_rng({SEED})
     gaps = []
+    # 3. Build {N_BOOT} alternative test sets by drawing stations at random, with replacement, and
+    #    score both models on each one. The spread of the resulting gaps is how much of the gap
+    #    could be luck in which stations happened to be held out.
     for i in range({N_BOOT}):
         picked = rng.integers(0, len(positions), size=len(positions))
         parts = []
@@ -1160,10 +1400,28 @@ for split_name in ["at random", "by station"]:
 
 print("Under the random split the whole interval sits above zero, so that advantage is bigger",
       "than the noise in its own test set — it is a real difference, about a difference that does",
-      "not matter. Under the station split the interval straddles zero, so the advantage I",
-      "reported there is not distinguishable from having drawn a lucky quarter of the stations.")
+      "not matter. Under the station split the interval straddles zero: rescoring the same two",
+      "frozen models on resampled draws of the same held-out stations moves the gap from one side",
+      "of zero to the other, so I cannot tell the advantage I reported there from which of those",
+      "stations I happened to score on.")
+print("That is the only thing this interval covers. Both models were fitted once and never",
+      "refitted, so it says nothing about how the gap would move if a different quarter of the",
+      "stations had been held out — that would change the training set as well, and I have not",
+      "measured it.")
 print("So yes, the answer depends entirely on which split I ask about, and the split I would",
       "report is the one where the answer is 'no measurable advantage'.")
+""")
+
+# --- SECTION 4 ---------------------------------------------------------------
+md(f"""
+## What is the leftover scatter made of?
+
+A ground-motion equation's sigma is not a nuisance — it is the number seismic hazard analysis
+actually consumes, because a building code asks for the shaking that is exceeded once in five
+hundred years, and that lives in the tail. Nothing you have fitted today moved it. Before asking
+what could, it is worth knowing what it is made of, because sigma splits into two pieces with
+completely different meanings: how much whole *earthquakes* come out above or below the equation,
+and how much *individual recordings* scatter within one earthquake.
 """)
 
 ask(f"""
@@ -1232,10 +1490,10 @@ md(f"""
 
 For a magnitude {_demo_M} earthquake {_demo_R} km away on ground with Vs30 = {_demo_V} m/s, this
 fit says **{M['demo_pga']:.3f} g** — and its own scatter says the true value will lie between
-{M['demo_lo']:.3f} g and {M['demo_hi']:.3f} g nineteen times in twenty. That is a factor of
-{M['demo_factor']:.1f} either side of the middle, and about {M['demo_span']:.0f} from one end of the
-range to the other — from four coefficients fitted to {M['n_work']:,} recordings of
-{M['events']:,} earthquakes.
+{M['demo_lo']:.3f} g and {M['demo_hi']:.3f} g nineteen times in twenty, which is {CI_Z} sigma and
+not the 2 sigma it is tempting to round it to. That is a factor of {M['demo_factor']:.1f} either
+side of the middle, and about {M['demo_span']:.0f} from one end of the range to the other — from
+four coefficients fitted to {M['n_work']:,} recordings of {M['events']:,} earthquakes.
 
 The width is the answer. A building code cannot use the middle of that range; it uses the tail, so
 the quantity worth improving is sigma, and sigma is what nothing in this notebook moved.
@@ -1319,16 +1577,15 @@ md(f"""
 Nobody grading this knows the answer, and neither does the literature. Everything above is the
 scaffolding; this is the project.
 
-Here is what is established by the notebook you have just run, and it is less than it looks. Under a
-random split the forest gains {TABLE['at random']['forest_gap']:+.3f} R² over the equation and the
-network {TABLE['at random']['net_gap']:+.3f}, and the random split's own bootstrap interval
-[{BOOT['at random']['lo']:+.3f}, {BOOT['at random']['hi']:+.3f}] excludes zero, so that gain is
-real — it is just not a gain at anything useful. Take the shared earthquakes away and it falls to
-{TABLE['by event']['forest_gap']:+.3f}; take the shared stations away and it falls to
-{TABLE['by station']['forest_gap']:+.3f}, with an interval
-[{BOOT['by station']['lo']:+.3f}, {BOOT['by station']['hi']:+.3f}] that straddles zero. Send the
-model across a border and it becomes {TABLE['across a border']['forest_gap']:+.3f}: the
-four-coefficient equation wins, in a country neither model has seen.
+Here is what is established by the notebook you have just run, and it is less than it looks — stated
+as quantities, because the values are the ones you measured and they are yours to read off your own
+output rather than mine. Under a random split both flexible models gain R² over the equation, and
+the random split's own bootstrap interval excludes zero, so that gain is real; it is just not a gain
+at anything useful, because almost every record being scored shares an earthquake and a station with
+the training set. Take the shared earthquakes away and the gain shrinks. Take the shared stations
+away and it shrinks again, to a number whose interval straddles zero. Send the model across a border
+and the sign flips: the four-coefficient equation wins outright, in a country neither model has
+seen. Four splits, one model, and the conclusion changes with the split.
 
 What is **not** established is why, or whether it has to be that way. Four directions, none of them
 worked out here:
@@ -1342,21 +1599,24 @@ worked out here:
    explicit term per site and per region — a *non-ergodic* model. Your event terms from *Your turn
    7* are a first draft of exactly that. What happens to tau and phi if you allow a per-station
    term, and does the leftover phi shrink enough to be worth the parameters?
-3. **Test both directions of the border.** This notebook trained outside Italy and tested in Italy.
-   Train *in* Italy and test everywhere else and the sample sizes swap. If the parametric equation
-   wins in both directions, that is a much stronger claim than winning in one.
+3. **Predict which hold-outs will reverse, before running them.** If the reversal is about a test
+   set sitting outside the region the model was trained in, then some measure of how far a
+   country's records sit from the rest of the file — in magnitude, distance and Vs30 together —
+   should order the country hold-outs by their gap. Build that measure, commit to the ordering,
+   and only then run the hold-outs. A rule that predicts in advance is worth ten that explain
+   afterwards.
 4. **Ask how much of sigma is even reducible.** Two recordings of the same earthquake at two
    stations 500 m apart on the same rock still differ. Find such pairs in this file — same event,
    nearly the same distance, nearly the same Vs30 — and measure how far apart they are. Whatever
    that number is, no model with these columns can do better than it.
 
 And one that is bigger than a semester. Sigma has barely moved in forty years of ground-motion
-research, across an enormous increase in data and model complexity. Your own fit gives
-{M['sigma']:.3f} in log10 units, a factor of {M['factor_model']:.1f}, splitting into
-{M['tau']:.3f} between earthquakes and {M['phi']:.3f} within them. If that number is close to
-irreducible with the observations that exist, then the interesting question is not which model
-predicts shaking best, but what would have to be *measured* — and not modelled — to make it smaller.
-Answering that with a number, even a rough one, would be a real result.
+research, across an enormous increase in data and model complexity. The fit at the top of this
+notebook gives {M['sigma']:.3f} in log10 units, a factor of {M['factor_model']:.1f} in shaking, and
+*Your turn 7* splits it into a between-earthquake and a within-earthquake half. If that number is
+close to irreducible with the observations that exist, then the interesting question is not which
+model predicts shaking best, but what would have to be *measured* — and not modelled — to make it
+smaller. Answering that with a number, even a rough one, would be a real result.
 """)
 
 ask(f"""
@@ -1369,43 +1629,102 @@ cell below the prose.
 """)
 
 answer_prose(f"""
-I would test the border in the other direction first, because it is the only measurement here where
-the two explanations predict opposite things rather than different sizes. If the flexible models are
-genuinely learning ground-motion physics, then training on Italy and testing everywhere else should
-look like training everywhere else and testing on Italy: physics does not care which way round the
-countries go, so the sign of the gap should stay the same. If instead they are learning things
-specific to whichever set of stations they were shown, the direction should matter a great deal —
-Italy is only {M['italy_rows'] / M['n_work'] * 100:.0f}% of my records, so training on it means
-training on far fewer stations, and a model that survives on physics should lose much less from that
-than a model that survives on memory. The number that would change my mind is the gap in the reverse
-direction: if the forest came out ahead of the equation trained on Italy and tested outside it, I
-would have to accept that my {TABLE['across a border']['forest_gap']:+.3f} was about Italy rather
-than about memorisation.
+The one measurement I would make first is to **move the border**. My border split is a single
+hold-out — train everywhere except Italy, score in Italy — and it is the only one of the four splits
+where the sign changed. Before I explain that sign I should find out whether it is a property of
+holding out a country at all, or a property of holding out *that* country. Holding out each of the
+four largest countries in turn costs one line I have already written. The two explanations predict
+different patterns rather than different sizes, which is what makes it worth doing first. If the
+flexible models lose whenever a country hold-out takes away something they were leaning on, then
+every country should reverse by roughly the same amount. If instead they lose because the held-out
+records sit somewhere the model was never trained, only the countries whose records sit away from
+the rest of the file should reverse, and the others should come out at nothing. The number that
+would change my mind is the gap on the largest hold-out, Greece with
+{COUNTRIES['GR']['n_test']:,} records: if it came out near Italy's, the flexible models really would
+be losing at every border and I would have to prefer the first explanation.
 
-What makes me doubt the flexible models in advance is *Your turn 7*. My sigma of {M['sigma']:.3f}
-splits into {M['tau']:.3f} between whole earthquakes and {M['phi']:.3f} within them, and neither
-piece is something three columns can explain: the first needs to know how this particular rupture
-went and the second needs to know what the ground is like along the actual path. A model with more
-freedom and no more information cannot reach either. So my expectation is that the reverse-direction
-test also favours the equation, and that the honest report is not "machine learning does not work
-here" but "nothing works better here until somebody measures something new" — which is a result
-about the data, not about the models.
+It comes out at {COUNTRIES['GR']['gap']:+.3f}, and Turkey at {COUNTRIES['TR']['gap']:+.3f} — both
+indistinguishable from no difference at all, on hold-outs that withhold an entire country. Only
+Italy ({COUNTRIES['IT']['gap']:+.3f}) and Romania ({COUNTRIES['RO']['gap']:+.3f}) reverse. So the
+border is not the mechanism, and neither is the forest memorising its stations: my station split
+already withheld **every** station in the test set, share-a-station
+{TABLE['by station']['share_station']:.3f}, and the forest was still ahead there by
+{TABLE['by station']['forest_gap']:+.3f}. A model that was winning by remembering stations would
+have lost that split first, before any border was involved.
+
+What Italy has instead is a test set sitting outside the part of the feature space the models were
+trained on. Its median source distance is {EDGE['median_r_test']:.0f} km against
+{EDGE['median_r_train']:.0f} km for the records outside it, and
+{EDGE['below_q05'] * 100:.0f}% of the Italian records are nearer than the 5th percentile of the
+training set's distances. A forest is piecewise constant: every prediction is an average of
+training records that fell in the same leaf, so it cannot return a value those records never
+reached, and at the edge of the cloud every nearby leaf lies on one side. On the Italian test set
+its highest prediction is {EDGE['forest_hi']:.2f} in log10 PGA, while the equation reaches
+{EDGE['line_hi']:.2f} and the recordings themselves reach {EDGE['actual_hi']:.2f} — the forest
+simply stops, a factor of {10 ** (EDGE['line_hi'] - EDGE['forest_hi']):.1f} in shaking short of the
+records it is being scored on. Extended past its data a straight line keeps going, and here it goes
+in the right direction — not because it learned to, but because somebody built the direction into
+its shape. The forest's residual scatter on those records is {EDGE['sd_forest']:.3f} against the
+equation's {EDGE['sd_line']:.3f}, and it is not a constant offset; it is that flattening.
+
+I should not fold Romania into the same explanation, and this is where I would stop and say so.
+Romania reverses by nearly the same amount, but its records are not near-field — their median
+distance is {COUNTRIES['RO']['median_r']:.0f} km. What is unusual about them is a variable the
+models cannot see at all. Most of Romania's records come from intermediate-depth earthquakes in the
+Vrancea zone: their median depth is {COUNTRIES['RO']['median_depth']:.0f} km against
+{COUNTRIES['RO']['median_depth_train']:.0f} km for everything else, and depth is not one of my
+three features. There the *equation* scores
+{COUNTRIES['RO']['line']:.3f} — worse than guessing the average — so both models have failed and
+the forest has merely failed harder. Two hold-outs reversing for two different reasons is exactly
+why I would not claim to have found the mechanism, only to have ruled one out.
+
+So the conclusion I will defend is narrower than "the forest memorised the site terms" and better
+supported: a model with more freedom and no more information cannot leave the region it was trained
+in, while a parametric equation can, because its shape carries physics nobody had to learn from
+this dataset. For this particular border the loss holds in both directions — training in Italy and
+testing everywhere else gives {REVERSE['gap']:+.3f} — but that is one border, and Greece and Turkey
+say I should not generalise from it. What makes me doubt the flexible models in advance is *Your
+turn 7*: sigma splits into a between-earthquake half and a within-earthquake half, and neither is
+something these three columns can explain — the first needs to know how this particular rupture
+went, the second what the ground is like along the actual path. So my report is not "machine
+learning does not work here" but "nothing works better here until somebody measures something new",
+which is a result about the data rather than about the models.
 """)
 
 answer(f"""
-train_in_italy = (shaking["st_nation_code"] == "IT").values
-
-for name, is_train in [("outside Italy -> Italy", splits["across a border"]),
-                       ("Italy -> outside Italy", train_in_italy)]:
+for country in ["GR", "IT", "TR", "RO"]:
+    is_train = (shaking["st_nation_code"] != country).values
     line = held_out_r2(LinearRegression(), is_train)
     trees = held_out_r2(forest, is_train)
-    brain = r_squared(network_predictions(is_train), y[~is_train])
-    print(f"{{name:<24}} train {{is_train.sum():>6}}  test {{(~is_train).sum():>5}}"
-          f"   equation {{line:.3f}}   forest {{trees:.3f}}   network {{brain:.3f}}"
-          f"   forest - equation {{trees - line:+.3f}}")
+    low, high = X[is_train].quantile(0.05), X[is_train].quantile(0.95)
+    outside = ((X[~is_train] < low) | (X[~is_train] > high)).any(axis=1)
+    print(f"hold out {{country}}   test {{(~is_train).sum():>5}}"
+          f"   median R {{shaking['R'][~is_train].median():>6.1f}} km"
+          f"   median depth {{shaking['ev_depth_km'][~is_train].median():>5.1f}} km"
+          f"   outside the training 5-95% band {{outside.mean():.3f}}"
+          f"   equation {{line:.3f}}   forest {{trees:.3f}}   forest - equation {{trees - line:+.3f}}")
 
-print("Same sign both ways, so this is not something about Italy — a model with more freedom and",
-      "no more information loses whichever side of the border it is trained on.")
+train_in_italy = (shaking["st_nation_code"] == "IT").values
+print(f"the same border the other way — train in Italy, test outside:"
+      f"   equation {{held_out_r2(LinearRegression(), train_in_italy):.3f}}"
+      f"   forest {{held_out_r2(forest, train_in_italy):.3f}}")
+
+is_train = splits["across a border"]
+predicted_line = held_out_predictions(LinearRegression(), is_train)
+predicted_forest = held_out_predictions(forest, is_train)
+edge = shaking["log_r"][is_train].quantile(0.05)
+
+print("share of the Italian records nearer than the training set's 5th percentile of log distance:",
+      round((shaking["log_r"][~is_train] < edge).mean(), 3))
+print("highest value reached on the Italian records, log10 PGA — the recordings",
+      round(y[~is_train].max(), 2), " the equation", round(predicted_line.max(), 2),
+      " the forest", round(predicted_forest.max(), 2))
+print("The forest cannot predict a value its training records never reached, and the Italian",
+      "records are nearer and shake harder than most of what it was trained on, so it flattens",
+      "exactly where the equation keeps going.")
+print("Romania is not the same story and I will not report it as one: its records are not",
+      "near-field, and what is unusual about them is depth, which is not a feature. Both models",
+      "score below the trivial baseline there.")
 """)
 
 
@@ -1447,7 +1766,7 @@ def track_ids(cells):
             c["id"] = f"{TRACK['id']}-q{q:02d}-check"
         else:
             c["id"] = f"{TRACK['id']}-c{i:03d}"
-    return cells
+    return weekkit.dedupe_ids(cells)
 
 
 def main():
@@ -1460,9 +1779,7 @@ def main():
     sol_path.write_text(json.dumps(sol, indent=1) + "\n")
 
     print(f"executing {sol_path.name} ...")
-    r = subprocess.run([sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook",
-                        "--execute", "--inplace", "--ExecutePreprocessor.timeout=1800",
-                        str(sol_path)], capture_output=True, text=True, cwd=ROOT)
+    r = weekkit.execute(sol_path, timeout=1800)
     if r.returncode:
         print(r.stderr[-4000:])
         sys.exit("the solution did not execute")

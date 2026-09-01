@@ -126,10 +126,16 @@ def seasonal(station):
 def fourier_fit(station):
     """Replace each year's swing by the smooth once-a-year wave that fits it best."""
     station = station.copy()
+    # 1. Turn the month number into a position on a circle, so December and January come out next
+    #    to each other instead of eleven months apart.
     angle = 2 * np.pi * station["month"] / 12
     station["sin"] = np.sin(angle)
     station["cos"] = np.cos(angle)
     station["fourier"] = np.nan
+    # 2. Fit one wave per year, from that year's months alone. A sine and a cosine added together
+    #    can make a once-a-year wave of any height with its peak in any month, so choosing how
+    #    much of each to use is choosing the best wave for that year. A year with a gap in
+    #    `swing` is skipped and keeps the blank set on the line above.
     for year, rows in station.dropna(subset=["swing"]).groupby("year"):
         wave = LinearRegression().fit(rows[["sin", "cos"]], rows["swing"])
         station.loc[rows.index, "fourier"] = wave.predict(rows[["sin", "cos"]])
@@ -150,6 +156,18 @@ def amplitude(station, column):
 def trend(amps):
     """How fast the yearly amplitude is changing, in ppm per decade."""
     return LinearRegression().fit(amps[["year"]], amps["amplitude"]).coef_[0] * 10
+
+
+def restrict(amps, first, last):
+    """The same amplitude series over a STATED span of years.
+
+    Two rates are comparable only if they were fitted over the same years, and left to itself
+    every definition and every station ends up with a different set: the raw definition keeps a
+    year the detrended one loses at the ends of the record, and Samoa's usable record stops six
+    years before Barrow's. Every comparison below goes through this function so the span is a
+    decision that is written down rather than whatever each series happened to have.
+    """
+    return amps[(amps["year"] >= first) & (amps["year"] <= last)].reset_index(drop=True)
 
 
 def trend_spread(amps):
@@ -276,22 +294,124 @@ M["growth_early"] = float(growth.dropna().head(WINDOW).mean())
 M["growth_late"] = float(growth.dropna().tail(WINDOW).mean())
 gap_frame = pd.DataFrame({"year": leak.index, "amplitude": leak["gap"].values})
 M["leak_slope"] = float(trend(gap_frame))
-M["slope_difference"] = A["mlo", "detrended"]["slope"] - A["mlo", "raw"]["slope"]
+# The raw definition keeps two years the detrended one loses (the rolling mean has no full year
+# around the ends of the record), so the two slopes as shipped are fitted over different spans.
+# The gap between the definitions is measured over the years BOTH definitions have, which is the
+# only version of it that is about the definitions rather than about the ends of the record.
+DEF_FROM = max(int(raw_amp.index.min()), int(det_amp.index.min()))
+DEF_TO = min(int(raw_amp.index.max()), int(det_amp.index.max()))
+M["slope_difference"] = float(trend(restrict(amplitude(MLO, "swing"), DEF_FROM, DEF_TO))
+                              - trend(restrict(amplitude(MLO, "value"), DEF_FROM, DEF_TO)))
+M["def_from"], M["def_to"] = DEF_FROM, DEF_TO
+
+# --- the two-station pair the plan opens on ---
+# course.yml opens on Mauna Loa AGAINST Barrow, and the notebook prints those two rates over each
+# station's own complete years — 46 and 48 of them, so as printed they are not fitted on one span.
+# Whether the comparison survives being put on one span is a measurement rather than an opinion,
+# so it is made here under both defensible cuts (the shared WINDOW, and the shared YEAR SET) and
+# the plan is checked against it below. Note the ladder's window is a different window again:
+# Samoa sets that one, and importing it into a two-station sentence would answer a question
+# nobody asked.
+PAIR_AMPS = {"mlo": amplitude(MLO, "swing"), "brw": amplitude(BRW, "swing")}
+PAIR_FROM = max(int(a["year"].min()) for a in PAIR_AMPS.values())
+PAIR_TO = min(int(a["year"].max()) for a in PAIR_AMPS.values())
+PAIR_YEARS = sorted(set(PAIR_AMPS["mlo"]["year"]) & set(PAIR_AMPS["brw"]["year"]))
+PAIR_CUTS = {
+    "each its own years": dict(PAIR_AMPS),
+    f"the shared window {PAIR_FROM}-{PAIR_TO}":
+        {s: restrict(a, PAIR_FROM, PAIR_TO) for s, a in PAIR_AMPS.items()},
+    f"the {len(PAIR_YEARS)} shared years":
+        {s: a[a["year"].isin(PAIR_YEARS)].reset_index(drop=True) for s, a in PAIR_AMPS.items()},
+}
+M["pair"] = {}
+for _label, _cut in PAIR_CUTS.items():
+    _d = {s: {"n": len(a), "slope": float(trend(a))} for s, a in _cut.items()}
+    _d["ratio"] = _d["brw"]["slope"] / _d["mlo"]["slope"]
+    M["pair"][_label] = _d
+M["pair_ratio_lo"] = min(v["ratio"] for v in M["pair"].values())
+M["pair_ratio_hi"] = max(v["ratio"] for v in M["pair"].values())
 
 # --- the first move on the open question: two more stations, same read recipe ---
-EXTRA = [("smo", "American Samoa"), ("spo", "the South Pole")]
+# ONE WINDOW FOR ALL FOUR. The first version of this ladder fitted each station over whatever
+# years that station happened to have — 32 for Samoa against 48 for Barrow — and printed neither
+# the count nor the span, so four incomparable rates were set side by side and read as a gradient.
+# That is exactly the error ✏️6 two cells above spends a paragraph teaching, committed by this
+# notebook's own closing measurement. The window is now the overlap of the four records, and n
+# and the span travel with every rate so the cost of the window is on the page.
+LADDER_SITES = [("spo", "the South Pole"), ("smo", "American Samoa"),
+                ("mlo", "Mauna Loa"), ("brw", "Barrow")]
+LADDER_AMPS, LADDER_LAT, LADDER_STATION = {}, {}, {}
+for site, name in LADDER_SITES:
+    if site in ("mlo", "brw"):
+        station, lat = (MLO if site == "mlo" else BRW), M[f"{site}_lat"]
+    else:
+        frame = fetch(GML.format(site=site), f"trackT2_co2_{site}.csv", REFRESH)
+        station, lat = fourier_fit(seasonal(frame)), float(frame["latitude"].iloc[0])
+    LADDER_AMPS[site] = amplitude(station, "swing")
+    LADDER_LAT[site] = lat
+    LADDER_STATION[site] = station
+
+LADDER_FROM = max(int(a["year"].min()) for a in LADDER_AMPS.values())
+LADDER_TO = min(int(a["year"].max()) for a in LADDER_AMPS.values())
 LADDER = []
-for site, name in EXTRA:
-    frame = fetch(GML.format(site=site), f"trackT2_co2_{site}.csv", REFRESH)
-    d = described(amplitude(seasonal(frame), "swing"))
-    d.update(site=site, name=name, lat=float(frame["latitude"].iloc[0]))
-    LADDER.append(d)
-for site, name, station in (("mlo", "Mauna Loa", MLO), ("brw", "Barrow", BRW)):
-    d = dict(A[site, "detrended"])
-    d.update(site=site, name=name, lat=M[f"{site}_lat"])
+for site, name in LADDER_SITES:
+    own = LADDER_AMPS[site]
+    d = described(restrict(own, LADDER_FROM, LADDER_TO))
+    d.update(site=site, name=name, lat=LADDER_LAT[site],
+             pct_dec=100 * d["slope"] / d["mean"],
+             pct_lo=100 * d["lo"] / d["mean"], pct_hi=100 * d["hi"] / d["mean"],
+             own_n=len(own), own_first=int(own["year"].min()), own_last=int(own["year"].max()),
+             own_slope=float(trend(own)), own_mean=float(own["amplitude"].mean()))
+    d["own_pct_dec"] = 100 * d["own_slope"] / d["own_mean"]
+    d["dropped"] = [y for y in range(LADDER_FROM, LADDER_TO + 1)
+                    if y not in set(own["year"])]
     LADDER.append(d)
 LADDER.sort(key=lambda d: d["lat"])
+LAD = {d["site"]: d for d in LADDER}
 M["ladder"] = LADDER
+M["ladder_from"], M["ladder_to"] = LADDER_FROM, LADDER_TO
+M["ladder_span"] = LADDER_TO - LADDER_FROM + 1
+# The track's open question rests on the ladder NOT being ordered by latitude. That is a claim
+# about the data, so it is measured on the common window and re-measured under the once-a-year
+# wave, and the ordering is carried into the prose rather than typed there. If either ever stops
+# holding, the open question has to be rewritten and this is where that shows up.
+M["ladder_order"] = [d["site"] for d in sorted(LADDER, key=lambda d: -d["pct_dec"])]
+FOURIER_LADDER = {}
+for site, _ in LADDER_SITES:
+    fa = restrict(amplitude(LADDER_STATION[site], "fourier"), LADDER_FROM, LADDER_TO)
+    FOURIER_LADDER[site] = {"n": len(fa), "mean": float(fa["amplitude"].mean()),
+                            "slope": float(trend(fa))}
+    FOURIER_LADDER[site]["pct_dec"] = (100 * FOURIER_LADDER[site]["slope"]
+                                       / FOURIER_LADDER[site]["mean"])
+M["fourier_ladder"] = FOURIER_LADDER
+M["fourier_order"] = sorted(FOURIER_LADDER, key=lambda s: -FOURIER_LADDER[s]["pct_dec"])
+M["order_survives"] = M["ladder_order"] == M["fourier_order"]
+M["order_is_latitude"] = M["ladder_order"] == [d["site"] for d in LADDER]
+_names = [LAD[s]["name"] for s in M["ladder_order"]]
+LADDER_ORDER_WORDS = ", ".join(_names[:-1]) + " and " + _names[-1]
+if M["order_is_latitude"] or not M["order_survives"]:
+    sys.exit("the four-station ladder is now ordered by latitude, or the ordering no longer "
+             "survives the once-a-year wave. course.yml's T2 open_question and the ✏️7 model "
+             "answer both rest on it not being — rewrite them before shipping this build.")
+
+# --- what Samoa's number is worth ---
+# A peak-to-trough range is the largest of twelve numbers minus the smallest, so it counts the
+# month-to-month scatter as signal. At Samoa the scatter is a large share of the range, which is
+# why the two definitions disagree there by more than the whole disputed quantity. Measured, not
+# argued: the scatter about each year's fitted wave, and the range twelve draws of pure scatter
+# would produce on their own.
+rng = np.random.default_rng(SEED)
+for site in ("smo", "spo", "mlo", "brw"):
+    st = LADDER_STATION[site]
+    sd = float((st["swing"] - st["fourier"]).std())
+    draws = rng.normal(0, sd, size=(20000, 12))
+    M[f"{site}_noise_sd"] = sd
+    M[f"{site}_noise_range"] = float((draws.max(axis=1) - draws.min(axis=1)).mean())
+    M[f"{site}_noise_share"] = 100 * M[f"{site}_noise_range"] / LAD[site]["mean"]
+    print(f"  measured  {site + ' noise':>16} : monthly scatter about its own fitted wave "
+          f"{sd:.3f} ppm; twelve draws of that scatter alone would span "
+          f"{M[f'{site}_noise_range']:.3f} ppm, which is {M[f'{site}_noise_share']:.0f}% of its "
+          f"{LAD[site]['mean']:.2f} ppm measured amplitude")
 
 # The build log is the record that every number was computed. Print all of it, not a selection.
 for k in sorted(M):
@@ -302,10 +422,62 @@ for (site, key), d in A.items():
           f"CI [{d['lo']:+.3f}, {d['hi']:+.3f}] above zero {d['above_zero']:.3f} · "
           f"{d['early']:.2f} ({d['early_from']}-{d['early_to']}) -> {d['late']:.2f} "
           f"({d['late_from']}-{d['late_to']}) = {d['pct']:+.1f}% · n={d['n']}")
+for _label, _d in M["pair"].items():
+    print(f"  measured  mlo vs brw, {_label}: mlo n={_d['mlo']['n']} {_d['mlo']['slope']:+.4f} "
+          f"· brw n={_d['brw']['n']} {_d['brw']['slope']:+.4f} · ratio {_d['ratio']:.3f}")
+print(f"  measured  the mlo/brw ratio therefore lands between {M['pair_ratio_lo']:.1f} and "
+      f"{M['pair_ratio_hi']:.1f} however the shared years are cut — the roughly eightfold gap is "
+      f"in the record, not in the window")
+print(f"  measured  ladder window {LADDER_FROM}-{LADDER_TO} ({M['ladder_span']} calendar years), "
+      f"the overlap of all four records; order by rate {'>'.join(M['ladder_order'])}, "
+      f"under the once-a-year wave {'>'.join(M['fourier_order'])}, "
+      f"ordered by latitude {M['order_is_latitude']}")
 for d in LADDER:
-    print(f"  measured  {d['name']:>16} : lat {d['lat']:+.2f}  mean {d['mean']:.2f} ppm  "
+    print(f"  measured  {d['name']:>16} : lat {d['lat']:+.2f}  n={d['n']:>2} of "
+          f"{M['ladder_span']} {d['first']}-{d['last']}  mean {d['mean']:.2f} ppm  "
           f"slope {d['slope']:+.3f} [{d['lo']:+.3f}, {d['hi']:+.3f}] ppm/dec  "
-          f"= {100 * d['slope'] / d['mean']:+.2f}%/decade")
+          f"= {d['pct_dec']:+.2f}%/decade [{d['pct_lo']:+.2f}, {d['pct_hi']:+.2f}]  "
+          f"(own window n={d['own_n']} {d['own_first']}-{d['own_last']}: "
+          f"{d['own_pct_dec']:+.2f}%/decade)  "
+          f"fourier {FOURIER_LADDER[d['site']]['pct_dec']:+.2f}%/decade")
+
+# course.yml's T2 open_question quotes the ladder to a student. It is edited by hand and this
+# file is not allowed to edit it, so the only thing that can stop it going stale is saying so
+# every build. Not a gate: a plan is corrected by a person, and a builder that patched the plan
+# would hide the drift rather than report it.
+_quoted = [round(float(x), 1) for x in re.findall(r"gives (\d+(?:\.\d+)?)",
+                                                  TRACK["open_question"])]
+_measured = [round(LAD[s]["pct_dec"], 1) for s in ("spo", "smo", "mlo", "brw")]
+_ladder_line = (f"spo {_measured[0]}, smo {_measured[1]}, mlo {_measured[2]}, brw {_measured[3]} "
+                f"%/decade on the common window {LADDER_FROM}-{LADDER_TO}")
+if len(_quoted) != 4:
+    print(f"  PLAN CHECK  course.yml's T2 open_question no longer quotes four 'gives N' figures, "
+          f"so it could not be checked against the ladder. Measured: {_ladder_line}.")
+elif _quoted != _measured:
+    print(f"  PLAN DRIFT  course.yml's T2 open_question quotes {_quoted} %/decade for the "
+          f"four-station ladder, in latitude order. Measured: {_ladder_line}. "
+          f"Correct the plan; this file does not.")
+
+# The plan also opens on the mlo/brw pair and on the band the ratio holds to. Those were not
+# watched by anything, so a corrected notebook and an uncorrected plan could disagree in silence
+# — which is the defect this whole pass exists to remove, one file over.
+_own = M["pair"]["each its own years"]
+_pair_quoted = re.findall(r"([+-]0\.\d{3})", TRACK["open_question"])
+_pair_measured = [f"{_own['mlo']['slope']:+.3f}", f"{_own['brw']['slope']:+.3f}"]
+if len(_pair_quoted) != 2:
+    print(f"  PLAN CHECK  course.yml's T2 open_question no longer quotes exactly two ppm/decade "
+          f"rates, so the mlo/brw pair could not be checked. Measured: "
+          f"mlo {_pair_measured[0]}, brw {_pair_measured[1]} over each station's own years.")
+elif _pair_quoted != _pair_measured:
+    print(f"  PLAN DRIFT  course.yml's T2 open_question quotes {_pair_quoted} ppm/decade for "
+          f"Mauna Loa and Barrow. Measured over each station's own complete years: "
+          f"{_pair_measured}. Correct the plan; this file does not.")
+_band = re.findall(r"between (\d+\.\d) and (\d+\.\d)", TRACK["open_question"])
+_band_measured = (f"{M['pair_ratio_lo']:.1f}", f"{M['pair_ratio_hi']:.1f}")
+if _band and _band[0] != _band_measured:
+    print(f"  PLAN DRIFT  course.yml's T2 open_question says the mlo/brw ratio lands between "
+          f"{_band[0][0]} and {_band[0][1]}. Measured across the cuts above: "
+          f"{_band_measured[0]} to {_band_measured[1]}. Correct the plan; this file does not.")
 
 
 # ---------------------------------------------------------------------------
@@ -521,6 +693,14 @@ at {M['mlo_lat']:.1f}°N, the longest continuous CO2 record there is, and **Barr
 coast of Alaska at {M['brw_lat']:.1f}°N. Barrow is not analysed until the last section; it is
 loaded now so that the one self-check covers both files.
 
+**These are the *in-situ* files, and that is a choice with a cost.** The Mauna Loa record
+everybody quotes — the Keeling curve, back to 1958 — is a separate NOAA *trends* file that exists
+for Mauna Loa alone; this notebook reads the in-situ series instead, which begins in
+{M['mlo_first']} and so gives up the {M['mlo_first'] - 1958} years before it. What it buys is the
+last section: every station NOAA runs publishes an in-situ file at this address with three letters
+changed, so four stations become one measurement programme in one layout, and a rate measured here
+can be compared with a rate measured there.
+
 **Two things about these files, and the second one is a trap.**
 
 - The measurement is the column called `value`, in parts per million, one row per month.
@@ -731,11 +911,16 @@ print("On this definition the swing is not measurably getting stronger:",
       "larger than the line's own rise across fifty years.")
 """)
 
-md(f"""
-Measured that way the answer is **{M['defs']['mlo', 'raw']['slope']:+.3f} ppm per decade** on a
-mean amplitude of {M['defs']['mlo', 'raw']['mean']:.2f} ppm — a fifth of a percent per decade, and
-the cloud of points is wide. A single fitted slope with no interval on it, though, cannot tell you
-whether that is a small effect or no effect.
+# The reveal states no number. A track's prompt is answered alone and nothing below the load
+# tells the student whether they are right — so a paragraph here that prints their slope back to
+# them is the promise in cell 1 broken, and the four paragraphs like it below were the whole of
+# this notebook's Tier 1 defect. What each one keeps is the sentence that carries the argument
+# into the next section; where a quantity is genuinely needed it is NAMED, never valued.
+md("""
+A slope on its own is not an answer yet. Whatever came out of your fit, it is a small fraction of
+the mean amplitude you printed beside it, and the cloud of points around the line is wide. A
+single fitted slope with no interval on it cannot tell you whether that is a small effect or no
+effect.
 """)
 
 ask(f"""
@@ -802,34 +987,56 @@ print("Before I could answer, the whole interval would have to sit on one side o
       len(raw), "years it does not.")
 """)
 
-md(f"""
-So the obvious definition gives no answer: **{M['defs']['mlo', 'raw']['slope']:+.3f} ppm per
-decade, 95% interval [{M['defs']['mlo', 'raw']['lo']:+.3f},
-{M['defs']['mlo', 'raw']['hi']:+.3f}]**, straddling zero, with
-{M['defs']['mlo', 'raw']['above_zero'] * 100:.0f}% of the resamples above it. On the longest and
-cleanest CO2 record in the world, the question in the title has just come back *don't know*.
+md("""
+So the obvious definition gives no answer. The interval you printed straddles zero and the share
+of resamples above it is not far off a coin toss, so on the complete years of the cleanest CO2
+record there is, the question in the title has just come back *don't know*.
 
 That is a real result and you could stop there. It would also be wrong.
 """)
 
-md(f"""
+md("""
 ### Predict before you run
 
 You are about to measure the same thing two other ways. Both are defensible, and neither is more
 obviously correct than what you have just done.
 
 How far could the answer move? Write down the slope you think the *most different* of the three
-definitions will give, in ppm per decade — your first answer was
-{M['defs']['mlo', 'raw']['slope']:+.3f}. Change `my_guess` and run the cell. You will check it at
-the end of the next section, and a wrong guess you committed to is worth more than a right answer
-you were shown.
+definitions will give, in ppm per decade — the answer you already have is in the cell above to
+measure it against. Change `my_guess` and run the cell. You will check it at the end of the next
+section, and a wrong guess you committed to is worth more than a right answer you were shown.
 """)
 
-code(f"""
-my_guess = {M['defs']['mlo', 'raw']['slope']:.2f}
+# The Predict cell ships EMPTY to the student, which is why it is written out here rather than
+# through `code()`. A pre-filled `my_guess` is not a prediction: the student presses shift-enter,
+# the notebook agrees with itself, and the commitment the whole device exists to extract never
+# happens. Measured across the built course, sixteen of twenty notebooks shipped the guess
+# already filled in, and this was one of them.
+#
+# This guard used to be written `if ... raise` rather than as the `assert` T3 uses, because this
+# Predict cell sits BELOW ✏️2 while T3's sits above its first ✏️, and check_track read any
+# line-initial `assert` after the first question as the safety net coming back on. It is not one:
+# it checks that a number was written down, never whether the number was right, so the promise in
+# cell 1 — that nothing below the load tells you if you are right — still holds. The rule now
+# exempts it by name, so both tracks write the same thing and the shape no longer depends on where
+# in the notebook the Predict section happens to fall.
+PREDICT_CHECK = (
+    'assert my_guess is not None, \\\n'
+    '    "write a number into my_guess before you run this — the commitment is the point, "\\\n'
+    '    "and a guess you made before you saw the answer is the only one that can teach you "\\\n'
+    '    "anything"'
+)
+PREDICT_PRINT = ('print("✓ committed — I think the most different definition will give", '
+                 'my_guess, "ppm per decade")')
 
-print("I think the most different definition will give", my_guess, "ppm per decade")
-""")
+# TWO cells, as in T3 and T4, and forced rather than chosen: check_asserts requires every name an
+# assert uses to be bound by an EARLIER cell, and check_conventions requires any cell containing
+# `assert` to print the course's ✓ line. Neither can be satisfied by one cell that assigns
+# `my_guess` and then tests it. It is also what a student does — change the number, run on.
+CELLS.append(("code",
+              f"my_guess = {M['defs']['mlo', 'raw']['slope']:.2f}",
+              "my_guess = None    # ← your number, written down before you look"))
+CELLS.append(("code", PREDICT_CHECK + "\n" + PREDICT_PRINT, None))
 
 # --- YOUR TURN 3, the fork --------------------------------------------------
 md(f"""
@@ -874,10 +1081,16 @@ answer("""
 def fourier_fit(station):
     \"\"\"Replace each year's swing by the smooth once-a-year wave that fits it best.\"\"\"
     station = station.copy()
+    # 1. Turn the month number into a position on a circle, so December and January come out next
+    #    to each other instead of eleven months apart.
     angle = 2 * np.pi * station["month"] / 12
     station["sin"] = np.sin(angle)
     station["cos"] = np.cos(angle)
     station["fourier"] = np.nan
+    # 2. Fit one wave per year, from that year's months alone. A sine and a cosine added together
+    #    can make a once-a-year wave of any height with its peak in any month, so choosing how
+    #    much of each to use is choosing the best wave for that year. A year with a gap in
+    #    `swing` is skipped and keeps the blank set on the line above.
     for year, rows in station.dropna(subset=["swing"]).groupby("year"):
         wave = LinearRegression().fit(rows[["sin", "cos"]], rows["swing"])
         station.loc[rows.index, "fourier"] = wave.predict(rows[["sin", "cos"]])
@@ -895,8 +1108,11 @@ for name in definitions:
     plt.plot(amps["year"], amps["amplitude"], styles[name], lw=1.2, label=name)
 plt.xlabel("year")
 plt.ylabel("seasonal amplitude (ppm)")
-plt.title(f"Three definitions of the Mauna Loa seasonal amplitude "
-          f"(n = {len(amplitude(mauna_loa, 'swing'))} years)")
+# The raw definition keeps two years the other two lose — the rolling mean has no full year
+# around the ends of the record — so one n over three series would be wrong for two of them.
+plt.title(f"Three definitions of the Mauna Loa seasonal amplitude\\n"
+          f"(raw n = {len(amplitude(mauna_loa, 'value'))} complete years; "
+          f"detrended and once-a-year wave n = {len(amplitude(mauna_loa, 'swing'))})")
 plt.legend()
 plt.show()
 
@@ -915,19 +1131,13 @@ print("Yes — the answer changes, and not just in size. The raw range says the 
       "raw one is measuring the trend as well as the season and the other two are not.")
 """)
 
-md(f"""
+md("""
 Three defensible definitions, and they do not merely differ in size — **they differ in what the
-answer is.**
+answer is.** Two of the three put their whole interval on one side of zero and one does not, and
+the one that does not is the definition you would have written first.
 
-| Definition | mean amplitude | trend | 95% interval | above zero |
-|---|---|---|---|---|
-| raw range | {M['defs']['mlo', 'raw']['mean']:.2f} ppm | {M['defs']['mlo', 'raw']['slope']:+.3f} ppm/decade | [{M['defs']['mlo', 'raw']['lo']:+.3f}, {M['defs']['mlo', 'raw']['hi']:+.3f}] | {M['defs']['mlo', 'raw']['above_zero'] * 100:.0f}% |
-| detrended range | {M['defs']['mlo', 'detrended']['mean']:.2f} ppm | {M['defs']['mlo', 'detrended']['slope']:+.3f} ppm/decade | [{M['defs']['mlo', 'detrended']['lo']:+.3f}, {M['defs']['mlo', 'detrended']['hi']:+.3f}] | {M['defs']['mlo', 'detrended']['above_zero'] * 100:.0f}% |
-| once-a-year wave | {M['defs']['mlo', 'fourier']['mean']:.2f} ppm | {M['defs']['mlo', 'fourier']['slope']:+.3f} ppm/decade | [{M['defs']['mlo', 'fourier']['lo']:+.3f}, {M['defs']['mlo', 'fourier']['hi']:+.3f}] | {M['defs']['mlo', 'fourier']['above_zero'] * 100:.0f}% |
-
-Two of the three clear zero and one does not, and the one that does not is the one you would write
-first. Two definitions agreeing and one disagreeing is a stronger clue than three-way
-disagreement would be: it says something specific is wrong with the odd one out.
+Two definitions agreeing and one disagreeing is a stronger clue than three-way disagreement would
+be: it says something specific is wrong with the odd one out.
 """)
 
 ask(f"""
@@ -960,21 +1170,41 @@ for the gap between the two definitions, and does it account for the difference 
 """)
 
 answer("""
+# Complete years only, for the same reason Your turn 1 needed them: the peak and the trough have
+# to be picked from all twelve months, and in a year missing its summer the "lowest month" is
+# whichever month happened to survive.
 have = mauna_loa.dropna(subset=["value"])
 full = have[have.groupby("year")["month"].transform("count") == 12]
+
+# WHERE in the year the two extremes fall, not how big they are. The theft is proportional to the
+# time between them, so it is the month numbers that carry the mechanism.
 peak_at = full.loc[full.groupby("year")["value"].idxmax()].set_index("year")["month"]
 trough_at = full.loc[full.groupby("year")["value"].idxmin()].set_index("year")["month"]
+
+# THE TRAP THE PROMPT WARNED ABOUT. Incomplete years were just dropped, so the row above 2024 in
+# this table is 2021 — and the growth below asks for "the year before" and "the year after" by
+# POSITION. Laying the means back out over the calendar turns a neighbour that does not exist into
+# a blank, which makes the growth for those years NaN instead of making it wrong by a factor of
+# three. Nothing else in this cell would have complained.
 years = range(full["year"].min(), full["year"].max() + 1)
 annual = full.groupby("year")["value"].mean().reindex(years)
 
-raw = amplitude(mauna_loa, "value").set_index("year")["amplitude"]
-detrended = amplitude(mauna_loa, "swing").set_index("year")["amplitude"]
+# The two amplitude series again, indexed by year so they subtract year against year. New names:
+# `raw` from Your turn 1 is a two-column table and these are Series, and rebinding the name would
+# break that cell for anyone who ran it again.
+raw_by_year = amplitude(mauna_loa, "value").set_index("year")["amplitude"]
+detrended_by_year = amplitude(mauna_loa, "swing").set_index("year")["amplitude"]
 
-leak = pd.DataFrame({"gap": detrended - raw,
+# The year's growth is centred — the year after minus the year before, halved — so that one noisy
+# year cannot set it. It needs both neighbours, which is why the first and last year of the record
+# leave in the .dropna().
+leak = pd.DataFrame({"gap": detrended_by_year - raw_by_year,
                      "lag": trough_at - peak_at,
                      "growth": (annual.shift(-1) - annual.shift(1)) / 2}).dropna()
 leak["predicted"] = leak["lag"] / 12 * leak["growth"]
 
+# The red line is 1:1, not a fit. `lag / 12 x growth` has no free parameter in it, so points
+# landing on the line mean the mechanism was right — not that a line was drawn through them.
 plt.scatter(leak["predicted"], leak["gap"], color="0.4", s=14)
 plt.plot([0, leak["predicted"].max()], [0, leak["predicted"].max()], color="firebrick", lw=1.2)
 plt.xlabel("predicted theft, lag / 12 x growth (ppm)")
@@ -1005,17 +1235,13 @@ print("Yes to both. The theft explains the gap year by year — predicted",
       "the theft has grown too, by almost exactly the amount that separates the two trends.")
 """)
 
-md(f"""
-The gap between the two definitions is **{M['leak_early']:.2f} ppm** in the early years and
-**{M['leak_late']:.2f} ppm** in the recent ones. The one-line prediction gives
-{M['leak_early_pred']:.2f} and {M['leak_late_pred']:.2f} for the same two windows, and correlates
-with the observed gap at r = {M['leak_corr']:.2f} across single years.
-
-The trough at Mauna Loa arrives about {M['lag_mean']:.1f} months after the peak, and CO2 now rises
-{M['growth_late']:.1f} ppm a year where it rose {M['growth_early']:.1f} ppm in the 1970s. So the
-raw definition loses more of the swing every decade — the leak itself grows at
-{M['leak_slope']:+.3f} ppm per decade, against the {M['slope_difference']:+.3f} ppm per decade that
-separates the two answers.
+md("""
+The gap you measured is larger in the recent years than in the early ones, and the one-line
+prediction tracks it — window against window, and year against year in the correlation you
+printed. The trough at Mauna Loa arrives several months after the peak, and CO2 rises faster now
+than it did in the 1970s, so the raw definition loses more of the swing every decade than it used
+to. Put your rate for the gap itself beside the difference between the two definitions' trends:
+they are the same number to the precision either of them deserves.
 
 **The raw definition did not measure a cycle that is not growing. It measured a cycle that is
 growing, minus a theft that is growing by about the same amount.** That is not a coincidence you
@@ -1075,7 +1301,11 @@ for station_name in ["Mauna Loa", "Barrow"]:
              lw=1.2, label=station_name)
 plt.xlabel("year")
 plt.ylabel("detrended seasonal amplitude (ppm)")
-plt.title("Seasonal amplitude at two latitudes, detrended range")
+# The two stations do not have the same number of complete years, so one n in this title would be
+# wrong for one of the two lines under it.
+plt.title(f"Seasonal amplitude at two latitudes, detrended range\\n"
+          f"(Mauna Loa n = {{len(amplitude(mauna_loa, 'swing'))}} complete years, "
+          f"Barrow n = {{len(amplitude(barrow, 'swing'))}})")
 plt.legend()
 plt.show()
 
@@ -1086,17 +1316,10 @@ print("Together the two stations say the cycle is deepening everywhere the defin
       "trustworthy, and far faster in the Arctic than in the mid-Pacific.")
 """)
 
-md(f"""
-At Barrow the fork closes. All three definitions land within
-{max(M['defs']['brw', k]['slope'] for k, _, _ in DEFS) - min(M['defs']['brw', k]['slope'] for k, _, _ in DEFS):.2f}
-ppm per decade of each other, every interval sits far above zero, and the detrended answer is
-**{M['defs']['brw', 'detrended']['slope']:+.3f} ppm per decade, 95% interval
-[{M['defs']['brw', 'detrended']['lo']:+.3f}, {M['defs']['brw', 'detrended']['hi']:+.3f}]** —
-roughly {M['defs']['brw', 'detrended']['slope'] / M['defs']['mlo', 'detrended']['slope']:.0f} times
-the Mauna Loa rate, on a cycle that is already
-{M['defs']['brw', 'detrended']['mean'] / M['defs']['mlo', 'detrended']['mean']:.1f} times as deep
-({M['defs']['brw', 'detrended']['mean']:.1f} ppm against
-{M['defs']['mlo', 'detrended']['mean']:.1f}).
+md("""
+At Barrow the fork closes. Your three definitions land within a fraction of a ppm per decade of
+each other, every interval sits clear of zero, and the Barrow rate is a large multiple of the
+Mauna Loa one on a cycle that was already several times as deep.
 
 The definition mattered at Mauna Loa and does not matter here, and the reason is arithmetic rather
 than geography: the theft is roughly the same size at both stations, and at Barrow it is a few
@@ -1162,17 +1385,18 @@ station rather than a problem with these fifty years of it.
 """)
 
 # --- closing ----------------------------------------------------------------
+# The closing carried the six numbers of the four ✏️ prompts above it, and it is the FIRST place
+# a student looks precisely because it is the only place below the load that could tell them they
+# are right. With the four reveals stripped it would now be the only place those numbers appear at
+# all, so it names the quantities instead. The student's own cells hold the values.
 md(f"""
 {weekkit.CLOSING_HEADING}
 
-At Barrow, unambiguously yes: **{M['defs']['brw', 'detrended']['slope']:+.2f} ppm per decade**
-(95% interval [{M['defs']['brw', 'detrended']['lo']:+.2f},
-{M['defs']['brw', 'detrended']['hi']:+.2f}]), and every definition agrees. At Mauna Loa yes, but
-only once the rising trend is taken out first — **{M['defs']['mlo', 'detrended']['slope']:+.3f}
-ppm per decade** [{M['defs']['mlo', 'detrended']['lo']:+.3f},
-{M['defs']['mlo', 'detrended']['hi']:+.3f}] detrended, against
-{M['defs']['mlo', 'raw']['slope']:+.3f} [{M['defs']['mlo', 'raw']['lo']:+.3f},
-{M['defs']['mlo', 'raw']['hi']:+.3f}] raw, which cannot tell growth from nothing.
+At Barrow, unambiguously yes: every definition agrees there, and every interval you computed sits
+clear of zero. At Mauna Loa yes, but only once the rising trend is taken out first — your
+detrended interval excludes zero and your raw one, fitted on the same record, cannot tell growth
+from nothing. Which of those two sentences you are entitled to write was decided by a definition
+you chose.
 """)
 
 md(track_summary())
@@ -1254,11 +1478,13 @@ Nobody grading this knows the answer, and neither does the literature. Everythin
 scaffolding; this is the project.
 
 Here is what is actually established, and it is less than it looks. Two stations do not make a
-gradient. You have {M['defs']['mlo', 'detrended']['slope']:+.3f} ppm per decade at
-{M['mlo_lat']:.1f}°N and {M['defs']['brw', 'detrended']['slope']:+.3f} at {M['brw_lat']:.1f}°N; a
-straight line through two points fits perfectly and means nothing. What is **not** settled is the
-shape between them and beyond them — whether the deepening rises smoothly with latitude, switches
-on somewhere, or tracks something else entirely that happens to correlate with latitude.
+gradient. You have one detrended rate at {M['mlo_lat']:.1f}°N and one at {M['brw_lat']:.1f}°N, and
+a straight line through two points fits perfectly and means nothing. They are not even quite a
+pair: each was fitted over its own station's complete years, so setting them side by side means
+first deciding which years both are allowed to use — and that decision is not free. What is
+**not** settled is the shape between them and beyond them — whether the deepening rises smoothly
+with latitude, switches on somewhere, or tracks something else entirely that happens to correlate
+with latitude.
 
 Three directions, none of them worked out here:
 
@@ -1309,43 +1535,112 @@ share of its own mean amplitude — if it is comparable to Barrow's, deepening t
 is far smaller, it tracks land and northern latitude was only ever standing in for northern
 continents.
 
-What makes me doubt a clean answer in advance is the size of the southern cycles. Samoa and the
-South Pole swing by around a ppm, against
-{M['defs']['brw', 'detrended']['mean']:.0f} ppm at Barrow, so the theft I measured in *Your turn 4*
-is a much larger share of the signal there than it was even at Mauna Loa, and the intervals will be
-correspondingly wide. I expect the honest outcome to be that four stations still cannot distinguish
-a curve from a step, which is itself the answer to the open question — and I would report it that
-way rather than drawing a straight line through four points and calling it a gradient.
+Putting all four on one window is not optional, and it is the argument of *Your turn 6* applied to
+my own table. Samoa's usable record ends in {LAD['smo']['own_last']} — and inside the window it
+drops {len(LAD['smo']['dropped'])} more years — so left to itself it is a rate over
+{LAD['smo']['own_n']} years while Barrow's is a rate over {LAD['brw']['own_n']}. Those are not four
+readings of one gradient; they are four different measurements. On the common window
+{M['ladder_from']}-{M['ladder_to']} the South Pole falls from {LAD['spo']['own_pct_dec']:+.2f} to
+{LAD['spo']['pct_dec']:+.2f} %/decade and its interval, [{LAD['spo']['pct_lo']:+.2f},
+{LAD['spo']['pct_hi']:+.2f}], now crosses zero — so the wider window was buying its entire
+result. Mauna Loa moves the other way, {LAD['mlo']['own_pct_dec']:+.2f} to
+{LAD['mlo']['pct_dec']:+.2f}, on {LAD['mlo']['own_n'] - LAD['mlo']['n']} fewer years, all of them
+outside the window at one end or the other. The window is not free at any station, and which way it
+moves a rate is not something I could have guessed — which is why `n` and the span belong in the
+table beside every rate rather than in a footnote.
+
+Samoa's number is the one I trust least, and the notebook's own definition check says why. Its
+amplitude on this window is {LAD['smo']['mean']:.2f} ppm, while the month-to-month scatter about
+its own fitted wave is {M['smo_noise_sd']:.2f} ppm — so twelve months of that scatter and nothing
+else would span {M['smo_noise_range']:.2f} ppm, which is {M['smo_noise_share']:.0f}% of the
+amplitude I am dividing by. A peak-to-trough range counts noise as signal, and at Samoa most of
+the range is noise. Switch to the once-a-year wave, which cannot, and the amplitude falls to
+{M['fourier_ladder']['smo']['mean']:.2f} ppm while the rate nearly doubles, from
+{LAD['smo']['pct_dec']:+.2f} to {M['fourier_ladder']['smo']['pct_dec']:+.2f} %/decade. Samoa is the
+largest number in the ladder under either definition and the least secure under both, and a
+station whose answer moves that far on a defensible choice is not evidence about latitude yet.
+
+So the honest outcome is that four stations still cannot distinguish a curve from a step. Ranked by
+rate the ladder runs {LADDER_ORDER_WORDS}, which is not the order of the latitudes, and the ranking
+survives the switch to the once-a-year wave. But the South Pole's interval contains zero, Samoa's
+is worth what the paragraph above says it is worth, and a non-monotone ordering built from four
+points — two of which are at the noise floor — is a reason to add stations, not a result about
+ecosystems. That is what I would report, rather than drawing a straight line through four points
+and calling it a gradient.
 """)
 
-answer(f"""
-ladder = []
+answer('''
+# Four stations, one read recipe: the site code is the only thing that changes, which is the whole
+# reason the open question above is pursuable with what you have already written. One definition
+# for all four as well — the detrended range — because a rate measured one way and a rate measured
+# another are not two readings of the same quantity, which is Your turn 6's argument turned on my
+# own table.
+records = []
 for site in ["spo", "smo", "mlo", "brw"]:
-    station = seasonal(load(GML.format(site=site), f"trackT2_co2_{{site}}.csv"))
-    amps = amplitude(station, "swing")
-    spread = trend_spread(amps)
-    ladder.append({{"site": site,
-                   "lat": station["latitude"].iloc[0],
-                   "mean": amps["amplitude"].mean(),
-                   "slope": trend(amps),
-                   "low": np.percentile(spread, 2.5),
-                   "high": np.percentile(spread, 97.5)}})
-ladder = pd.DataFrame(ladder)
-ladder["per_decade_pct"] = 100 * ladder["slope"] / ladder["mean"]
+    station = seasonal(load(GML.format(site=site), f"trackT2_co2_{site}.csv"))
+    records.append({"site": site,
+                    "lat": station["latitude"].iloc[0],
+                    "amps": amplitude(station, "swing")})
 
-bars = [100 * (ladder["slope"] - ladder["low"]) / ladder["mean"],
-        100 * (ladder["high"] - ladder["slope"]) / ladder["mean"]]
-plt.errorbar(ladder["lat"], ladder["per_decade_pct"], yerr=bars, fmt="o", color="0.4")
+# ONE WINDOW FOR ALL FOUR. Left alone, each station is fitted over whatever years it happens to
+# have — Samoa's usable record stops in 2018, Barrow's runs on — and four rates over four
+# different spans are four measurements, not a ladder. That is the same argument as Your turn 6.
+# The window is the overlap of the four records; `n` says what each station really has inside it.
+first = max(r["amps"]["year"].min() for r in records)
+last = min(r["amps"]["year"].max() for r in records)
+
+# `n` and the span are carried through the table rather than assumed: the window is the same for
+# every station, but how many complete years each one actually HAS inside it is not, and a rate
+# over thirty-two years is not the same evidence as a rate over thirty-nine.
+rows = []
+for r in records:
+    amps = r["amps"]
+    amps = amps[(amps["year"] >= first) & (amps["year"] <= last)]
+    spread = trend_spread(amps)
+    mean = amps["amplitude"].mean()
+    rows.append({"site": r["site"], "lat": r["lat"],
+                 "n": len(amps), "from": amps["year"].min(), "to": amps["year"].max(),
+                 "mean": mean, "slope": trend(amps),
+                 "low": np.percentile(spread, 2.5), "high": np.percentile(spread, 97.5)})
+ladder = pd.DataFrame(rows)
+
+# Each rate as a share of its OWN mean amplitude. In ppm per decade the ladder would mostly rank
+# the stations by how big their cycle already is — Barrow's is more than ten times the South
+# Pole's — and the question is whether a cycle is deepening relative to itself, not which cycle is
+# biggest. The interval has to be rescaled by the same divisor or it stops matching the point.
+ladder["pct_per_decade"] = 100 * ladder["slope"] / ladder["mean"]
+ladder["pct_low"] = 100 * ladder["low"] / ladder["mean"]
+ladder["pct_high"] = 100 * ladder["high"] / ladder["mean"]
+
+# `yerr` wants the DISTANCES from each point to the two ends of its bar, and as two rows — lower
+# first, then upper — because a bootstrap interval is not symmetric about the estimate. Handing it
+# the percentiles themselves instead draws every bar from the axis, which looks plausible and is
+# wrong.
+bars = [ladder["pct_per_decade"] - ladder["pct_low"],
+        ladder["pct_high"] - ladder["pct_per_decade"]]
+plt.errorbar(ladder["lat"], ladder["pct_per_decade"], yerr=bars, fmt="o", color="0.4")
 plt.axhline(0, color="firebrick", lw=1.2)
 plt.xlabel("station latitude (degrees north)")
 plt.ylabel("deepening (% of its own amplitude per decade)")
-plt.title(f"Four stations, one definition (n = {{len(ladder)}} stations)")
+plt.title(f"Four stations, one definition, one window {first}-{last}")
 plt.show()
 
-print(ladder.round(3).to_string(index=False))
-print("The two southern stations are NOT small, so latitude alone does not order these four —",
-      "and four points cannot say what the shape is.")
-""")
+print(f"window {first}-{last} = {last - first + 1} calendar years, the overlap of the four "
+      f"records; n is how many complete years each station actually has in it")
+print(ladder.round(2).to_string(index=False))
+
+# The two orderings printed side by side, because the whole claim is that they differ — reading
+# that off four error bars by eye is exactly the kind of judgement a reader should not have to
+# make. Then the stations whose interval still reaches zero, named rather than left to be spotted:
+# a rate whose interval contains zero has not measured a deepening at all, however it ranks.
+ranked = ladder.sort_values("pct_per_decade", ascending=False)
+print("ranked by rate:", " > ".join(ranked["site"]),
+      "— against latitude order:", " > ".join(ladder.sort_values("lat")["site"]))
+crossing = ladder[ladder["low"] < 0]["site"].tolist()
+print("intervals still crossing zero:", ", ".join(crossing) if crossing else "none")
+print("So latitude alone does not order these four, and one of them cannot be told from no",
+      "change at all on this window. Four points cannot say what the shape is.")
+''')
 
 
 # ---------------------------------------------------------------------------
@@ -1382,11 +1677,20 @@ def track_ids(cells):
             c["id"] = f"{TRACK['id']}-q{q:02d}-answer"
         elif c["cell_type"] == "markdown" and "Double-click" in s:
             c["id"] = f"{TRACK['id']}-q{q:02d}-prose"
+        elif c["cell_type"] == "code" and "my_guess" in s:
+            # The Predict cell now carries a commitment guard, but it is not a question's
+            # self-check: the generic branches would key it to whichever ✏️ it happens to sit
+            # under and make it move whenever a prompt is inserted above. It gets its own id.
+            # Two cells now carry `my_guess` — the one that writes it and the one that
+            # reads it — so the pair needs two ids. A duplicate is invalid nbformat and,
+            # because Gradescope keys a submission off cell ids, grades a cell as
+            # "missing from your notebook".
+            c["id"] = f"{TRACK['id']}-predict" + ("-check" if "assert " in s else "")
         elif c["cell_type"] == "code" and "assert " in s:
             c["id"] = f"{TRACK['id']}-q{q:02d}-check"
         else:
             c["id"] = f"{TRACK['id']}-c{i:03d}"
-    return cells
+    return weekkit.dedupe_ids(cells)
 
 
 def main():
@@ -1399,9 +1703,7 @@ def main():
     sol_path.write_text(json.dumps(sol, indent=1) + "\n")
 
     print(f"executing {sol_path.name} ...")
-    r = subprocess.run([sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook",
-                        "--execute", "--inplace", "--ExecutePreprocessor.timeout=900",
-                        str(sol_path)], capture_output=True, text=True, cwd=ROOT)
+    r = weekkit.execute(sol_path, timeout=900)
     if r.returncode:
         print(r.stderr[-4000:])
         sys.exit("the solution did not execute")

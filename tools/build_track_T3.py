@@ -481,10 +481,13 @@ Then the number needs something to be compared against, and rather than look one
 code(f"""
 def chi_squared(month_values):
     \"\"\"How far a set of months is from twelve equal piles, in the usual chi-squared units.\"\"\"
+    # the height every bar would have if the eruptions were spread evenly over the twelve months
     expected = len(month_values) / 12
     total = 0
     for m in range(1, 13):
         observed = (month_values == m).sum()
+        # dividing by `expected` is what makes the misses comparable: a bar missing by ten is a
+        # scandal in a small sample and nothing in a large one, and the total is in those units
         total = total + (observed - expected) ** 2 / expected
     return total
 
@@ -494,6 +497,7 @@ def null_spread(n, runs={N_NULL}):
     rng = np.random.default_rng({SEED})
     out = []
     for i in range(runs):
+        # 1 to 12: integers stops one short of its top number, so 13 is never drawn
         out.append(chi_squared(rng.integers(1, 13, size=n)))
     return np.array(out)
 """)
@@ -522,11 +526,29 @@ you will check it two sections from now, and a wrong guess you committed to is w
 right answer you were shown.
 """)
 
-code(f"""
-my_guess = {M['excess'] // 2}
+# The Predict cell ships EMPTY to the student, which is why it is written out here rather than
+# through `code()`. A pre-filled `my_guess` is not a prediction: the student presses shift-enter,
+# the notebook agrees with itself, and the commitment the whole device exists to extract never
+# happens. The assert is the thing that makes the cell ask; it is not a self-check on an answer,
+# so it does not reopen the promise that the loading step carries the last one.
+#
+# It is TWO cells, and that is forced rather than chosen. check_asserts requires every name an
+# assert uses to be bound by an EARLIER cell — it registers a cell's assignments only after it has
+# read that cell's asserts — and check_conventions requires any cell containing `assert` to print
+# the course's `✓ label — summary` line. Both rules are written for a self-check, and neither can
+# be satisfied by a single cell that assigns `my_guess` and then tests it. So the guess is written
+# in one cell and read in the next, which is also what a student does: change the number, run on.
+CELLS.append(("code",
+              f"my_guess = {M['excess'] // 2}",
+              "my_guess = None    # ← your number, written down before you look"))
 
-print("I think", my_guess, "of the {M['excess']} extra July eruptions really began in July")
-""")
+CELLS.append(("code", f"""
+assert my_guess is not None, \\
+    "write a number into my_guess in the cell above — the commitment is the point, and a guess "\\
+    "you made before you saw the answer is the only one that can teach you anything"
+print("✓ committed — I think", my_guess,
+      "of the {M['excess']} extra July eruptions really began in July")
+""".strip("\n"), None))
 
 # --- YOUR TURN 1 ------------------------------------------------------------
 md("""
@@ -539,7 +561,8 @@ ask(f"""
 ### ✏️ Your turn 1
 
 Count the {M['n_dated']:,} eruptions by **day of month** — 1 to 31, ignoring which month — and draw
-them as a bar chart. Then say, in the output, which days are not like the others and by how much.
+them as a bar chart. Then say, in the output, which days are not like the others and by how much —
+and what could put that many eruptions on one particular date of the month.
 
 You are looking for structure that has nothing to do with volcanoes. Print the median day-count
 alongside the two largest so the comparison is on the page and not in your head.
@@ -559,13 +582,12 @@ print("median day holds", per_day.median(), "eruptions")
 print("the two biggest days:", per_day.sort_values(ascending=False).head(2).astype(int).to_dict())
 print("the next biggest after those:",
       per_day.drop([2, 16]).sort_values(ascending=False).head(1).astype(int).to_dict())
+
+print("Nothing about a volcano prefers one date of the month over its neighbour, so a spike this",
+      "size cannot be the Earth. It is what somebody wrote down when they did not know the day.")
 """)
 
 md(f"""
-The typical day of the month holds {M['day_median']:.0f} eruptions. Day {M['day_third_which']} —
-the largest of the ordinary days — holds {M['day_third']}. Day 2 holds {M['day2']} and day 16 holds
-{M['day16']}.
-
 Nothing about volcanoes distinguishes the 16th of a month from the 15th. Somebody wrote those
 dates down.
 """)
@@ -615,14 +637,14 @@ print("So the July peak is mostly a fact about the file —",
 """)
 
 md(f"""
-Every one of the {M['all_182']} records in this window carrying an uncertainty of exactly 182 days
-is dated **2 July** — the middle of the year. When the compilers knew the year and nothing else,
-they wrote the midpoint of the year and recorded, in a column that never appears on a plot, that
-the date was worth nothing. Day 16 is the same move one level down: {M['day16_15']} of the
-{M['all_15']} records carrying an uncertainty of 15 days sit on the 16th, the middle of a month.
+Every record in this window whose date is uncertain by half a year is dated **2 July** — the middle
+of the year. When the compilers knew the year and nothing else, they wrote the midpoint of the year
+and recorded, in a column that never appears on a plot, that the date was worth nothing. Day 16 is
+the same move one level down: a date uncertain by half a month, written on the middle day of a
+month.
 
-{M['july_182']} of the {M['excess']}-eruption July excess — **{M['share_of_excess'] * 100:.0f}%** —
-is that one placeholder.
+The fraction you printed is the share of the July excess that one placeholder date accounts for.
+Whatever is left after it is the only part of the peak that could be about volcanoes.
 """)
 
 # --- YOUR TURN 3, the fork --------------------------------------------------
@@ -657,10 +679,16 @@ so the before and after are on the same page.
 Watch the blank-versus-zero distinction one more time: an exact date has a **blank** uncertainty,
 so `.isna()` is what selects it, and a comparison like `>= {DROP_AT}` is False for a blank rather
 than True.
+
+Then answer it, in the output: which of the three cuts changes the answer, and does the answer
+survive the change?
 """)
 
 answer(f"""
 unc = dated["StartDateDayUncertainty"]
+# `unc >= {DROP_AT}` is False wherever the uncertainty is blank, never True, so flipping it with ~
+# keeps the blanks alongside the small numbers. That is the cut we want: an exact date is worth
+# keeping, and only the placeholders go. `unc < {DROP_AT}` would have thrown the blanks away too.
 cuts = {{"keep everything": dated,
         "drop placeholders": dated[~(unc >= {DROP_AT})],
         "exact dates only": dated[unc.isna()]}}
@@ -684,19 +712,16 @@ plt.ylabel("eruptions")
 plt.title(f"Placeholders removed (n = {{len(clean)}}); the line is an even spread")
 plt.locator_params(axis="x", integer=True)
 plt.show()
+
+print("Dropping the placeholders is the cut that changes the answer, and the answer does not",
+      "survive it: the tallest bar stops being July and the statistic falls to the edge of what a",
+      "no-season world produces anyway. Keeping only the exact dates puts it on the other side.")
 """)
 
 md(f"""
-Dropping the placeholders removes {M['dropped']} of the {M['n_dated']:,} records and takes the
-statistic from **{M['chi_raw']:.1f}** to **{M['cuts']['clean']['chi']:.1f}**, against a no-season
-95th percentile of **{M['cuts']['clean']['p95']:.1f}**. July falls from
-{M['july_ratio']:.2f}× the even height to {M['cuts']['clean']['july_ratio']:.2f}×, and the tallest
-bar is now {M['cuts']['clean']['peak']} at {M['cuts']['clean']['peak_n']}.
-
-Keep only the exact dates and the {M['cuts']['exact']['n']:,} that remain give
-**{M['cuts']['exact']['chi']:.1f}** against a 95th percentile of
-{M['cuts']['exact']['p95']:.1f} — below it. Same catalogue, same question, and the answer flips
-on a choice about which rows to believe.
+Your three statistics do not all land on the same side of their own no-season thresholds, and the
+tallest bar is not the same month in all three cuts. Same catalogue, same question, and the answer
+flips on a choice about which rows to believe.
 """)
 
 ask(f"""
@@ -791,11 +816,10 @@ print("Nearer", len(per_volcano), "independent things than", len(clean), "— on
 """)
 
 md(f"""
-{M['cuts']['clean']['n']:,} eruptions, **{M['n_volcanoes']} volcanoes**. The median volcano
-contributes {M['per_median']:.0f}; {M['busiest']} contributes {M['per_max']} and
-{M['second_busiest']} another {M['second_busiest_n']}. One volcano's eruptive episode is one thing
-happening, not {M['per_max']} independent draws from the calendar — and a chi-squared test that
-counts it as {M['per_max']} is counting the same evidence over and over.
+There are far fewer volcanoes on your list than eruptions, the median volcano contributes a
+handful, and the two busiest contribute dozens each. One volcano's eruptive episode is one thing
+happening, not one independent draw from the calendar per eruption — and a chi-squared test that
+counts every row as its own draw is counting the same evidence over and over.
 
 The fix is the same move the uncertainty week made, applied to the right unit.
 **Bootstrap:** {idea('S4', 'Bootstrap')['words']}
@@ -834,10 +858,14 @@ n_volcanoes = len(volcano_months)
 rng = np.random.default_rng({SEED})
 resampled = []
 for i in range({N_BOOT}):
+    # with replacement: the same position can come up twice and another not at all, which is the
+    # whole point — each resample is a catalogue the Earth could plausibly have handed us instead
     picked = rng.integers(0, n_volcanoes, size=n_volcanoes)
     parts = []
     for p in picked:
         parts.append(volcano_months[p])
+    # glue the drawn volcanoes' months back into one flat list of months, so the resampled
+    # catalogue goes into chi_squared in exactly the shape the real one did
     resampled.append(chi_squared(np.concatenate(parts)))
 resampled = np.array(resampled)
 
@@ -872,25 +900,30 @@ print("Before I would call it seasonal the whole interval would have to sit abov
 """)
 
 md(f"""
-Resampling volcanoes rather than eruptions spreads the statistic from
-**{M['boot_lo']:.1f} to {M['boot_hi']:.1f}**, median {M['boot_median']:.1f}, and
-**{M['boot_below'] * 100:.0f}%** of the resamples land below the threshold the observed value
-cleared. A statistic whose interval is that wide has not established anything; the margin of
-{M['cuts']['clean']['chi'] - M['cuts']['clean']['p95']:.1f} it cleared by is inside its own noise.
+Resampling volcanoes rather than eruptions spreads the statistic across an interval wide enough
+that a substantial share of the resamples land below the threshold the observed value cleared. A
+statistic whose interval is that wide has not established anything: the margin by which your middle
+cut cleared its threshold in *Your turn 3* is inside its own noise.
 
 The naive chi-squared is not the honest test on this data, and the reason is not the arithmetic —
 it is that the rows are not the independent units the test assumes.
 """)
 
 # --- closing ----------------------------------------------------------------
+# check_track's closing rule warns that this cell "prints 400, which the student was asked to
+# compute". That 400 is the notebook's own TITLE — handed to the student in cell 0 and reprinted
+# here as the bookend that answers it. The rule cannot tell a number the notebook GAVE from one it
+# asked for, and this one is given, so the warn is ACCEPTED rather than fixed: removing it means
+# dropping the title from the close, which is a design change and not a leak fix. It is the only
+# leak warning this notebook carries — every reveal is at zero — so a SECOND warn is a real one.
 md(f"""
 {weekkit.CLOSING_HEADING}
 
 July has {M['july']} eruptions and {M['low_month']} has {M['low_count']} because the Smithsonian
-writes **2 July** when it knows only the year: {M['july_182']} such records, about
-{M['share_of_excess'] * 100:.0f}% of the July excess. That answers the title. It also removes the
-question — cleaned of placeholders, this catalogue does not show a seasonal signal that survives a
-test which respects how few independent volcanoes it contains.
+writes **2 July** when it knows only the year, and — as the fraction you computed in *Your turn 2*
+says — most of the July excess is that one placeholder date. That answers the title. It also
+removes the question — cleaned of placeholders, this catalogue does not show a seasonal signal that
+survives a test which respects how few independent volcanoes it contains.
 """)
 
 md(track_summary())
@@ -969,9 +1002,9 @@ scaffolding; this is the project.
 
 Here is what is actually established, and it is less than it looks. The July peak is a placeholder
 and that is settled. What is **not** settled is the next question down: after the placeholders are
-gone, is the {M['cuts']['clean']['chi']:.1f} that remains a small real signal that this catalogue
-is too coarse to resolve, or nothing at all? The volcano-block interval —
-{M['boot_lo']:.1f} to {M['boot_hi']:.1f} — says the data cannot currently tell you.
+gone, is the statistic that remains a small real signal that this catalogue is too coarse to
+resolve, or nothing at all? The volcano-block interval you computed in *Your turn 6* says the data
+cannot currently tell you.
 
 Three directions, none of them worked out here:
 
@@ -981,21 +1014,23 @@ Three directions, none of them worked out here:
    way — and how far — the statistic moves.
 2. **Change the unit, not the test.** If a volcano is the independent thing, one obvious move is to
    ask each volcano a single question — its own peak month, say, or a per-volcano statistic — and
-   test the {M['n_volcanoes']} answers rather than the {M['cuts']['clean']['n']:,} eruptions. What
-   power would such a test have, and is {M['n_volcanoes']} enough?
+   test one answer per volcano rather than one per eruption. What power would such a test have, and
+   are there enough volcanoes in this catalogue to give it any?
 3. **Split the Earth in half.** July is midsummer north of the equator and midwinter south of it.
    Any mechanism that runs on snow load, meltwater or the seasonal sea-level cycle must therefore
    push the two hemispheres in *opposite* directions, while a recording artefact pushes them the
-   same way. `GeoLocation` holds a `POINT (lon lat)` string for every row, so this is a filter and
-   two bar charts. It is the sharpest test available in this dataset, and this notebook has
-   deliberately not run it.
+   same way. `GeoLocation` holds a `POINT (lon lat)` string for every row. Pulling the two numbers
+   out of that string is plumbing and not the exercise, so here is the line:
+   `clean[["lon", "lat"]] = clean["GeoLocation"].str.extract(r"POINT \\((-?[\\d.]+) (-?[\\d.]+)\\)").astype(float)`.
+   After it, this is a filter and two bar charts. It is the sharpest test available in this
+   dataset, and this notebook has deliberately not run it.
 
 And one that is bigger than a semester: what would a catalogue have to look like for a seasonal
 signal of a few percent to be **detectable** at all? Count what you would need — how many
 independent volcanoes, over how long, with dates good to what precision — and compare it with what
-{M['n_volcanoes']} volcanoes and {M['cuts']['clean']['n']:,} eruptions can support. If the answer
-is that no achievable catalogue could settle it, that is a result, and it is the one this project
-is most likely to reach.
+the volcanoes and eruptions you are left with can support. If the answer is that no achievable
+catalogue could settle it, that is a result, and it is the one this project is most likely to
+reach.
 """)
 
 ask(f"""
@@ -1082,11 +1117,16 @@ def track_ids(cells):
             c["id"] = f"{TRACK['id']}-q{q:02d}-answer"
         elif c["cell_type"] == "markdown" and "Double-click" in s:
             c["id"] = f"{TRACK['id']}-q{q:02d}-prose"
+        elif c["cell_type"] == "code" and "my_guess" in s:
+            # The Predict pair carries an assert but is not a question's self-check: it sits
+            # BEFORE the first ✏️, so the generic branch below would key it to `q00` and collide
+            # with the loading check, which is the real q00. Its two cells get their own ids.
+            c["id"] = f"{TRACK['id']}-predict" + ("-check" if "assert " in s else "")
         elif c["cell_type"] == "code" and "assert " in s:
             c["id"] = f"{TRACK['id']}-q{q:02d}-check"
         else:
             c["id"] = f"{TRACK['id']}-c{i:03d}"
-    return cells
+    return weekkit.dedupe_ids(cells)
 
 
 def main():
@@ -1099,9 +1139,7 @@ def main():
     sol_path.write_text(json.dumps(sol, indent=1) + "\n")
 
     print(f"executing {sol_path.name} ...")
-    r = subprocess.run([sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook",
-                        "--execute", "--inplace", "--ExecutePreprocessor.timeout=900",
-                        str(sol_path)], capture_output=True, text=True, cwd=ROOT)
+    r = weekkit.execute(sol_path, timeout=900)
     if r.returncode:
         print(r.stderr[-4000:])
         sys.exit("the solution did not execute")

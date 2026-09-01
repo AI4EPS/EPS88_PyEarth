@@ -273,6 +273,92 @@ for start_month, label in ((10, "Oct-Sep"), (11, "Nov-Oct"), (9, "Sep-Aug"), (1,
     FORK[label]["gap"] = FORK[label]["south"] - FORK[label]["north"]
 M["fork"] = FORK
 
+# Read the fork DOWN its columns, not across. The four windows are not four attempts at one
+# number: the southern correlation is flat across all four and the northern one is not, so
+# whatever the calendar year does, it does it to one river. These are the summaries the model
+# answers quote, computed rather than eyeballed off the table.
+M["fork_min_south"] = min(f["south"] for f in FORK.values())
+M["fork_max_south"] = max(f["south"] for f in FORK.values())
+M["fork_min_north"] = min(f["north"] for f in FORK.values())
+M["fork_max_north"] = max(f["north"] for f in FORK.values())
+M["fork_max_gap"] = max(f["gap"] for f in FORK.values())
+M["fork_min_gap"] = min(f["gap"] for f in FORK.values())
+M["north_multiple"] = FORK["Jan-Dec"]["north"] / FORK["Oct-Sep"]["north"]
+M["headline_is_max_gap"] = FORK["Oct-Sep"]["gap"] == M["fork_max_gap"]
+M["headline_is_min_north"] = FORK["Oct-Sep"]["north"] == M["fork_min_north"]
+
+# --- WHY the two conventions disagree, and why only at the northern gauge ------------------
+# Oct-Sep and Jan-Dec share nine months. They differ in one quarter — October to December — and
+# they differ in WHICH October-December: the water year takes the autumn running up to and into a
+# winter (its December is one of the index's own three months), the calendar year takes the autumn
+# nine months after that winter ended. So the disagreement has to live in those three months, and
+# the way to see it is to correlate each piece of the year with the winter index on its own.
+def piece_from(daily, months, year_of):
+    """Mean flow over `months` of a calendar year, lined up with the winter it belongs to.
+
+    `year_of` is 0 when those months follow the winter inside the same calendar year, and 1 when
+    the winter is the one they run into — Oct-Dec 1982 belongs to the winter of 1983.
+    """
+    monthly = daily[daily["date"].dt.month.isin(months)]
+    mean = monthly.groupby(monthly["date"].dt.year)["cfs"].mean()
+    return pd.DataFrame({"year": mean.index + year_of,
+                         "cfs": mean.values}).merge(winter, on="year")
+
+
+PIECE = {}
+for label, months, year_of in (("jan_mar", [1, 2, 3], 0), ("ond_before", [10, 11, 12], 1),
+                               ("ond_after", [10, 11, 12], 0)):
+    sp, np_ = piece_from(south_daily, months, year_of), piece_from(north_daily, months, year_of)
+    PIECE[label] = {"n": int(len(np_)), "south": correlation(sp["djf"], sp["cfs"]),
+                    "north": correlation(np_["djf"], np_["cfs"])}
+M["piece"] = PIECE
+
+# How much of each river's year those three months are worth. This is the other half of the
+# answer: the same convention moves the north and not the south because Oct-Dec is a fifth of
+# the Eel's water and a ninth of Arroyo Seco's.
+for label, daily in (("south", south_daily), ("north", north_daily)):
+    by_m = daily.groupby(daily["date"].dt.month)["cfs"].mean()
+    M[f"{label}_ond_share"] = float(100 * by_m.loc[[10, 11, 12]].sum() / by_m.sum())
+    M[f"{label}_ond_cfsmonths"] = float(by_m.loc[[10, 11, 12]].sum())
+    M[f"{label}_jfm_cfsmonths"] = float(by_m.loc[[1, 2, 3]].sum())
+    M[f"{label}_nov_cfs"] = float(by_m.loc[11])
+    M[f"{label}_dec_cfs"] = float(by_m.loc[12])
+    M[f"{label}_year_cfsmonths"] = float(by_m.sum())
+
+# And the check that stops the obvious misreading of the piece table. If the Nino index itself
+# remembered a winter nine months later, the calendar year's autumn would be a second look at the
+# same El Nino. It does not: the autumn running INTO a winter is almost that winter's index over
+# again, and the autumn after it is uncorrelated with it.
+ond_index = pd.DataFrame({"year": nino_years["year"].astype(int),
+                          "ond": (nino_years["Oct"] + nino_years["Nov"]
+                                  + nino_years["Dec"]) / 3}).dropna()
+_before = ond_index.assign(year=ond_index["year"] + 1).merge(winter, on="year")
+_after = ond_index.merge(winter, on="year")
+M["nino_ond_before"] = correlation(_before["ond"], _before["djf"])
+M["nino_ond_after"] = correlation(_after["ond"], _after["djf"])
+
+
+# --- two windows that are not twelve months, for the size of the answer --------------------
+def window_from(daily, months, offsets):
+    """Mean flow over an arbitrary set of months, each labelled with the winter year it serves."""
+    parts = []
+    for month, offset in zip(months, offsets):
+        part = daily[daily["date"].dt.month == month].copy()
+        part["year"] = part["date"].dt.year + offset
+        parts.append(part)
+    mean = pd.concat(parts).groupby("year")["cfs"].mean()
+    return pd.DataFrame({"year": mean.index, "cfs": mean.values}).merge(winter, on="year")
+
+
+EXTRA = {}
+for label, months, offsets in (("Dec-Mar", [12, 1, 2, 3], [1, 0, 0, 0]),
+                               ("Jan-Sep", list(range(1, 10)), [0] * 9)):
+    s, n = window_from(south_daily, months, offsets), window_from(north_daily, months, offsets)
+    EXTRA[label] = {"n": int(len(s)), "south": correlation(s["djf"], s["cfs"]),
+                    "north": correlation(n["djf"], n["cfs"])}
+    EXTRA[label]["gap"] = EXTRA[label]["south"] - EXTRA[label]["north"]
+M["extra"] = EXTRA
+
 # --- the bootstrap, both ways -------------------------------------------------
 rng = np.random.default_rng(SEED)
 alone_south, alone_north, difference = [], [], []
@@ -317,9 +403,9 @@ M["transect_gap_hi"] = max(t["lat"] for t in below)
 
 # The build log is the record that every number was computed. Print all of it, not a selection.
 for k in sorted(M):
-    if k not in ("composite", "fork", "transect"):
+    if k not in ("composite", "fork", "transect", "piece", "extra"):
         print(f"  measured  {k:>18} = {M[k]}")
-for k in ("composite", "fork"):
+for k in ("composite", "fork", "piece", "extra"):
     for label in M[k]:
         print(f"  measured  {label:>18} : {M[k][label]}")
 for t in M["transect"]:
@@ -341,6 +427,20 @@ print(f"    course.yml open_question: 'paired bootstrap gives +0.222, CI [+0.039
       f"measured {M['gap']:+.4f}, CI [{M['ci_gap'][0]:+.3f}, {M['ci_gap'][1]:+.3f}] at "
       f"seed {SEED}, B={N_BOOT}. The point estimate reproduces exactly; the interval differs "
       f"in the third decimal because the audit used a different seed.")
+print(f"    course.yml open_question quotes ONE gap. Measured, the gap depends on the window and "
+      f"the dependence is entirely at the northern gauge: south {M['fork_min_south']:+.3f}..."
+      f"{M['fork_max_south']:+.3f} across the four twelve-month windows, north "
+      f"{M['fork_min_north']:+.3f}...{M['fork_max_north']:+.3f}. The headline "
+      f"{M['gap']:+.3f} is the LARGEST of the four gaps ({M['headline_is_max_gap']}) and rests "
+      f"on the SMALLEST of the four northern estimates ({M['headline_is_min_north']}). On "
+      f"Dec-Mar the gap is {M['extra']['Dec-Mar']['gap']:+.3f} and on Jan-Sep "
+      f"{M['extra']['Jan-Sep']['gap']:+.3f}. An open_question that quotes one gap without a "
+      f"range overstates what this track establishes.")
+print(f"    notes/dataset-audit/noaa-climate.md:96 has the calendar-year direction RIGHT (it "
+      f"lifts the northern gauge, it does not destroy a southern signal) but reports it at the "
+      f"wrong gauge and the wrong values: measured, Jan-Dec gives north "
+      f"{M['fork']['Jan-Dec']['north']:+.3f} against south {M['fork']['Jan-Dec']['south']:+.3f}. "
+      f"The audit's 234 natural gauges is {M['n_gauges']} under this notebook's name filter.")
 print(f"    course.yml title spells it 'El Nino'; the notebook writes 'El Nino' with the tilde.")
 
 
@@ -529,10 +629,10 @@ code(weekkit.setup_cell(
     imports="import numpy as np\n",
     figsize="(7, 4)",
     cache_base=CACHE_BASE,
-    signature="url, cached, **options",
+    signature="url, cache_name, **options",
     docstring="Read one live source; fall back to the copy stored with the course.",
     url_expr="url, **options",
-    cache_expr="cached, **options",
+    cache_expr="cache_name, **options",
     unpack='''
 NINO = "''' + NINO_URL + '''"
 GAUGE = ("''' + GAUGE_URL_A + '''"
@@ -556,12 +656,17 @@ winter = pd.DataFrame({"year": nino["year"].astype(int),
 
 def flow(site):
     """Every daily reading from one USGS gauge: one row per day, discharge in cubic feet/second."""
+    # 1. One gauge's whole daily record. `load` asks the USGS server first and falls back to the
+    #    copy stored with the course, so this cell still runs when the network does not.
     raw = load(GAUGE + site, "trackT5_dv_" + site + ".tsv.gz",
                sep="\\t", comment="#", low_memory=False)
     raw = raw[raw["agency_cd"] == "USGS"]        # drops the "5s 15s 20d 14n" format row
     for name in raw.columns:                     # the discharge column carries an internal id,
         if name.endswith("_00060_00003"):        # so it is named differently at every gauge
             column = name
+    # 2. Keep the two columns this notebook needs. A day the gauge did not report arrives as text
+    #    rather than a number, so `errors="coerce"` blanks it and `dropna` drops the row — a day
+    #    with no reading must not be averaged in as a day of no water.
     return pd.DataFrame({"date": pd.to_datetime(raw["datetime"]),
                          "cfs": pd.to_numeric(raw[column], errors="coerce")}).dropna()
 
@@ -577,9 +682,14 @@ def water_year(dates, start_month):
 
 def paired(site, start_month):
     """One row per year: the winter Nino 3.4 index, and that year's mean flow at one gauge."""
+    # 1. Label every day with the twelve-month year it falls in, then average the days inside each
+    #    of those years. `start_month` is the choice this whole notebook turns on: move it and the
+    #    boundary between one year and the next moves with it.
     daily = flow(site)
     daily["year"] = water_year(daily["date"], start_month)
     per_year = daily.groupby("year")["cfs"]
+    # 2. Carry `days` next to the mean — how many daily readings that year actually got — because
+    #    the mean of a year the gauge only half-covered is not the mean of a year.
     yearly = pd.DataFrame({"year": per_year.mean().index,
                            "cfs": per_year.mean().values,
                            "days": per_year.size().values})
@@ -768,11 +878,9 @@ thing you will compute. Write down what you think it is first. Change `my_guess`
 A wrong guess you committed to is worth more than a right answer you were shown.
 """)
 
-code(f"""
-my_guess = {M['r_south']:.2f}
-
-print("I think the northern river's correlation with winter Niño 3.4 is about", my_guess)
-""")
+CELLS.extend(("code", s, a) for s, a in
+             weekkit.predict_cell(f"{M['r_south']:.2f}",
+                                  "is the northern river's correlation with winter Niño 3.4"))
 
 # --- YOUR TURN 1 ------------------------------------------------------------
 md(f"""
@@ -901,71 +1009,207 @@ For each window print how many paired years survive and the two correlations, an
 **gap** between them — the southern correlation minus the northern one — because the gap is the
 claim this track is actually making.
 
-Then print one more line answering it: three of those four windows tell one story and one tells
-another, so which is it — did you discover a fact about California, or a fact about where you
-started counting?
+Then print one more line answering it, and answer it by reading **down** the two correlation
+columns rather than across the gap column. One window disagrees with the other three — but when it
+disagrees, only one of the two rivers has moved. Say which river moves and which sits still, and
+say what that does to the gap you would put in a headline.
 """)
 
 answer(f"""
+souths, norths, gaps = [], [], []
 for start_month, label in [({WATER_YEAR}, "Oct-Sep"), (11, "Nov-Oct"), (9, "Sep-Aug"),
                            (1, "Jan-Dec (calendar)")]:
     s = paired("{SOUTH}", start_month)
     n = paired("{NORTH}", start_month)
     r_s = correlation(s["djf"], s["cfs"])
     r_n = correlation(n["djf"], n["cfs"])
+    souths.append(r_s)
+    norths.append(r_n)
+    gaps.append(r_s - r_n)
     print(f"{{label:20s}} n = {{len(s):3d}}   south {{r_s:+.3f}}   north {{r_n:+.3f}}   "
           f"gap {{r_s - r_n:+.3f}}")
 
-print("Both. The three windows that start in the dry season agree with each other and give a gap",
-      "near +0.22, so the north-south contrast is not an artefact of exactly which dry month I",
-      "start in. The calendar year is the odd one out and it collapses the gap to almost nothing,",
-      "because a calendar year cuts a winter in half: January and February of one storm season",
-      "land in one year and the December that belongs with them lands in the previous one.",
-      "So the fact about California is real, and it is only visible to someone who made the",
-      "right calendar choice first — which is a fact about me, not about the rivers.")
+print(f"Down the columns: the south holds still, {{min(souths):+.3f}} to {{max(souths):+.3f}} "
+      f"across all four windows. The north does not — {{min(norths):+.3f}} to "
+      f"{{max(norths):+.3f}}, and under the calendar year it is "
+      f"{{max(norths) / min(norths):.1f}} times what the water year gives it.")
+print("So the calendar year does not cut a signal in half. The southern river hardly notices the",
+      "choice; the whole collapse of the gap is the NORTHERN correlation climbing to meet a",
+      "southern one that never moved. Whatever is going on lives in the three months the two",
+      "conventions disagree about, and it lives at the northern gauge.")
+print(f"Which makes my headline gap the largest of the four ({{max(gaps):+.3f}}, against "
+      f"{{min(gaps):+.3f}} at the other end), and it is largest because the water year puts the "
+      f"north in the LOW group: the three dry-season windows agree on about "
+      f"{{sorted(norths)[1]:+.2f}} and the calendar year gives {{max(norths):+.2f}}. That is a "
+      f"fact about which autumn I stapled onto the northern river's year before I computed "
+      f"anything — so it is not yet a fact about California, and I cannot report the gap "
+      f"without the range.")
 """)
 
 ask(f"""
 ### ✏️ Your turn 4
 
-Two or three paragraphs, quoting **your own four gaps**.
+Two or three paragraphs, quoting **your own four rows** — both correlation columns, not just the
+gap.
 
 1. Which window would you report, and what does the choice cost? Say what a reader loses by not
    being shown the other three.
 2. The calendar year is not a mistake — plenty of published work reports calendar-year runoff, and
-   nothing in the data says it is wrong. So what should a reader conclude from a result that
-   depends on a defensible choice, and what would have to be true of California's weather for all
-   four windows to agree?
+   nothing in the data says it is wrong. Your four gaps are therefore not four attempts at one
+   number. One river is responsible for all of the disagreement between them: say which, and say
+   what that does to the headline you would write. If the gap you would report is the biggest of
+   the four, what does a reader have to be told for that headline to be honest?
+3. You cannot yet say *why* one river moved and the other did not, but you can say what you would
+   have to know. Name it.
 """)
 
 answer_prose(f"""
 I would report the October–September water year, and I would report it because of the average-year
 figure rather than because of the answer it gives. Flow at {M['south_name']} peaks in
 {M['wettest_month']} and bottoms out in {M['driest_month']}, so a year cut at the end of September
-contains one storm season and a year cut at the end of December contains the tail of one and the
-head of the next. That is a reason available *before* looking at the correlations, which is what
-makes it a choice rather than a preference. It costs me the ability to compare directly with
-anything published on calendar years, and it costs a reader the knowledge that my headline gap of
-{M['fork']['Oct-Sep']['gap']:+.3f} would have been {M['fork']['Jan-Dec']['gap']:+.3f} under a
-different and perfectly defensible convention — which is why all four belong in the write-up and
-not just the one I chose.
+contains one storm season whole, and a year cut at the end of December contains the tail of one and
+the head of the next. That reason is available *before* looking at any correlation, which is what
+makes it a choice rather than a preference. What it costs is comparability — I cannot set my
+numbers beside anything published on calendar years — and it costs a reader the knowledge that my
+headline gap of {M['fork']['Oct-Sep']['gap']:+.3f} would have been
+{M['fork']['Jan-Dec']['gap']:+.3f} under a convention nobody could call wrong. All four rows belong
+in the write-up, not the one I chose.
 
-My four gaps are {M['fork']['Oct-Sep']['gap']:+.3f} for October, {M['fork']['Nov-Oct']['gap']:+.3f}
-for November, {M['fork']['Sep-Aug']['gap']:+.3f} for September and
-{M['fork']['Jan-Dec']['gap']:+.3f} for the calendar year. The first three are the same number to
-within a hundredth; the fourth is essentially zero. What a reader should conclude is not that the
-calendar year is wrong but that this result is *conditional*: it says El Niño's effect on southern
-California is concentrated in a single storm season, and any accounting that splits a storm season
-in two will not find it. A conclusion that survives three of four reasonable choices, and fails on
-the fourth for a reason you can name in one sentence, is a stronger result than one that survives
-all four for reasons nobody looked into.
+The important thing is not in the gap column at all, and I nearly missed it by reading across
+instead of down. The southern correlation is {M['fork_min_south']:+.3f} to
+{M['fork_max_south']:+.3f} across all four windows — it does not care. The northern one runs from
+{M['fork_min_north']:+.3f} to {M['fork_max_north']:+.3f}, a factor of
+{M['north_multiple']:.1f}. So the calendar year does not halve a signal or split a storm season in
+a way that hides something; it leaves the south exactly where it was and raises the north until
+there is almost nothing between them. Every one of my four gaps is a statement about the northern
+gauge wearing a statement about the southern one as a constant.
 
-For all four windows to agree, the El Niño signal would have to be spread evenly through the
-calendar rather than concentrated in December to February — a wet El Niño year would have to be wet
-in July as well. It is not: the average-year figure shows almost all of the flow arriving in a few
-winter months, so where you cut the year decides whether those months stay together. The other way
-they could agree is if the effect were large enough to survive being halved, and at
-{M['r_south']:+.3f} it is nowhere near that.
+That is what makes the headline dishonest if I quote it alone. My {M['fork']['Oct-Sep']['gap']:+.3f}
+is the largest of the four gaps, and it is largest because the water year puts the northern river
+in the low group — the three dry-season windows all land near {M['fork']['Oct-Sep']['north']:+.2f}
+and only the calendar year does not. A reader told only
+that number is being shown the most favourable cut of a choice I made for unrelated reasons. What
+they have to be told is the range — that the north–south contrast is positive under every window I
+tried but anywhere from {M['fork_min_gap']:+.2f} to {M['fork_max_gap']:+.2f} in size,
+and that which end it lands on is decided by a calendar convention rather than by California. What
+I would need in order to say *why* is what those three disputed months — October, November,
+December — are worth at each gauge, and what each gauge's autumn flow is correlated with. If they
+are a large share of the northern river's water and a small share of the southern one's, that alone
+would explain why the same choice moves one river and not the other.
+""")
+
+# --- the notebook owns the fork it just handed over --------------------------
+# Not help with a question: an answer to one the student cannot reach with `paired`, which only
+# cuts twelve-month windows. Leaving the fork at "the north moved" would leave the reader with a
+# headline number and no way to judge its size, which is the one thing this section is about.
+md(f"""
+### Why the northern river moved and the southern one did not
+
+Your own four rows say the calendar year moves the north and leaves the south where it was. They
+cannot say why, and the why is worth three more lines of code, because it decides how much of the
+gap to believe.
+
+The two conventions agree about nine months of the year and disagree about one quarter of it:
+**October to December**. They also disagree about *which* October to December. The water year takes
+the autumn that runs up to and into a winter — and December of that autumn is one of the three
+months the Niño index is built from. The calendar year takes the autumn that comes nine months
+*after* that winter ended.
+
+So there are three pieces to look at, at both gauges: the winter itself, and the two rival autumns.
+""")
+
+code(f"""
+def piece(site, months, year_of):
+    \"\"\"Mean flow over `months` of a calendar year, lined up with the winter it belongs to.
+
+    year_of = 0 when those months come after the winter inside the same calendar year;
+    year_of = 1 when the winter is the one they run into, so Oct-Dec 1982 serves winter 1983.
+    \"\"\"
+    # 1. Keep the months asked for, and average them inside each CALENDAR year — the grouping is
+    #    on the date's own year, before any relabelling.
+    daily = flow(site)
+    monthly = daily[daily["date"].dt.month.isin(months)]
+    mean = monthly.groupby(monthly["date"].dt.year)["cfs"].mean()
+    # 2. `+ year_of` is the relabelling: it slides those calendar years onto the winter they
+    #    serve, so the merge lines each average up against the Nino index it should be compared to.
+    return pd.DataFrame({{"year": mean.index + year_of,
+                         "cfs": mean.values}}).merge(winter, on="year")
+
+
+for label, months, year_of in [("Jan-Mar, the winter itself      ", [1, 2, 3], 0),
+                               ("Oct-Dec BEFORE it (water year)  ", [10, 11, 12], 1),
+                               ("Oct-Dec AFTER it (calendar year)", [10, 11, 12], 0)]:
+    n = piece("{NORTH}", months, year_of)
+    s = piece("{SOUTH}", months, year_of)
+    print(f"{{label}}   north {{correlation(n['djf'], n['cfs']):+.3f}}"
+          f"   south {{correlation(s['djf'], s['cfs']):+.3f}}")
+
+for site, label in [("{NORTH}", "north"), ("{SOUTH}", "south")]:
+    by_month = flow(site).groupby(flow(site)["date"].dt.month)["cfs"].mean()
+    share = 100 * by_month.loc[[10, 11, 12]].sum() / by_month.sum()
+    print(f"{{label}}: Oct-Dec is {{share:.0f}}% of the average year's water")
+""")
+
+md(f"""
+Those five lines are the whole explanation of the {M['north_multiple']:.1f}× you found, and of why
+the southern column never moved.
+
+The northern river's winter and its two autumns do not agree with each other. Its January–March
+flow goes with El Niño at {M['piece']['jan_mar']['north']:+.3f}. The autumn running **into** that
+same winter goes the other way, {M['piece']['ond_before']['north']:+.3f} — an El Niño autumn on the
+north coast is, if anything, dry. The autumn nine months **after** it comes out at
+{M['piece']['ond_after']['north']:+.3f}. And Oct–Dec is
+{M['north_ond_share']:.0f}% of the Eel's water, so which of those two autumns your year contains is
+not a rounding term: the water year averages a positive winter against a negative autumn and lands
+low, and the calendar year swaps in an autumn that does not pull the other way.
+
+At the southern gauge the same three months are only {M['south_ond_share']:.0f}% of the year's
+water and both autumns come out near zero
+({M['piece']['ond_before']['south']:+.3f} and {M['piece']['ond_after']['south']:+.3f}), so the
+choice has almost nothing to work with. That is the whole asymmetry.
+
+**One warning before you use this.** It is tempting to read
+{M['piece']['ond_after']['north']:+.3f} as a second sighting of the same El Niño and conclude that
+the calendar year is the better estimate. It is not, and the index says so itself: the Niño 3.4
+autumn that runs into a winter is that winter over again
+(r = {M['nino_ond_before']:+.3f} between the two indices), while the autumn after it has no memory
+of it at all (r = {M['nino_ond_after']:+.3f}). Whatever the calendar year's autumn is contributing
+to the northern correlation, it is not that winter's El Niño. So neither convention gives the
+honest answer: each one staples three months of unrelated water onto a number about winter.
+""")
+
+md(f"""
+Which leaves an obvious question the four windows never asked: what does the correlation look like
+on the months the Niño index is actually about? The index is December–February. Two windows worth
+running are the storm season itself, December to March, and the winter-and-after window,
+January to September, which is what is left of a calendar year once the disputed autumn is removed.
+""")
+
+code(f"""
+def window(site, months, offsets):
+    \"\"\"Mean flow over any set of months, each labelled with the winter year it serves.\"\"\"
+    # 1. Take one month at a time and label it with the winter year it serves. `offsets` is 1 for
+    #    a month that runs INTO a winter and 0 for one that follows it; doing this month by month
+    #    is what lets a window cross New Year at all.
+    daily = flow(site)
+    parts = []
+    for month, offset in zip(months, offsets):
+        part = daily[daily["date"].dt.month == month].copy()
+        part["year"] = part["date"].dt.year + offset
+        parts.append(part)
+    # 2. Stack the relabelled months back up and average within each winter year, so December 1982
+    #    and January 1983 fall into the same average.
+    mean = pd.concat(parts).groupby("year")["cfs"].mean()
+    return pd.DataFrame({{"year": mean.index, "cfs": mean.values}}).merge(winter, on="year")
+
+
+for label, months, offsets in [("Dec-Mar, the storm season    ", [12, 1, 2, 3], [1, 0, 0, 0]),
+                               ("Jan-Sep, the winter and after", list(range(1, 10)), [0] * 9)]:
+    s = window("{SOUTH}", months, offsets)
+    n = window("{NORTH}", months, offsets)
+    r_s, r_n = correlation(s["djf"], s["cfs"]), correlation(n["djf"], n["cfs"])
+    print(f"{{label}}  n = {{len(s):3d}}   south {{r_s:+.3f}}   north {{r_n:+.3f}}   "
+          f"gap {{r_s - r_n:+.3f}}")
 """)
 
 # --- YOUR TURN 5, 6: the sting ----------------------------------------------
@@ -1096,12 +1340,34 @@ print("The lesson is that the right unit to resample is the thing the two measur
 md(f"""
 {weekkit.CLOSING_HEADING}
 
-Not to California — to part of it. Over {M['n_years']} water years the southern gauge gives
-r = {M['r_south']:+.3f} and the northern one {M['r_north']:+.3f}, and a paired bootstrap on the
-difference puts it at {M['gap']:+.3f} with a 95% interval of
-[{M['ci_gap'][0]:+.3f}, {M['ci_gap'][1]:+.3f}] — above zero, on the same
-{M['n_years']} winters, but only if you count a year from October. Count it from January and the
-gap falls to {M['fork']['Jan-Dec']['gap']:+.3f} and the whole result disappears.
+Not to California — to part of it, and by an amount this notebook cannot pin down. Your own
+numbers are above; this is what they add up to.
+
+**The direction is solid.** The southern gauge came out above the northern one under every window
+you tried, its own correlation barely moved across all four, and the paired bootstrap in *Your turn
+6* put the difference above zero on the same {M['n_years']} winters. The sign never reversed under
+anything this notebook tried. El Niño's grip on California loosens as you go north.
+
+**The size is not solid, and you watched exactly why.** The gap this notebook led with is the
+largest of the four you computed, and it is largest because the water year puts the northern
+correlation in the low group rather than the high one. Not because the other windows destroyed a
+signal — the southern number never moved across any of them — but because a water year hands the
+northern river an autumn that runs the other way, and
+{M['north_ond_share']:.0f}% of that river's water is in it. Cut the year at the storm season the
+Niño index is actually about, December to March, and the two gauges come out
+{M['extra']['Dec-Mar']['south']:+.3f} and {M['extra']['Dec-Mar']['north']:+.3f}, a gap of
+{M['extra']['Dec-Mar']['gap']:+.3f}. Take January to September and they are
+{M['extra']['Jan-Sep']['south']:+.3f} and {M['extra']['Jan-Sep']['north']:+.3f}, a gap of
+{M['extra']['Jan-Sep']['gap']:+.3f}. Nothing in the data prefers one of these; they are answers to
+slightly different questions, and the twelve months you call a year decides which question you
+asked.
+
+**So the lesson is not "three of four windows agree, so the answer is real."** It is that a
+comparison is only as good as the like-for-like it rests on, and here the two rivers were never
+being compared on the same thing: the same twelve months mean something different to a river whose
+autumn is a fifth of its water than to one whose autumn is a ninth of it. Fix that and the contrast
+stays; its magnitude moves by a factor of two. Which of those two things you report is the whole
+difference between a finding and a headline.
 """)
 
 md(track_summary())
@@ -1181,8 +1447,9 @@ md(f"""
 Nobody grading this knows the answer, and neither does the literature. Everything above is the
 scaffolding; this is the project.
 
-Here is what is actually established, and it is less than it looks. Two gauges differ, by
-{M['gap']:+.3f} with a paired interval of [{M['ci_gap'][0]:+.3f}, {M['ci_gap'][1]:+.3f}]. Two
+Here is what is actually established, and it is less than it looks. Two gauges differ — you have
+the difference and its paired interval in your own output above, and you have four other versions
+of that difference from *Your turn 3*. Two
 gauges are two points. They tell you that the response is not the same everywhere in California and
 they tell you nothing whatever about the *shape* of the change between them — whether there is a
 line somewhere around the latitude of Monterey with El Niño country on one side of it, or a smooth
@@ -1195,7 +1462,7 @@ one of the two worked here — carries it through everything above, and reports 
 interval, and its latitude. The class assembles a map that no single project could produce, and the
 map is the result.
 
-Three directions, none of them worked out here:
+Four directions, none of them worked out here:
 
 1. **Find the switch.** Take gauges spanning the state, plot each one's correlation against its
    latitude, and look at the shape. Is there a step, and if so where — and how far apart do two
@@ -1205,10 +1472,16 @@ Three directions, none of them worked out here:
    receive their water in completely different ways — rain in one, snowmelt in the other — so
    latitude may be standing in for something else entirely. What would distinguish them?
 3. **Ask what the record cannot say.** {M['n_years']} years is {M['composite']['south']['n_warm']}
-   El Niño winters. Your interval on one gauge is roughly
-   [{M['ci_south'][0]:+.2f}, {M['ci_south'][1]:+.2f}] wide. How many gauges would a map need before
-   a boundary at, say, 37°N could be told apart from a smooth ramp? Work out what the answer
-   depends on before you go looking for it.
+   El Niño winters, and your single-gauge interval from *Your turn 5* is wider than the whole
+   north–south gap you are trying to resolve. How many gauges would a map need before a boundary
+   at, say, 37°N could be told apart from a smooth ramp? Work out what the answer depends on
+   before you go looking for it.
+4. **Report the window, not just the gap.** Everything above assumes one twelve-month window. Your
+   gauge has its own seasonal shape, and the section on the two rival autumns showed that the
+   window's cost depends on it — how much of the year's water arrives in October to December. Run
+   your gauge under all four windows before you hand the class a number, and hand them the range
+   as well as the one you chose. A class map assembled from gauges cut on different conventions,
+   or on one convention nobody checked, is a map of the convention.
 
 And one that is bigger than a semester: the {M['n_gauges']} gauges in the list are the
 {M['n_long']} long records minus the {M['n_excluded']} whose *names* advertised
@@ -1317,11 +1590,19 @@ def track_ids(cells):
             c["id"] = f"{TRACK['id']}-q{q:02d}-answer"
         elif c["cell_type"] == "markdown" and "Double-click" in s:
             c["id"] = f"{TRACK['id']}-q{q:02d}-prose"
+        # The Predict pair carries an assert but is not a question's self-check: it sits BEFORE
+        # the first ✏️, so the generic branch below would key it to `q00` and collide with the
+        # loading check, which is the real q00. Its two cells get their own ids, and the guess
+        # cell matches in both copies -- solution `= 2`, student `= None`.
+        elif c["cell_type"] == "code" and re.search(r"(?m)^my_guess\w*\s*=", s):
+            c["id"] = f"{TRACK['id']}-predict"
+        elif c["cell_type"] == "code" and re.search(r"assert my_guess\w* is not None", s):
+            c["id"] = f"{TRACK['id']}-predict-check"
         elif c["cell_type"] == "code" and "assert " in s:
             c["id"] = f"{TRACK['id']}-q{q:02d}-check"
         else:
             c["id"] = f"{TRACK['id']}-c{i:03d}"
-    return cells
+    return weekkit.dedupe_ids(cells)
 
 
 def main():
@@ -1334,9 +1615,7 @@ def main():
     sol_path.write_text(json.dumps(sol, indent=1) + "\n")
 
     print(f"executing {sol_path.name} ...")
-    r = subprocess.run([sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook",
-                        "--execute", "--inplace", "--ExecutePreprocessor.timeout=900",
-                        str(sol_path)], capture_output=True, text=True, cwd=ROOT)
+    r = weekkit.execute(sol_path, timeout=900)
     if r.returncode:
         print(r.stderr[-4000:])
         sys.exit("the solution did not execute")

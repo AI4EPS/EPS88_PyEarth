@@ -72,6 +72,7 @@ EARLY = (2016, 2020)         # the two eras Your turn 1 compares
 LATE = (2021, 2026)
 SAWTOOTH_FROM = 2014         # the first year the yearly median is built on hundreds of planets
 ROCKY = 1.6                  # radii below this are rocky; the course's week-2 threshold
+GIANT = 8.0                  # the gas-giant end: Neptune is 3.9 Earth radii, Saturn 9.1
 SEED = 88                    # the course number, fixed before anything was run
 N_BOOT = 2000                # bootstrap resamples
 
@@ -149,6 +150,57 @@ M["saw_sigma"] = float(saw.std())
 M["saw_swing"] = float(saw.max() - saw.min())
 M["saw_years"] = {int(y): round(float(saw[y]), 2) for y in (2015, 2016, 2017, 2025) if y in saw}
 
+# The sawtooth has two KINDS of step and the notebook has to tell them apart, so both are measured
+# here. 2014 and 2016 are one team's batch — Kepler validated candidates in bulk in those two
+# years, and the year's median is that batch's median. The largest excursion is NOT that, and it is
+# not anything else this file can name either. Two wrong mechanisms have already been written into
+# cell 9 and removed: "a different team published that year" (refuted — the spike year has the same
+# dominant facility as both neighbours) and "the year is not finished" (refuted below — the spike
+# sits inside a TESS subset that is ~98% radius-complete, and the year with the FEWEST finished
+# rows has an ordinary median). So year_split measures the composition of the spike rather than
+# asserting a cause: the giant fraction says what those planets are, tess_filled retires the
+# completeness story, and tess_strad / tess_dist retire "bigger stars" and "farther away". Do not
+# add a third mechanism to cell 9 without a counter-test that survives all four of these columns.
+TESS_FULL = MEASURED_SURVEYS[2]
+
+
+def year_split(y):
+    """One year, split by whether TESS found it — the facility test cell 9's claim rests on.
+
+    `tess_filled` is the only figure computed off `planets` rather than `with_radius`: it is the
+    share of that year's TESS rows that carry a radius AT ALL, so it has to see the holes.
+    """
+    rows = with_radius[with_radius["disc_year"] == y]
+    tess = rows[rows["disc_facility"] == TESS_FULL]
+    other = rows[rows["disc_facility"] != TESS_FULL]
+    tess_all = planets[(planets["disc_year"] == y) & (planets["disc_facility"] == TESS_FULL)]
+    return {"n": len(rows), "med": float(rows["pl_rade"].median()),
+            "tess_n": len(tess),
+            "tess_med": float(tess["pl_rade"].median()) if len(tess) else float("nan"),
+            "other_n": len(other),
+            "other_med": float(other["pl_rade"].median()) if len(other) else float("nan"),
+            "tess_share": len(tess) / len(rows),
+            "tess_giant": float((tess["pl_rade"] > GIANT).mean()) if len(tess) else float("nan"),
+            "tess_filled": len(tess) / len(tess_all) if len(tess_all) else float("nan"),
+            "tess_strad": float(tess["st_rad"].median()) if len(tess) else float("nan"),
+            "tess_dist": float(tess["sy_dist"].median()) if len(tess) else float("nan")}
+
+
+M["spike_year"] = int(saw.idxmax())
+M["recent"] = {int(y): year_split(int(y))
+               for y in (M["spike_year"] - 1, M["spike_year"], M["spike_year"] + 1)
+               if y in saw.index}
+# Almost all of the spread is that one year. The number matters because Your turn 1 hands the
+# spread to the student as a yardstick, and a spread that one point sets is not a measure of
+# year-to-year variation — which is a statistical argument, and needs no story about WHY that year
+# is odd.
+M["saw_sigma_ex_spike"] = float(saw.drop(M["spike_year"]).std())
+M["batch"] = {}
+for _y in (2014, 2016):
+    _rows = with_radius[with_radius["disc_year"] == _y]
+    M["batch"][_y] = {"n": len(_rows), "kepler": int((_rows["disc_facility"] == "Kepler").sum()),
+                      "med": float(_rows["pl_rade"].median())}
+
 # --- Your turn 1: the eras and the bootstrap -------------------------------
 early = with_radius[with_radius["disc_year"].between(*EARLY)]["pl_rade"].values
 late = with_radius[with_radius["disc_year"].between(*LATE)]["pl_rade"].values
@@ -185,10 +237,16 @@ M["pc_rv_distinct"] = int(pc_rv["pl_rade"].dropna().nunique())
 
 prov = planets["pl_bmassprov"].value_counts()
 M["prov_mass"] = int(prov.get("Mass", 0))
-M["prov_msini"] = int(prov.get("Msini", 0)) + int(prov.get("Msin(i)/sin(i)", 0))
+# `Msini` is the floor. `Msin(i)/sin(i)` is NOT: the inclination was determined and divided back
+# out, so that number is a true mass and belongs with `Mass`. Adding the two categories together
+# produced a count of "planets whose mass is only a floor" that matched nothing the notebook
+# prints, because the notebook prints value_counts() with all three labels separate.
+M["prov_msini"] = int(prov.get("Msini", 0))
+M["prov_msini_solved"] = int(prov.get("Msin(i)/sin(i)", 0))
 M["prov_none"] = int(planets["pl_bmassprov"].isna().sum())
 rv_prov = rv["pl_bmassprov"].value_counts()
-M["rv_msini"] = int(rv_prov.get("Msini", 0)) + int(rv_prov.get("Msin(i)/sin(i)", 0))
+M["rv_msini"] = int(rv_prov.get("Msini", 0))
+M["rv_msini_solved"] = int(rv_prov.get("Msin(i)/sin(i)", 0))
 M["rv_true_mass"] = int(rv_prov.get("Mass", 0))
 
 # --- Your turn 3: the mass-radius line -------------------------------------
@@ -219,11 +277,15 @@ M["guess_outside"] = int(((guessing["pl_bmasse"] < M["train_lo"])
 SURVEYS = {}
 for short, full in zip(["Kepler", "K2", "TESS"], MEASURED_SURVEYS):
     rows = tr[tr["disc_facility"] == full]
+    # dropna FIRST: `column < 1.6` is False for a hole, so the raw .mean() divides by every row
+    # and silently counts a planet nobody has measured as "not rocky" — the trap the setup names.
+    measured = rows["pl_rade"].dropna()
     SURVEYS[short] = {"n": len(rows),
-                      "radius": float(rows["pl_rade"].median()),
+                      "measured": len(measured),
+                      "radius": float(measured.median()),
                       "orbit": float(rows["pl_orbsmax"].median()),
                       "distance": float(rows["sy_dist"].median()),
-                      "rocky": float((rows["pl_rade"] < ROCKY).mean())}
+                      "rocky": float((measured < ROCKY).mean())}
 M["surveys"] = SURVEYS
 
 # --- Your turn 5 and 6: transit probability --------------------------------
@@ -263,9 +325,9 @@ M["bands"] = BANDS
 
 # The build log is the record that every number was computed. Print all of it, not a selection.
 for k in sorted(M):
-    if k not in ("surveys", "weighted", "bands", "saw_years"):
+    if k not in ("surveys", "weighted", "bands", "saw_years", "recent", "batch"):
         print(f"  measured  {k:>18} = {M[k]}")
-for k in ("saw_years", "surveys", "weighted", "bands"):
+for k in ("saw_years", "batch", "recent", "surveys", "weighted", "bands"):
     print(f"  measured  {k:>18} : {M[k]}")
 
 # The plan records two numbers about this dataset. A builder does not edit the plan, so a
@@ -297,7 +359,7 @@ def fn(module_id, name):
 # new, so the full module tables would list forty functions it never uses; these are the ones the
 # notebook and its model answers actually write.
 TRACK_IDEAS = [("P1", "Catalogue completeness"), ("D1", "NaN"), ("D2", "Table"),
-               ("S3", "Log axes"), ("ML1", "Linear regression"),
+               ("D4", "Log axes"), ("ML1", "Linear regression"),
                ("S4", "Bootstrap"), ("S4", "Confidence interval")]
 TRACK_FNS = [("D2", "column.isna()"), ("D2", "column.value_counts()"),
              ("D2", "table.groupby(column)"), ("D2", "column.count() / column.median()"),
@@ -537,6 +599,13 @@ print("spread of the yearly medians since {SAWTOOTH_FROM}:",
       round(per_year.loc[{SAWTOOTH_FROM}:].max() - per_year.loc[{SAWTOOTH_FROM}:].min(), 2))
 """)
 
+# Short names for the two blocks of measurements cell 9 quotes. Written out in full, a single
+# sentence of that paragraph is four `M['recent'][M['spike_year'] - 1][...]` lookups and wraps
+# three times, which is how a number ends up next to the wrong claim.
+SPIKE = M["spike_year"]
+SPB, SP0, SPA = (M["recent"][SPIKE - 1], M["recent"][SPIKE], M["recent"][SPIKE + 1])
+B14, B16 = M["batch"][2014], M["batch"][2016]
+
 md(f"""
 That is the observation the project exists to explain, and it needs no statistics to see: the
 middle planet fell from about {M['old_med']:.0f} Earth radii to about {M['new_med']:.1f}, a factor
@@ -546,10 +615,44 @@ Look at the line after 2014 as well, because a second thing is going on. The yea
 settle — it saws up and down by whole Earth radii from one year to the next
 ({', '.join(f"{y} → {v}" for y, v in M['saw_years'].items())}), a swing of {M['saw_swing']:.1f}
 across {SAWTOOTH_FROM}–{M['year_last']} with a standard deviation of {M['saw_sigma']:.2f}. Nothing
-about the sky changes that fast. What changes is which team published a batch that year.
+about the sky changes that fast, so every one of those steps is a fact about the archive rather
+than about planets. But not the same fact, and the difference is the whole point of this notebook.
 
-So a *year* is not a useful unit for this data. The first question is what happens when you stop
-using it.
+**The two huge years are one team's batch.** Of the {B14['n']:,} planets with a measured radius
+announced in 2014, {B14['kepler']:,} are Kepler's; of the {B16['n']:,} announced in 2016,
+{B16['kepler']:,}. Those two years are bulk validations of one telescope's candidates, so their
+medians are Kepler's median wearing a year's label — the survey effect this whole project is
+about, showing up in the calendar.
+
+**The biggest step of all is not that.** {SPIKE} is the largest excursion in the series,
+{SP0['med']:.2f} against {SPB['med']:.2f} the year before and {SPA['med']:.2f} the year after — and
+no team changed hands. {SP0['tess_n']} of its {SP0['n']} measured radii are TESS's, the same
+dominant facility as in {SPIKE - 1} ({SPB['tess_n']} of {SPB['n']}) and {SPIKE + 1}
+({SPA['tess_n']} of {SPA['n']}); inside TESS alone the median runs {SPB['tess_med']:.2f} →
+{SP0['tess_med']:.2f} → {SPA['tess_med']:.2f}. Whatever moved that year, it is not the calendar
+handing the sky to a different telescope.
+
+What the file does say is *what* those planets are. Of TESS's {SPIKE} planets,
+{SP0['tess_giant']:.0%} are larger than {GIANT:.0f} Earth radii — the gas-giant end of the
+range — against {SPB['tess_giant']:.0%} in {SPIKE - 1} and {SPA['tess_giant']:.0%} in {SPIKE + 1}.
+The whole distribution moved, and the median is reporting that honestly.
+
+**Why it moved, this file does not say, and it is worth watching three good guesses fail.** *The
+year is unfinished, and the small planets have not arrived yet:* no — {SP0['tess_filled']:.1%} of
+TESS's {SPIKE} rows already carry a radius, and {SPIKE + 1}, which has had a year less to fill in,
+sits at an ordinary {SPA['tess_med']:.2f}. *The stars are bigger, so only big planets show:* no —
+the median host star is {SP0['tess_strad']:.2f} solar radii against {SPB['tess_strad']:.2f} and
+{SPA['tess_strad']:.2f}. *The planets are farther away, so only big ones are detectable:* no —
+{SPIKE + 1} is the more distant year of the two ({SPA['tess_dist']:.0f} parsecs against
+{SP0['tess_dist']:.0f}) and is not giant-heavy. The archive records the swing and does not explain
+it, and no column in this table does either.
+
+So a *year* is not a useful unit for this data, and the two failures are different in kind: a year
+can be one survey's batch, which the file proves, and a year can swing by an amount nothing in the
+file accounts for. Carry the second into the next question, because the {M['saw_sigma']:.2f} above
+is not a typical year-to-year wobble — {SPIKE} alone supplies almost all of it, and a spread that
+one point sets is not a measurement of how much years differ. The first question is what happens
+when you stop using years.
 
 One detail in the cell above, because you will copy the shape: the two eras were pulled out with
 `.values`, which hands back a plain array instead of a column of the table. Everything below that
@@ -575,10 +678,12 @@ do that {N_BOOT} times. `rng = np.random.default_rng({SEED})` once, then
 and 97.5th percentiles, and draw the {N_BOOT} differences as a histogram with the observed
 difference marked.
 
-Now answer it, in a line your code prints, on your own three numbers — the difference, its
-interval, and the year-to-year standard deviation of {M['saw_sigma']:.2f} printed above: is the
-later era's larger typical planet something you could have seen in the yearly series, and what
-would that series have had to look like for the answer to be yes?
+Now answer it, in a line your code prints, on your own numbers — the difference, its interval, and
+the year-to-year spread. Print that spread twice: over all of
+{SAWTOOTH_FROM}–{M['year_last']}, and again with the single year that dominates it left out
+(`per_year.loc[{SAWTOOTH_FROM}:].idxmax()` finds it). Then answer: is the later era's larger typical
+planet something you could have seen in the yearly series, which of your two spreads is the fair
+comparison, and what would that series have had to look like for the answer to be yes?
 """)
 
 answer(f"""
@@ -608,15 +713,25 @@ plt.ylabel("resamples")
 plt.title(f"{N_BOOT} bootstrap resamples of the era difference (red = observed)")
 plt.show()
 
-spread = per_year.loc[{SAWTOOTH_FROM}:].std()
-print("No — not in the yearly series. The difference is", round(observed, 2),
-      "Earth radii with an interval of", round(low, 2), "to", round(high, 2),
-      "which never touches zero, so the shift itself is real; but the year-to-year standard",
-      "deviation is", round(spread, 2), "Earth radii —", round(spread / observed, 1),
-      "times larger — so a real shift of this size is invisible inside it.")
-print("For the yearly series to show it, the scatter between neighbouring years would have",
-      "to be smaller than the shift — which means each year would have to be a fair sample",
-      "of the sky rather than whichever survey's batch happened to be published that year.")
+yearly = per_year.loc[{SAWTOOTH_FROM}:]
+dominant = yearly.idxmax()
+spread = yearly.std()
+spread_without = yearly.drop(dominant).std()
+print("year-to-year spread:", round(spread, 2), "Earth radii over all of",
+      "{SAWTOOTH_FROM}-{M['year_last']}, but", round(spread_without, 2), "with", dominant,
+      "left out — one year carries nearly all of it")
+print("The shift is real either way. It is", round(observed, 2), "Earth radii with an interval",
+      "of", round(low, 2), "to", round(high, 2), "which never touches zero. Whether the yearly",
+      "series could have shown it depends entirely on which spread I compare it against: against",
+      round(spread, 2), "—", round(spread / observed, 1), "times the shift — it is invisible;",
+      "against", round(spread_without, 2), "it is larger than the year-to-year scatter and would",
+      "have been visible. The second is the fair comparison, because", dominant, "is not a noisy",
+      "year, it is a single excursion, and a spread one point sets is not a measure of how much",
+      "years differ.")
+print("So the yearly series hides a shift this size for two reasons, and neither is that the sky",
+      "is noisy: some years are one survey's batch rather than a sample of anything, and one year",
+      "swings by an amount nothing in this file accounts for. For the series to show the shift,",
+      "every year would have to be a fair sample of the same sky, and no year here is.")
 """)
 
 # --- section 2: the fork ----------------------------------------------------
@@ -631,7 +746,9 @@ on how the orbit happens to be tilted — which is unknown. So what comes out is
 **minimum** mass, `M·sin(i)`, and no radius at all.
 
 The archive records which one you are looking at, in `pl_bmassprov`: `Mass` means somebody pinned
-the true mass, `Msini` means the tilt is unknown and the number is a floor.
+the true mass, and `Msini` means the tilt is unknown and the number is a floor. You will meet a
+third label below, `Msin(i)/sin(i)`: the tilt was determined afterwards and divided back out, so
+those are true masses too — count them with `Mass`, not with the floors.
 
 **Table:** {idea('D2', 'Table')['words']}
 """)
@@ -644,11 +761,26 @@ many of those you think carry a **measured** radius, and run the cell. You will 
 next question, and a wrong guess you committed to is worth more than a right answer you were shown.
 """)
 
-code(f"""
-my_guess = {M['rv_n'] // 2}
+# The Predict cell ships EMPTY to the student — written out here rather than through `code()`,
+# which emits one cell to both copies. A pre-filled `my_guess` is not a prediction: the student
+# presses shift-enter, the notebook agrees with itself, and the commitment the device exists to
+# extract never happens. Sixteen of the twenty notebooks shipped one.
+#
+# TWO cells, and forced rather than chosen: `check_asserts` requires every name an assert uses to
+# be bound by an EARLIER cell, and `check_conventions` requires any cell containing `assert` to
+# print the course's ✓ line. Neither can be satisfied by one cell that assigns and then tests.
+# It is also what a student does — change the number, run on.
+CELLS.append(("code",
+              f"my_guess = {M['rv_n'] // 2}",
+              "my_guess = None    # ← your number, written down before you look"))
 
-print("I think", my_guess, "of the {M['rv_n']} radial-velocity planets have a measured radius")
-""")
+CELLS.append(("code", f"""
+assert my_guess is not None, \\
+    "write a number into my_guess in the cell above — the commitment is the point, and a guess "\\
+    "you made before you saw the answer is the only one that can teach you anything"
+print("✓ committed — I think", my_guess,
+      "of the {M['rv_n']} radial-velocity planets have a measured radius")
+""".strip("\n"), None))
 
 ask(f"""
 ### ✏️ Your turn 2
@@ -673,6 +805,8 @@ answer(f"""
 for method in ["Transit", "Radial Velocity"]:
     a = planets[planets["discoverymethod"] == method]
     b = composite[composite["discoverymethod"] == method]
+    # :16 and :5 are field widths, not maths — the two tables are only comparable if the numbers
+    # sit under each other, and the whole point here is reading ps against pscomppars down a column
     print(f"{{method:16}} ps: {{len(a):5}} planets, {{a['pl_rade'].count():5}} with a radius"
           f"   |  pscomppars: {{b['pl_rade'].count():5}} with a radius")
 
@@ -705,7 +839,7 @@ radius nobody has measured. Whether such an estimate can then stand beside a mea
 separate question, and the way to settle it is to build the estimator yourself and look at what
 comes out.
 
-**Log axes:** {idea('S3', 'Log axes')['words']}
+**Log axes:** {idea('D4', 'Log axes')['words']}
 **Linear regression:** {idea('ML1', 'Linear regression')['words']}
 """)
 
@@ -732,8 +866,13 @@ you have to compare instead to settle it with measurements only?
 """)
 
 answer(f"""
+# "Mass" only, never "Msini": a floor is not a mass, and a line fitted through floors would learn
+# where the floors sit rather than how mass and radius are related.
 train = planets[(planets["pl_bmassprov"] == "Mass") & planets["pl_rade"].notna()
                 & planets["pl_bmasse"].notna()]
+# sklearn wants one ROW per planet on the input side, so x is reshaped into a column; a flat array
+# would be read as a single planet with hundreds of columns. The target y stays flat — one number
+# per planet is what it expects there, and reshaping it too is the commonest way to get this wrong.
 x = np.log10(train["pl_bmasse"].values).reshape(-1, 1)
 y = np.log10(train["pl_rade"].values)
 model = LinearRegression().fit(x, y)
@@ -751,6 +890,8 @@ plt.show()
 
 rv = planets[planets["discoverymethod"] == "Radial Velocity"]
 guessing = rv[rv["pl_rade"].isna() & rv["pl_bmasse"].notna()]
+# the line was fitted in log space, so its output is a logarithm — 10 ** undoes it, and forgetting
+# to would hand back numbers near 1 that still look like plausible radii.
 invented = 10 ** model.predict(np.log10(guessing["pl_bmasse"].values).reshape(-1, 1))
 
 transits = planets[planets["discoverymethod"] == "Transit"]
@@ -827,11 +968,13 @@ surveys = {{"Kepler": "Kepler", "K2": "K2",
 
 for short in surveys:
     rows = transits[transits["disc_facility"] == surveys[short]]
+    measured = rows["pl_rade"].dropna()   # a hole is not a big planet: drop it, do not compare it
     print(f"{{short:7}} n={{len(rows):5}}"
-          f"  radius {{round(rows['pl_rade'].median(), 2):6}} Re"
+          f"  radius {{round(measured.median(), 2):6}} Re"
           f"  orbit {{round(rows['pl_orbsmax'].median(), 3):6}} AU"
           f"  distance {{round(rows['sy_dist'].median()):6.0f}} pc"
-          f"  below {ROCKY} Re {{round((rows['pl_rade'] < {ROCKY}).mean(), 3)}}")
+          f"  below {ROCKY} Re {{round((measured < {ROCKY}).mean(), 3)}}"
+          f"  of {{len(measured)}} measured")
 
 kepler = transits[transits["disc_facility"] == "Kepler"]["pl_rade"].dropna()
 tess = transits[transits["disc_facility"] == surveys["TESS"]]["pl_rade"].dropna()
@@ -906,6 +1049,8 @@ multiplier stay the same across the plot, or does it depend on where the planet 
 answer(f"""
 geometry = transits[transits["st_rad"].notna() & transits["pl_orbsmax"].notna()
                     & transits["pl_rade"].notna()].copy()
+# {R_SUN_IN_AU:.8f} AU is one solar radius: st_rad is in solar radii and pl_orbsmax is in AU, and
+# a ratio of two numbers in different units is not a probability of anything.
 geometry["p_transit"] = geometry["st_rad"] * {R_SUN_IN_AU:.8f} / geometry["pl_orbsmax"]
 
 print("transit planets with all three columns:", len(geometry), "of", len(transits))
@@ -965,6 +1110,8 @@ kepler_rows = geometry[geometry["disc_facility"] == "Kepler"]
 kepler_weights = 1 / kepler_rows["p_transit"]
 kepler_small = kepler_rows["pl_rade"] < {ROCKY}
 
+# a weighted share, not an average: each planet counts once for every planet it stands for, so the
+# answer is about the population rather than about the sample geometry allowed me to see.
 shares = [small.mean(), weights[small].sum() / weights.sum(),
           kepler_small.mean(), kepler_weights[kepler_small].sum() / kepler_weights.sum()]
 labels = ["all raw", "all weighted", "Kepler raw", "Kepler weighted"]
@@ -978,21 +1125,31 @@ plt.title(f"Geometric correction, {{len(geometry)}} transiting planets")
 plt.show()
 
 geometry["band"] = pd.qcut(geometry["pl_orbsmax"], 4)
-widest_share = 0
+band_share = {{}}
 for band, rows in geometry.groupby("band", observed=True):
-    widest_share = (1 / rows["p_transit"]).sum() / weights.sum()      # the last band is the widest
+    band_share[band] = (1 / rows["p_transit"]).sum() / weights.sum()
     print("orbit", str(band), " n =", len(rows),
           " median", round(rows["pl_orbsmax"].median(), 3), "AU",
           " below {ROCKY} Re", round((rows["pl_rade"] < {ROCKY}).mean(), 3),
-          " share of the weight", round(widest_share, 3))
+          " share of the weight", round(band_share[band], 3))
+
+widest = max(band_share)          # qcut bands order by their edges, so the widest is the largest
+widest_share = band_share[widest]
+widest_rocky = (geometry.loc[geometry["band"] == widest, "pl_rade"] < {ROCKY}).mean()
 
 print("It moved DOWN, not up:", round(shares[0], 3), "to", round(shares[1], 3), "overall and",
       round(shares[2], 3), "to", round(shares[3], 3), "for Kepler. Correcting for geometry made",
       "the population look LESS Earth-like, not more.")
 print("The bands say why. The widest-orbit quarter carries", round(widest_share, 2),
       "of all the weight, because 1/p is largest out there — and it is also the band with the",
-      "fewest small planets, because a small planet on a wide orbit makes a shallow, rare",
-      "transit that a survey cannot detect.")
+      "fewest small planets, at", round(widest_rocky, 3), "below {ROCKY} Re.")
+print("Depth and rarity are two different quantities and my weight holds only one of them. How",
+      "deep a transit is depends on the planet and its star alone — (pl_rade / st_rad) ** 2 —",
+      "and is the same at any orbit width, so a small planet is shallow wherever it sits. How",
+      "rare it is is the geometry, st_rad / pl_orbsmax, which is exactly what I weighted by. Out",
+      "at the wide orbits a small planet is hit by both at once: still shallow, and now also",
+      "transiting for few observers and seldom enough that a fixed observing baseline catches",
+      "few events. So the hardest planets to detect are the ones the weight counts most.")
 print("So the bias I have not corrected is detectability, and it runs the opposite way to",
       "geometry. Fixing only the one I can compute exactly makes the answer worse, which means a",
       "partial debiasing is not a small version of the right answer — it can point the wrong way.")
@@ -1004,12 +1161,13 @@ md(f"""
 
 Mostly better telescopes. The typical known planet fell from {M['old_med']:.1f} Earth radii to
 {M['new_med']:.2f} because Kepler arrived, stared at one faint patch of sky for four years and
-returned {M['surveys']['Kepler']['n']:,} planets with a median radius of
-{M['surveys']['Kepler']['radius']:.2f}; it has been climbing again because TESS arrived, swept the
-bright nearby sky and returned {M['surveys']['TESS']['n']:,} with a median of
-{M['surveys']['TESS']['radius']:.2f}. Both censuses are honest and neither is the sky. What that
-leaves unanswered is what the sky actually holds, and the next section is about how far this file
-can get you towards it.
+returned much the largest batch of planets in this file; it has climbed back because TESS
+arrived, swept the bright nearby sky instead, and has been supplying most of the recent years. The
+sizes and the distances are yours, from *Your turn 4* — the survey that stares longest at the
+faintest stars returns the smaller typical planet and the more distant one, and the survey built
+for bright nearby stars returns the larger and the nearer. Both censuses are honest and neither is
+the sky. What that leaves unanswered is what the sky actually holds, and the next section is about
+how far this file can get you towards it.
 """)
 
 md(track_summary())
@@ -1090,13 +1248,12 @@ scaffolding; this is the project.
 
 Here is what is actually established, and it is less than it looks. The fall from
 {M['old_med']:.1f} Earth radii to {M['new_med']:.2f} is Kepler arriving, and that is settled. That
-each instrument returns a different galaxy is settled: Kepler's median planet sits
-{M['surveys']['Kepler']['radius']:.2f} Earth radii at
-{M['surveys']['Kepler']['distance']:.0f} parsecs, TESS's {M['surveys']['TESS']['radius']:.2f} at
-{M['surveys']['TESS']['distance']:.0f}. What is **not** settled is the thing all of that is
-evidence about: what the population is. Your turn 6 is where you found out what happens when you
-correct one bias out of several, and it is the reason this question is open rather than merely
-unfinished.
+each instrument returns a different galaxy is settled too, and you measured it in *Your turn 4*:
+the two big surveys disagree about the size of a typical planet and about how far away it is, and
+they disagree by far more than the uncertainty on either. What is **not** settled is the thing all
+of that is evidence about: what the population is. Your turn 6 is where you found out what happens
+when you correct one bias out of several, and it is the reason this question is open rather than
+merely unfinished.
 
 Four directions, none of them worked out here:
 
@@ -1118,10 +1275,10 @@ Four directions, none of them worked out here:
    changes a histogram's shape, not just its median — does the gap survive your weights, and does
    it survive in each survey separately?
 4. **Decide what this file cannot answer.** The archive holds {M['no_radius']:,} planets with no
-   radius at all and {M['rv_msini']:,} radial-velocity planets whose mass is only a floor. Write
-   down what fraction of the population you are estimating actually rests on a measurement, and
-   what fraction rests on a model. If the honest answer is that most of it is model, that is a
-   result.
+   radius at all, and *Your turn 2* counted the radial-velocity planets whose `pl_bmassprov` is
+   `Msini` — a mass that is only a floor, because nobody has pinned the orbit's tilt. Write down
+   what fraction of the population you are estimating actually rests on a measurement, and what
+   fraction rests on a model. If the honest answer is that most of it is model, that is a result.
 
 And one that is bigger than a semester: what would a survey have to be like for its census to be a
 population? Not "how many more planets" — what property would the sample need. Write down the
@@ -1167,6 +1324,8 @@ should expect the answer to be sensitive to how I draw the floor.
 """)
 
 answer(f"""
+# one solar radius is {R_SUN_IN_REARTH:.3f} Earth radii — the same two IAU definitions again, this
+# time putting the star on the planet's scale, so the fraction that comes out is a pure number.
 geometry["depth"] = (geometry["pl_rade"] / (geometry["st_rad"] * {R_SUN_IN_REARTH:.3f})) ** 2
 
 for short in surveys:
@@ -1229,11 +1388,16 @@ def track_ids(cells):
             c["id"] = f"{TRACK['id']}-q{q:02d}-answer"
         elif c["cell_type"] == "markdown" and "Double-click" in s:
             c["id"] = f"{TRACK['id']}-q{q:02d}-prose"
+        elif c["cell_type"] == "code" and "my_guess" in s:
+            # The Predict pair carries an assert but is not a question's self-check, so it must
+            # not take a question's id — see build_track_T3.py, where the same pair collided
+            # with the loading check. Its two cells get their own.
+            c["id"] = f"{TRACK['id']}-predict" + ("-check" if "assert " in s else "")
         elif c["cell_type"] == "code" and "assert " in s:
             c["id"] = f"{TRACK['id']}-q{q:02d}-check"
         else:
             c["id"] = f"{TRACK['id']}-c{i:03d}"
-    return cells
+    return weekkit.dedupe_ids(cells)
 
 
 def main():
@@ -1246,9 +1410,7 @@ def main():
     sol_path.write_text(json.dumps(sol, indent=1) + "\n")
 
     print(f"executing {sol_path.name} ...")
-    r = subprocess.run([sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook",
-                        "--execute", "--inplace", "--ExecutePreprocessor.timeout=900",
-                        str(sol_path)], capture_output=True, text=True, cwd=ROOT)
+    r = weekkit.execute(sol_path, timeout=900)
     if r.returncode:
         print(r.stderr[-4000:])
         sys.exit("the solution did not execute")

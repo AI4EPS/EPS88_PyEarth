@@ -779,8 +779,13 @@ def build():
     out.mkdir(parents=True, exist_ok=True)
 
     print(f"executing {len(solution.cells)} cells ...")
-    NotebookClient(solution, timeout=600, kernel_name="python3",
-                   resources={"metadata": {"path": str(out)}}).execute()
+    # `kernel_name="python3"` is resolved through JUPYTER_PATH exactly as nbconvert resolves it,
+    # so this in-process driver had the same latent bug as the eighteen subprocess ones: the
+    # kernelspec ipykernel writes starts with a bare "python" and the kernel came from PATH.
+    # weekkit.pinned_kernel makes it this interpreter. See weekkit.execute for the whole story.
+    with weekkit.pinned_kernel():
+        NotebookClient(solution, timeout=600, kernel_name="python3",
+                       resources={"metadata": {"path": str(out)}}).execute()
 
     for nb in (solution, student):
         nb.metadata["kernelspec"] = {"display_name": "Python 3", "language": "python",

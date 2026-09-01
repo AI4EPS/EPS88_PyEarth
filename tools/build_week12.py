@@ -451,9 +451,10 @@ before** the sequence — 1 January to 1 July 2019? Change `my_guess` to your nu
 cell under it.
 """)
 
-code(f"""
-my_guess = 2000
+CELLS.extend(("code", s, a) for s, a in
+             weekkit.predict_cell("2000", "earthquakes in the six months before the sequence"))
 
+code(f"""
 windows = [("2018-01-01", "2018-07-01"), ("2018-07-01", "2019-01-01"),
            ("2019-01-01", "2019-07-01"), ("2019-07-01", "2019-12-31"),
            ("2020-01-01", "2020-07-01")]
@@ -1385,9 +1386,7 @@ def main():
     sol_path.write_text(json.dumps(sol, indent=1) + "\n")
 
     print(f"executing {sol_path.name} ...")
-    r = subprocess.run([sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook",
-                        "--execute", "--inplace", "--ExecutePreprocessor.timeout=900",
-                        str(sol_path)], capture_output=True, text=True, cwd=ROOT)
+    r = weekkit.execute(sol_path, timeout=900)
     if r.returncode:
         print(r.stderr[-4000:])
         sys.exit("the solution did not execute")

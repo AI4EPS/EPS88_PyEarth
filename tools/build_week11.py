@@ -304,6 +304,13 @@ model which columns it actually used.
 
 **Eight places where you write something: five in class, three at home.** Each one is headed
 *Your turn*, with an empty cell under it.
+
+**The four questions, in order:**
+
+1. Can two elements tell three tectonic settings apart?
+2. What do you do when no column in the file is complete?
+3. Do the badly measured columns help, or hurt?
+4. Is the forest reading the chemistry, or reading who measured the rock?
 """)
 
 code(weekkit.asset_setup_cell(
@@ -329,7 +336,7 @@ print(basalts.shape, "-", len(feature_columns), "chemistry columns and one label
 
 # --- section 1 -------------------------------------------------------------
 md("""
-## Three settings, one rock
+## Can two elements tell three tectonic settings apart?
 
 Basalt is the most common lava on the planet, and almost all of it erupts in one of three places.
 
@@ -390,10 +397,8 @@ print("✓ the baseline — guessing the commonest of the three settings is righ
       round(baseline * 100, 1), "percent of the time")
 """)
 
-# --- section 2 -------------------------------------------------------------
+# --- section 2: the second half of spine question 1 -------------------------
 md("""
-## Two elements and a boundary
-
 Geochemists have been separating these three settings by hand since the 1970s, and they did it with
 two elements at a time on a piece of graph paper. Pearce, J.A. and Cann, J.R. (1973), *Tectonic
 setting of basic volcanic rocks determined using trace element analyses*, Earth and Planetary
@@ -498,7 +503,7 @@ be compared, and we are about to want to compare a dozen of them.
 
 # --- section 3 -------------------------------------------------------------
 md(f"""
-## The holes in the file
+## What do you do when no column in the file is complete?
 
 So how holey is this file? `.isna()` marks every hole with `True`, `.sum()` adds up the `True`s
 column by column, and dividing by the number of rows turns each count into a fraction. The result
@@ -599,14 +604,20 @@ code("""
 def accuracy(model, features, seed=0):
     \"\"\"Fit one model on one set of columns and score it on the held-out third of the samples.\"\"\"
     labels = basalts["affinity"]
+    # Split first, before anything at all is measured from the data. `stratify` keeps the mix
+    # of affinities the same in both halves, so a rare one cannot land entirely in the test set.
     X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.3,
                                                         random_state=seed, stratify=labels)
+    # Fill the holes, then put the columns on a common footing. Both of these learn their
+    # numbers from the training half alone — `fit_transform` on it, plain `transform` on the
+    # test half — because a median taken from rows you are about to be tested on is leakage.
     filler = SimpleImputer(strategy="median")
     X_train = filler.fit_transform(X_train)
     X_test = filler.transform(X_test)
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
+    # Learn from the training half; report the score on the test half, which it has never seen.
     model.fit(X_train, y_train)
     return model.score(X_test, y_test)
 """)
@@ -672,7 +683,7 @@ From here every number comes out of `accuracy`, so every number is measured on t
 
 # --- section 4 -------------------------------------------------------------
 md(f"""
-## Ten oxides, or all fifty-one
+## Do the badly measured columns help, or hurt?
 
 The **major oxides** are the measurements that account for nearly the whole weight of the rock —
 its silicon, titanium, aluminium, iron, calcium, magnesium, manganese, potassium and sodium. That
@@ -805,7 +816,7 @@ reverses. The extra columns are carrying something.
 
 # --- section 5 -------------------------------------------------------------
 md("""
-## Which columns did the work
+## Is the forest reading the chemistry, or reading who measured the rock?
 
 A fitted forest will tell you which columns its trees kept asking about. `feature_importances_` is
 one number per column, and they add up to 1. Note that `accuracy` calls `fit` on the model object
@@ -862,10 +873,8 @@ trace elements like `{M['top'][2][0]}` and `{M['top'][3][0]}`, missing {pct(M['t
 {pct(M['top'][3][2])} percent of the time — patchy, but mostly there.
 """)
 
-# --- section 6 -------------------------------------------------------------
+# --- section 6: the second half of spine question 4 -------------------------
 md(f"""
-## The blanks themselves
-
 One more check before anybody reports {M['all_forest']:.3f} to a geochemist. *You got 99 percent. Be
 suspicious. Did one of your columns already know the answer?*
 
@@ -972,14 +981,20 @@ major_oxides = ["SiO2_wt_percent", "TiO2_wt_percent", "Al2O3_wt_percent", "Fe2O3
 def accuracy(model, features, seed=0):
     """Fit one model on one set of columns and score it on the held-out third of the samples."""
     labels = basalts["affinity"]
+    # Split first, before anything at all is measured from the data. `stratify` keeps the mix
+    # of affinities the same in both halves, so a rare one cannot land entirely in the test set.
     X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.3,
                                                         random_state=seed, stratify=labels)
+    # Fill the holes, then put the columns on a common footing. Both of these learn their
+    # numbers from the training half alone — `fit_transform` on it, plain `transform` on the
+    # test half — because a median taken from rows you are about to be tested on is leakage.
     filler = SimpleImputer(strategy="median")
     X_train = filler.fit_transform(X_train)
     X_test = filler.transform(X_test)
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
+    # Learn from the training half; report the score on the test half, which it has never seen.
     model.fit(X_train, y_train)
     return model.score(X_test, y_test)'''))
 
@@ -993,6 +1008,10 @@ Build `sparse_columns` with a loop over `feature_columns`, keeping the names whe
 `missing[name] > 0.5`. Then score a `RandomForestClassifier(n_estimators=200, random_state=0)` on
 `basalts[sparse_columns]` with `accuracy`. Print how many columns you kept, the score, and your
 `baseline` from your turn 1.
+
+Then answer it in one more printed line, quoting your score against your baseline: do
+{M['n_half_empty']} columns that are more than half empty carry real information about tectonic
+setting, or not?
 
 **Use these names**, because the self-check looks for them: `sparse_columns`, `sparse_score`.
 """)
@@ -1009,6 +1028,10 @@ sparse_score = accuracy(RandomForestClassifier(n_estimators=200, random_state=0)
 print("columns kept:", len(sparse_columns))
 print("forest on those alone:", round(sparse_score, 3))
 print("baseline:             ", round(baseline, 3))
+
+print("Yes — badly measured is not the same as uninformative:", round(sparse_score, 3),
+      "against a baseline of", round(baseline, 3), "is", round(sparse_score / baseline, 1),
+      "times better than guessing, on columns that are blank for most of the rocks.")
 """, """
 assert missing[sparse_columns].min() > 0.5, "every column in sparse_columns should be over half empty"
 print("✓ the emptiest columns alone —", len(sparse_columns), "columns,",
@@ -1027,6 +1050,9 @@ by looping over `feature_columns` and keeping the names where `missing[name] < c
 forest on `basalts[kept_columns]`. Then do the same for the cutoff you did *not* pick, so that you
 can say what your choice cost. Print, for each: the cutoff, how many columns survived and the
 score. Class got {M['all_forest']:.3f} from all {M['n_features']}.
+
+Then say it, in one more printed line: quote both scores and both column counts, and name what
+your cutoff cost you.
 
 **Use these names**, because the self-check looks for them: `cutoff`, `kept_columns`, `kept_score`.
 """)
@@ -1052,6 +1078,13 @@ other_score = accuracy(RandomForestClassifier(n_estimators=200, random_state=0),
 
 print("my cutoff", cutoff, "-", len(kept_columns), "columns, score", round(kept_score, 3))
 print("cutoff 0.2 -", len(other_columns), "columns, score", round(other_score, 3))
+
+print("Cutting at", cutoff, "kept", len(kept_columns), "columns and scored", round(kept_score, 3),
+      "where the other cutoff kept", len(other_columns), "columns and scored",
+      round(other_score, 3), "so my choice bought", round(kept_score - other_score, 3),
+      "of accuracy. What it cost is the right to say the model uses only well-measured columns:",
+      len(kept_columns) - len(other_columns), "of the columns I kept are blank for between a",
+      "fifth and a half of the rocks.")
 """, """
 assert missing[kept_columns].max() < cutoff, "every column you kept should be emptier than cutoff"
 print("✓ your cutoff —", cutoff, "keeps", len(kept_columns), "columns and scores",
@@ -1133,9 +1166,7 @@ def main():
     sol_path.write_text(json.dumps(sol, indent=1) + "\n")
 
     print(f"executing {sol_path.name} ...")
-    r = subprocess.run([sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook",
-                        "--execute", "--inplace", "--ExecutePreprocessor.timeout=900",
-                        str(sol_path)], capture_output=True, text=True, cwd=ROOT)
+    r = weekkit.execute(sol_path, timeout=900)
     if r.returncode:
         print(r.stderr[-4000:])
         sys.exit("the solution did not execute")

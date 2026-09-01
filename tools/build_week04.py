@@ -19,7 +19,6 @@ import json
 import pathlib
 import subprocess
 import sys
-import textwrap
 
 import numpy as np
 import pandas as pd
@@ -104,6 +103,7 @@ M["n_volcanoes"] = len(volcanoes)
 M["n_eruptions"] = len(eruptions)
 M["n_boundary_points"] = int(boundaries["lon"].notna().sum())
 M["n_segments"] = int(boundaries["segment"].nunique())
+M["n_separators"] = int(boundaries["lon"].isna().sum())
 for kind in ("ridge", "transform", "trench"):
     M[f"n_{kind}"] = int(boundaries[boundaries["kind"] == kind]["segment"].nunique())
 
@@ -302,14 +302,41 @@ for a sentence about them, so those have a second cell as well.
 4. Why does a count of eruptions need a log axis — and what is missing from the bottom of it?
 """)
 
+md("""
+## Setup
+
+Run the next cell once. You are not expected to follow it — it is here so that everything below it
+is short.
+
+Both archives it reads are live catalogues: they grow, and rows get revised. The earthquake query
+is pinned to a fixed window and a fixed magnitude floor, but the Smithsonian's volcano and
+eruption tables cannot be pinned at all — the service hands back whatever it holds that day, and
+the size and the date of an eruption are both things the archive edits as the evidence improves.
+Every count printed in this notebook came from the copy stored with the course, so if you run it
+live and get a slightly different number, that is the archive having moved, not you having made a
+mistake.
+
+Two of the three files are somebody's research, and both are cited the way you would cite a paper:
+
+- **The earthquakes** are the USGS earthquake catalogue, read from its public query service at
+  `earthquake.usgs.gov`.
+- **The volcanoes and the eruptions** are the Smithsonian Institution's *Volcanoes of the World*,
+  which asks to be cited with the version of the database you used: *Global Volcanism Program,
+  Volcanoes of the World, v.X.X.X, Smithsonian Institution*. The `version=1.0.0` in the URL below
+  is not it — that is the version of the web protocol, not of the data — and the reply carries no
+  version number anywhere, so the X.X.X has to be read off `volcano.si.edu` by hand and written
+  in here. Until it is, this citation is incomplete, and it is worth seeing why: a number you
+  cannot say which edition of the data it came from is a number nobody can check.
+""")
+
 setup = weekkit.setup_cell(
     imports="import numpy as np\n",
     figsize="(9, 4.5)",
     cache_base=CACHE_BASE,
-    signature="url, cached",
+    signature="url, cache_name",
     docstring="Read the live source; fall back to the copy stored with the course.",
     url_expr="url",
-    cache_expr="cached",
+    cache_expr="cache_name",
     unpack=f'''
 USGS = ("https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&orderby=time-asc"
         "&starttime={START}&endtime={END}&minmagnitude={MINMAG}")
@@ -325,8 +352,11 @@ eruptions = load(GVP + "Eruptions&outputFormat=csv", "{ERUPTION_CACHE}")
 coast = pd.read_csv(CACHE + "/coastlines.csv")
 boundaries = pd.read_csv(CACHE + "/plate_boundaries.csv")
 
+# plate_boundaries.csv keeps a blank row between segments, so most of its rows are points and
+# some of them are pen-lifts; count the ones that are really points
 print("earthquakes:", quakes.shape, " volcanoes:", volcanoes.shape,
-      " eruptions:", eruptions.shape, " boundary points:", boundaries.shape)
+      " eruptions:", eruptions.shape,
+      " boundary points:", boundaries["lon"].notna().sum())
 '''.strip("\n"))
 code(setup)
 
@@ -425,15 +455,20 @@ Draw the same map for the volcanoes: a scatter of longitude against latitude, th
 top, the same limits and aspect, labelled axes, and a title carrying how many there are. Use
 `marker="^"` so the volcanoes are triangles, and `s=8` so they are big enough to see.
 
-`plt.scatter` hands back the thing it drew. Catch it in a name — `triangles = plt.scatter(...)` —
-so that the self-check can look at the points you actually plotted.
+`plt.scatter` hands back the thing it drew. Catch it in a name — `points = plt.scatter(...)` — so
+that the self-check can look at the points you actually plotted.
 
-**Use these names**, because the self-check looks for them: `triangles`.
+Then put your two maps side by side on the screen and answer this, in a comment at the bottom of
+your cell: the earthquakes drew two lines, the rim of the Pacific and the line down the middle of
+the Atlantic. Which of the two do the volcanoes draw as well, and which one do they leave almost
+empty?
+
+**Use these names**, because the self-check looks for them: `points`.
 """)
 
 answer(f"""
-triangles = plt.scatter(volcanoes["Longitude"], volcanoes["Latitude"],
-                        s=8, color="darkgreen", marker="^")
+points = plt.scatter(volcanoes["Longitude"], volcanoes["Latitude"],
+                     s=8, color="darkgreen", marker="^")
 plt.plot(coast.lon, coast.lat, color="0.6", lw=0.6)
 plt.xlim(-180, 180)
 plt.ylim(-90, 90)
@@ -442,27 +477,39 @@ plt.xlabel("longitude (degrees east)")
 plt.ylabel("latitude (degrees north)")
 plt.title(str(len(volcanoes)) + " volcanoes that have erupted since the last ice age")
 plt.show()
+
+# Both maps draw the rim of the Pacific. The mid-Atlantic line is drawn by the earthquakes and
+# almost not at all by the volcanoes: the ridge is there, but hardly any of it is on this map.
 """, """
-assert len(triangles.get_offsets()) == len(volcanoes), \\
+assert len(points.get_offsets()) == len(volcanoes), \\
     "the scatter drew something else — pass the volcano columns, not the earthquake ones"
-assert round(triangles.get_offsets()[:, 1].max()) == round(volcanoes["Latitude"].max()), \\
+assert round(points.get_offsets()[:, 1].max()) == round(volcanoes["Latitude"].max()), \\
     "longitude goes across and latitude up — check which column you gave scatter first"
-print("✓ the volcano map —", len(triangles.get_offsets()), "volcanoes, between latitude",
-      round(triangles.get_offsets()[:, 1].min()), "and", round(triangles.get_offsets()[:, 1].max()))
+print("✓ the volcano map —", len(points.get_offsets()), "volcanoes, between latitude",
+      round(points.get_offsets()[:, 1].min()), "and", round(points.get_offsets()[:, 1].max()))
 """)
 
 # --- section 2 -------------------------------------------------------------
-md("""
+md(f"""
 ## 2. What draws those lines?
 
 The volcanoes fall on lines too, and mostly the same ones: the Andes, the Cascades, the Aleutians,
 Japan, Indonesia. So both maps are drawing something neither file contains. That something is the
 edges of the tectonic plates, and we can put them on the map from a third file.
 
-`data/plate_boundaries.csv` was converted once from the USGS plate-boundary map into a plain table
-of longitudes and latitudes. It has the blank-row trick that `coastlines.csv` has, so one
-`plt.plot` draws a whole layer without joining the end of one line to the start of the next. It
-also has a `kind` column, because there are three ways two plates can meet:
+`data/plate_boundaries.csv` was converted once, for this course, into a plain table of longitudes
+and latitudes. It did not start here, and it is worth knowing whose work it is: the shapefiles
+behind it were exported in 2011 from the `NaturalHazards` database of HSIP Gold 2011, and the
+geometry itself is the *Plate Boundaries of the World* compilation — the Coffin, Gahagan and
+Lawver lineage — that the USGS redistributes. The files carry no licence statement of their own,
+which is not permission, only silence, so the map gets cited the way any other map you did not
+draw would be.
+
+It has the blank-row trick that `coastlines.csv` has, so one `plt.plot` draws a whole layer
+without joining the end of one line to the start of the next. Those blank rows are rows, though:
+counting the `kind` column over the whole file would count {M["n_separators"]} pen-lifts along with
+the {M["n_boundary_points"]:,} real points, so the next cell counts only the rows that carry one.
+It has a `kind` column because there are three ways two plates can meet:
 
 - a **ridge**, where they pull apart and new ocean floor is made;
 - a **transform**, where they slide past each other;
@@ -471,7 +518,10 @@ also has a `kind` column, because there are three ways two plates can meet:
 
 code("""
 print(boundaries.head())
-print(boundaries["kind"].value_counts())
+
+# .notna() is False on the blank pen-lift rows, so this keeps only the rows that are really points
+boundary_points = boundaries[boundaries["lon"].notna()]
+print(boundary_points["kind"].value_counts())
 """)
 
 code(f"""
@@ -574,7 +624,7 @@ carries the depth.
 
 `plt.scatter` takes `c=` for the values to colour by and `cmap=` for the colour scheme;
 `vmin` and `vmax` fix what the ends of the scale mean, so that the colours mean the same thing on
-every map you draw. The thing `plt.scatter` hands back — the one you caught as `triangles` on the
+every map you draw. The thing `plt.scatter` hands back — the one you caught as `points` on the
 volcano map — is what `plt.colorbar(label=...)` needs, to know which colours it is the key to.
 """)
 
@@ -588,20 +638,24 @@ that the scale is fixed and pale means shallow. Catch what `plt.scatter` hands b
 the volcano map, and give that to `plt.colorbar`:
 
 ```
-dots = plt.scatter(...)
-plt.colorbar(dots, label="depth (km)")
+points = plt.scatter(...)
+plt.colorbar(points, label="depth (km)")
 ```
 
 Keep everything else from the first map — the coastline, the limits, the equal aspect, the labels,
 and a title with the sample size in it.
 
-**Use these names**, because the self-check looks for them: `dots`.
+Before you read on, answer this in a comment at the bottom of your cell: name two places where the
+dark dots cluster, and say whether each is on a ridge or a trench. The map from the last section
+has the ridges and the trenches on it, so you can look them up rather than guess.
+
+**Use these names**, because the self-check looks for them: `points`.
 """)
 
 answer(f"""
-dots = plt.scatter(quakes["longitude"], quakes["latitude"], s=2,
-                   c=quakes["depth"], cmap="plasma_r", vmin=0, vmax=600)
-plt.colorbar(dots, label="depth (km)")
+points = plt.scatter(quakes["longitude"], quakes["latitude"], s=2,
+                     c=quakes["depth"], cmap="plasma_r", vmin=0, vmax=600)
+plt.colorbar(points, label="depth (km)")
 plt.plot(coast.lon, coast.lat, color="0.6", lw=0.6)
 plt.xlim(-180, 180)
 plt.ylim(-90, 90)
@@ -610,18 +664,21 @@ plt.xlabel("longitude (degrees east)")
 plt.ylabel("latitude (degrees north)")
 plt.title(str(len(quakes)) + " earthquakes, coloured by depth")
 plt.show()
+
+# Two clusters of dark dots: one down the west side of South America and one over Japan. Both are
+# on a trench on the boundary map, not on a ridge.
 """, """
-assert dots.get_array() is not None, "pass c=quakes[\\"depth\\"], or the dots carry no colour"
-assert dots.get_array().max() > 300, "the colours should carry depth in km, not magnitude"
+assert points.get_array() is not None, "pass c=quakes[\\"depth\\"], or the dots carry no colour"
+assert points.get_array().max() > 300, "the colours should carry depth in km, not magnitude"
 print("✓ the depth map — the colours run from", round(quakes["depth"].min()),
       "to", round(quakes["depth"].max()), "km")
 """)
 
 md(f"""
-The ridges are uniformly pale: everything that happens at a spreading centre happens in the top
-few tens of kilometres. The dark dots — the deep ones — appear in only a handful of places, and
-every one of them is a place where the previous figure drew a trench: South America, Japan,
-Indonesia, Tonga.
+Check your two against the map. There are four places to find, and every one of them is somewhere
+the previous figure drew a trench: South America, Japan, Indonesia, Tonga. Not one of them is a
+ridge — the ridges are uniformly pale, because everything that happens at a spreading centre
+happens in the top few tens of kilometres.
 
 Notice also what is *not* dark. Nowhere along the black line across Asia is there a dot at the dark
 end of the scale: of the {M['n_belt']} earthquakes this catalogue puts in that belt, not one is
@@ -659,7 +716,12 @@ Take South America: latitude {SOUTH[0]} to {SOUTH[1]}, longitude {SOUTH[2]} to {
    `vmax=600`, a colorbar — but with the limits set to the box, and with the trenches drawn on top
    in black (`plt.plot(trenches.lon, trenches.lat, color="black", lw=1.2)`).
 3. Then print two numbers: the median longitude of the shallow events (`depth` at most 70) and the
-   median longitude of the deep ones (`depth` over 300).
+   median longitude of the deep ones (`depth` over 300). A median is the right summary here
+   because it says where the *middle* of a cloud of dots sits, which is the thing your eye is
+   comparing when it looks at the two colours on the figure.
+
+Then answer this in a comment: which of the two is further east, and what does that put the deep
+events behind?
 
 **Use these names**, because the self-check looks for them: `south`, `shallow_lon`, `deep_lon`.
 """)
@@ -668,9 +730,9 @@ answer(f"""
 south = quakes[(quakes["latitude"] >= {SOUTH[0]}) & (quakes["latitude"] <= {SOUTH[1]})
                & (quakes["longitude"] >= {SOUTH[2]}) & (quakes["longitude"] <= {SOUTH[3]})]
 
-dots = plt.scatter(south["longitude"], south["latitude"], s=8,
-                   c=south["depth"], cmap="plasma_r", vmin=0, vmax=600)
-plt.colorbar(dots, label="depth (km)")
+points = plt.scatter(south["longitude"], south["latitude"], s=8,
+                     c=south["depth"], cmap="plasma_r", vmin=0, vmax=600)
+plt.colorbar(points, label="depth (km)")
 plt.plot(coast.lon, coast.lat, color="0.6", lw=0.6)
 plt.plot(trenches.lon, trenches.lat, color="black", lw=1.2)
 plt.xlim({SOUTH[2]}, {SOUTH[3]})
@@ -685,6 +747,9 @@ shallow_lon = south[south["depth"] <= 70]["longitude"].median()
 deep_lon = south[south["depth"] > 300]["longitude"].median()
 print("shallow events, median longitude:", round(shallow_lon, 2))
 print("deep events, median longitude:   ", round(deep_lon, 2))
+
+# The deep events are the further east of the two. East of the trench here is inland, so the deep
+# earthquakes sit behind the trench, underneath the continent.
 """, f"""
 assert len(south) > 0, "no earthquakes in the box — check the four limits"
 assert south["latitude"].max() <= {SOUTH[1]} and south["longitude"].min() >= {SOUTH[2]}, \\
@@ -767,9 +832,10 @@ VEI 0 is the smallest kind of eruption and VEI 2 is two steps up. The record hol
 `my_guess` before you run the cell.
 """)
 
-code(f"""
-my_guess = 20000
+CELLS.extend(("code", s, a) for s, a in
+             weekkit.predict_cell("20000", "eruptions in the record at VEI 0"))
 
+code(f"""
 vei_counts = eruptions["ExplosivityIndexMax"].value_counts().sort_index()
 print(vei_counts)
 print("you guessed", my_guess, "at VEI 0; the record holds", int(vei_counts.loc[0]))
@@ -804,6 +870,9 @@ smallest erupted volume in cubic kilometres that the index stands for — 10 to 
 Then print the volume for Tambora, which is VEI 7, the volume for Mount St Helens in 1980, which
 is VEI 5, and how many times bigger the first is than the second.
 
+Then answer this in a comment, with your two volumes and their ratio as the evidence: VEI 7 is not
+seven of anything, so what is the 7 counting?
+
 **Use these names**, because the self-check looks for them: `vei_volume`.
 """)
 
@@ -816,6 +885,9 @@ def vei_volume(vei):
 print("Tambora, VEI 7:  ", vei_volume(7), "cubic km")
 print("St Helens, VEI 5:", vei_volume(5), "cubic km")
 print("ratio:", vei_volume(7) / vei_volume(5))
+
+# The 7 counts steps, not cubic kilometres. Two steps from 5 to 7 is a hundred times the rock, so
+# each step counts one factor of ten and the number itself is an exponent in disguise.
 """, """
 assert vei_volume(6) / vei_volume(5) == 10, "one step of VEI should be a factor of ten"
 print("✓ VEI is an index, not a volume — two steps up is a factor of",
@@ -823,9 +895,10 @@ print("✓ VEI is an index, not a volume — two steps up is a factor of",
 """)
 
 md(f"""
-A factor of {M['vol_ratio']} between two eruptions that are only two apart on the scale. A count
-of eruptions per VEI has the same problem: the classes at the top are rare by exactly as much as
-they are big. Draw it on an ordinary axis and see what happens.
+The factor of {M['vol_ratio']} you just printed is the whole difficulty in one number: two steps
+on the scale, and the world moves by a hundred. A count of eruptions per VEI inherits it, because
+the classes at the top are rare by exactly as much as they are big. Draw it on an ordinary axis
+and see what happens.
 
 `plt.bar(positions, heights)` draws one bar per category — the right chart when the thing on the
 bottom axis is a label rather than a measurement. `plt.subplot(1, 2, 1)` means *one row of two
@@ -849,9 +922,12 @@ plt.show()
 """)
 
 md(f"""
-On the left, the top of the scale is unreadable. The axis has to climb to {M['vei2']:,} to fit the
-tallest bar, so VEI 4 and VEI 5 are there but impossible to compare, VEI 6 is a hairline, and the
-{M['vei7']} eruptions at VEI 7 do not show at all. On the right, the same numbers on a log axis:
+On the left, the axis has to climb to {M['vei2']:,} to fit the tallest bar, and the top of the
+scale pays for it. VEI 4 and VEI 5 survive — {M['vei4']} against {M['vei5']}, and you can see that
+the one is about three times the other — but VEI 6, at {M['vei6']}, is a hairline you would not
+notice if you were not looking for it, and the {M['vei7']} eruptions at VEI 7 do not show at all.
+The two rarest classes, the two that matter most, are the two the figure has thrown away. On the
+right, the same numbers on a log axis:
 *when the values span factors of a thousand, plot the exponents instead and a curve becomes a
 line.* Every class is now readable, and the tops of the bars from
 VEI 2 to VEI 6 come down in near-equal steps — which on a log axis means each class is a roughly
@@ -878,6 +954,9 @@ count them by VEI with `.value_counts()`, and print three things: how many erupt
 holds, how many of them carry a VEI at all (`counts.sum()`), and how many VEI 1 eruptions there are
 for each VEI 2 — `counts.loc[1] / counts.loc[2]`, rounded to two decimals.
 
+Your three ratios move one way. Answer this in a comment: which way, and does that mean the world
+made fewer small eruptions long ago, or that nobody recorded them?
+
 **Use these names**, because the self-check looks for them: `recent`, `recent_counts`.
 """)
 
@@ -898,6 +977,10 @@ for first_year in first_years:
     counts = window["ExplosivityIndexMax"].value_counts()
     print("from", first_year, "onwards:", len(window), "eruptions,", int(counts.sum()),
           "with a VEI, VEI 1 per VEI 2 =", round(counts.loc[1] / counts.loc[2], 2))
+
+# The ratio rises as the window gets shorter and more recent. The planet did not change how it
+# erupts in seventy years, so it is the recording that changed: the small eruptions were always
+# there, and the older the window, the more of them nobody wrote down.
 """, """
 assert recent["StartDateYear"].min() >= 1950, \\
     "recent holds eruptions from before 1950 — check which way round the comparison points"
@@ -908,7 +991,8 @@ print("✓ the modern window —", len(recent), "eruptions since 1950, of which"
 """)
 
 md(f"""
-Two numbers move the same way. The ratio of VEI 1 to VEI 2 climbs from {M['ratio_all']} over the
+Check your reading against a second number that moves the same way. The ratio of VEI 1 to VEI 2
+climbs from {M['ratio_all']} over the
 whole record to {M['ratio_recent']} since 1950; and the share of eruptions with no VEI at all —
 where the record does not even say how big — falls from {M['pct_no_vei']}% over the whole record to
 {M['pct_no_vei_1800']}% since 1800 and {M['pct_no_vei_1950']}% since 1950. Improve the recording and
@@ -1041,7 +1125,7 @@ put longitude on the bottom axis and depth up the side, and the sinking plate dr
 
 Filter `quakes` to your box and call it `arc`. Plot `arc["longitude"]` against `-arc["depth"]` —
 the minus sign turns a depth into a height, so the picture is the right way up and the axis label
-should say so. Catch what `plt.scatter` hands back as `section`, as you did on the maps, so that
+should say so. Catch what `plt.scatter` hands back as `points`, as you did on the maps, so that
 the self-check can look at the points you drew. Label both axes and title the figure with the arc's
 name and how many earthquakes are in it. Then work out `shallow_lon` and
 `deep_lon`, the median longitudes of the events no deeper than 70 km and of those deeper than
@@ -1054,33 +1138,16 @@ figure: which side of the shallow events do the deep ones sit on, and which way 
 down under the arc you chose? The self-check under your answer prints the gap between the two
 medians but not its direction, so this one is yours to read off the sign.
 
-**Use these names**, because the self-check looks for them: `arc`, `section`, `shallow_lon`,
+**Use these names**, because the self-check looks for them: `arc`, `points`, `shallow_lon`,
 `deep_lon`.
 """)
-
-# The payload of the fork, written into the solution as a comment so that a grader marking a Japan
-# submission has the key for it. Wrapped here rather than by hand: the counts and the offsets are
-# formatted in, so hand-laid line breaks would come out ragged whenever a number changes width.
-WHY_BOTH_ARE_RIGHT = textwrap.fill(
-    f"Why the two arcs disagree, and why both answers are right. Chile has "
-    f"{M['hw']['Chile']['n']} earthquakes in the box and its deep ones sit "
-    f"{abs(M['hw']['Chile']['gap'])} degrees EAST of the shallow ones; Japan has "
-    f"{M['hw']['Japan']['n']} and its deep ones sit {abs(M['hw']['Japan']['gap'])} degrees WEST "
-    f"of them. Off South America the Nazca plate is sinking eastwards under the continent, so the "
-    f"slab gets deeper towards the east and carries its earthquakes inland that way. Off Japan "
-    f"the Pacific plate is sinking westwards, so the same geometry is mirrored and the deep "
-    f"events land on the other side of the shallow ones. The sign of the offset is the direction "
-    f"the plate is going down, and the size, a few degrees either way, is the same slab dipping "
-    f"at much the same angle. So a negative number for Japan and a positive one for Chile are "
-    f"both right, and neither is arbitrary: the sign follows the plate.",
-    width=96, initial_indent="# ", subsequent_indent="# ")
 
 answer(f"""
 # Chile. Either box is a right answer, so both are worked here.
 arc = quakes[(quakes["latitude"] >= {CHILE[0]}) & (quakes["latitude"] <= {CHILE[1]})
              & (quakes["longitude"] >= {CHILE[2]}) & (quakes["longitude"] <= {CHILE[3]})]
 
-section = plt.scatter(arc["longitude"], -arc["depth"], s=8, color="crimson")
+points = plt.scatter(arc["longitude"], -arc["depth"], s=8, color="crimson")
 plt.xlabel("longitude (degrees east)")
 plt.ylabel("height relative to the surface (km)")
 plt.title("Chile: " + str(len(arc)) + " earthquakes")
@@ -1105,11 +1172,9 @@ japan_shallow_lon = japan[japan["depth"] <= 70]["longitude"].median()
 japan_deep_lon = japan[japan["depth"] > 300]["longitude"].median()
 print("Japan, shallow events, median longitude:", round(japan_shallow_lon, 2))
 print("Japan, deep events, median longitude:   ", round(japan_deep_lon, 2))
-
-{WHY_BOTH_ARE_RIGHT}
 """, """
 assert len(arc) > 0, "no earthquakes in that box — check the four numbers"
-assert section.get_offsets()[:, 1].max() <= 0, \\
+assert points.get_offsets()[:, 1].max() <= 0, \\
     "the deepest events are drawn at the TOP — plot -arc[\\"depth\\"], so that down the page is down"
 assert 1 < abs(deep_lon - shallow_lon) < 15, \\
     "the two medians should be a few degrees apart; a gap of nearly nothing usually means both " \\
@@ -1124,20 +1189,34 @@ shallow ones {M['hw']['Chile']['shallow_lon']}, so deep minus shallow is
 {M['hw']['Chile']['gap']} degrees — a positive number, which means the deep earthquakes sit
 {M['hw']['Chile']['gap']} degrees **{M['hw']['Chile']['side']}** of the shallow ones, inland of the
 trench. The slab therefore dips {M['hw']['Chile']['side']}wards: the Nazca plate goes down under
-South America, getting deeper the further inland you follow it. (Japan gives
-{M['hw']['Japan']['gap']} degrees, a negative number, because there the Pacific plate is sinking
-{M['hw']['Japan']['side']}wards under the arc — the mirror image, and just as right.)
+South America, getting deeper the further inland you follow it.
+
+*(Both boxes are right answers, so here is the other one too. Chile holds
+{M['hw']['Chile']['n']} earthquakes and its deep ones sit {abs(M['hw']['Chile']['gap'])} degrees
+**east** of the shallow ones; Japan holds {M['hw']['Japan']['n']} and its deep ones sit
+{abs(M['hw']['Japan']['gap'])} degrees **west** of them. Off South America the Nazca plate sinks
+eastwards under the continent, so the slab deepens towards the east and carries its earthquakes
+inland that way. Off Japan the Pacific plate sinks westwards, so the same geometry is mirrored and
+the deep events land on the other side of the shallow ones. The sign of the offset is the
+direction the plate is going down; the size, a few degrees either way, is the same slab dipping at
+much the same angle. A negative number for Japan and a positive one for Chile are both right, and
+neither is arbitrary — the sign follows the plate.)*
 """)
 
-ask("""
+ask(f"""
 ### ✏️ Your turn 8
 
 Two of the pictures in this notebook are counts on a log axis: the eruptions by VEI, and your own
 magnitudes from part 6. One of them falls off at its low end and the other does not.
 
-In three or four sentences, and using your own printed numbers — the three shortest VEI bars from
-class, and the first two numbers in your `counts` array — say which chart has the broken low end,
-and explain what is different about how the two catalogues were made. Your answer should say what
+The numbers you need are these. From class, the three smallest VEI classes hold {M['vei0']:,} at
+VEI 0, {M['vei1']:,} at VEI 1 and {M['vei2']:,} at VEI 2. From part 6, the two smallest magnitude
+bins are `counts[0]` and `counts[1]`, which the self-check printed for you; if part 6 did not run,
+they came out {M['mag_lowest']:,} and {M['mag_second']:,} on the copy of the catalogue stored with
+the course, so use those and say that is what you did.
+
+In three or four sentences, using those numbers, say which chart has the broken low end and
+explain what is different about how the two catalogues were made. Your answer should say what
 would have to be true for the *other* chart's low end to break as well.
 """)
 
@@ -1188,9 +1267,7 @@ def main():
     sol_path.write_text(json.dumps(sol, indent=1) + "\n")
 
     print(f"executing {sol_path.name} ...")
-    r = subprocess.run([sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook",
-                        "--execute", "--inplace", "--ExecutePreprocessor.timeout=600",
-                        str(sol_path)], capture_output=True, text=True, cwd=ROOT)
+    r = weekkit.execute(sol_path, timeout=600)
     if r.returncode:
         print(r.stderr[-4000:])
         sys.exit("the solution did not execute")

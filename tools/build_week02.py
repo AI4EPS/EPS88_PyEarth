@@ -315,11 +315,10 @@ left. The comparisons themselves are `<`, `>`, `<=`, `>=`, `==` for "is equal to
 not". You can chain two of them: `273 <= temperature <= 373` is true when the temperature is inside
 the window, which is shorter than saying it twice.
 
-Here is the whole test, over the three worlds, with a counter accumulating alongside it.
+Here is the whole test, over the three worlds.
 """)
 
 code('''
-in_window = 0
 for i in range(len(worlds)):
     temperature = sun_temp * (sun_radius_au / (2 * sun_distances[i])) ** 0.5
     if temperature < 273:
@@ -328,10 +327,7 @@ for i in range(len(worlds)):
         verdict = "too hot"
     else:
         verdict = "liquid water possible"
-        in_window = in_window + 1
     print(worlds[i], round(temperature, 1), "K -", verdict)
-
-print("worlds the test accepts:", in_window)
 ''')
 
 # ---------------------------------------------------------------- 3. albedo
@@ -451,7 +447,8 @@ and `return` hands one value back to whoever called it. The triple-quoted line j
 code('''
 def equilibrium_temperature(star_temp, star_radius, distance, albedo):
     """the temperature starlight alone would hold a planet at, in kelvin"""
-    return star_temp * (star_radius * sun_radius_au / (2 * distance)) ** 0.5 * (1 - albedo) ** 0.25
+    starlight = star_temp * (star_radius * sun_radius_au / (2 * distance)) ** 0.5
+    return starlight * (1 - albedo) ** 0.25
 
 
 print("Earth at its own albedo:", round(equilibrium_temperature(5772, 1.0, 1.000, 0.306), 1), "K")
@@ -459,48 +456,18 @@ help(equilibrium_temperature)
 ''')
 
 md("""
-Two things changed on the way in. `star_radius` is now measured in radii of the Sun, because that
-is the unit the archive uses — the function multiplies by `sun_radius_au` itself, so the Sun goes
-in as `1.0`. And `albedo` is an argument rather than something baked in, so the same function
+The formula is in two lines rather than one, and the halves have names. `starlight` is the
+temperature with nothing reflected — section 3's own name for it — and the `return` line cools that
+by the fourth root of the fraction the planet keeps. A single line carrying a division, a square
+root and a fourth root is worth splitting wherever its halves mean something on their own.
+
+Two things also changed on the way in. `star_radius` is now measured in radii of the Sun, because
+that is the unit the archive uses — the function multiplies by `sun_radius_au` itself, so the Sun
+goes in as `1.0`. And `albedo` is an argument rather than something baked in, so the same function
 answers the albedo-0 question and the albedo-0.306 question without being rewritten.
 
 `help(equilibrium_temperature)` printed the docstring back. That is what writing one buys you.
-
-A function can also hand back **two** values at once: `return temperature, verdict` gives both, and
-`t, v = check_planet(...)` catches them in that order.
 """)
-
-md("""
-### ✏️ Your turn 4
-
-Write a function called `check_planet` that takes the same four arguments —
-`star_temp`, `star_radius`, `distance`, `albedo` — and returns two things: the temperature, and a
-verdict string that is `"too cold"` below 273 K, `"too hot"` above 373 K, and
-`"liquid water possible"` in between.
-
-Give it a docstring. Inside it, call `equilibrium_temperature` rather than retyping the formula,
-then use the same `if` / `elif` / `else` as section 2. Finish by calling it on Venus twice — once
-with albedo `0.0` and once with albedo `0.770` — and printing both results.
-
-**Use these names**: `check_planet`.
-""")
-
-answer_code('''
-def check_planet(star_temp, star_radius, distance, albedo):
-    """a planet's equilibrium temperature, and whether liquid water is possible there"""
-    temperature = equilibrium_temperature(star_temp, star_radius, distance, albedo)
-    if temperature < 273:
-        verdict = "too cold"
-    elif temperature > 373:
-        verdict = "too hot"
-    else:
-        verdict = "liquid water possible"
-    return temperature, verdict
-
-
-print("Venus, reflecting nothing:", check_planet(5772, 1.0, 0.723, 0.0))
-print("Venus, at its own albedo:", check_planet(5772, 1.0, 0.723, 0.770))
-''')
 
 # ---------------------------------------------------------------- 4b. the archive
 md("""
@@ -518,101 +485,69 @@ compare it with a number at all. `None < 1.6` is an error, not a `False`. That r
 The test for it is `is None`, or `is not None` for the other way round, and `and` joins two
 conditions so that both have to hold.
 
-The cell below keeps only the planets that carry all three numbers the formula needs.
+One pass over the archive does three jobs. It keeps the planets that carry all three numbers the
+formula needs. It calls the function **once** on each of them and keeps the answer, so that nothing
+after this cell has to carry a star and an orbit around in order to ask about a temperature. And
+where the archive publishes an equilibrium temperature of its own — `pl_eqt`, computed by whoever
+wrote the discovery paper, with their own assumptions — it checks our number against theirs, which
+is worth doing before trusting our own arithmetic on three thousand worlds. `abs(x)` gives the size
+of a difference without caring which way round it went.
+
+Four lists come out, in step: the name, the temperature, the radius, and the star's own
+temperature — which class never touches, and the homework asks about.
 """)
 
-code('''
+# The four lists are written ONCE, here, and spliced into both the class cell and the homework
+# checkpoint. A hand-copied rebuild is how a checkpoint comes to fill five of six lists and
+# nobody notices; four appends in one place cannot drift from themselves.
+USABLE_LISTS = '''
 usable_names = []
-usable_star_temps = []
-usable_star_radii = []
-usable_distances = []
+usable_temps = []
 usable_radii = []
-usable_archive_temps = []
+usable_star_temps = []
+'''.strip("\n")
+
+USABLE_LOOP = '''
 for i in range(len(planet_names)):
     if star_temps[i] is not None and star_radii[i] is not None and distances[i] is not None:
+        temperature = equilibrium_temperature(star_temps[i], star_radii[i], distances[i], 0.0)
         usable_names.append(planet_names[i])
-        usable_star_temps.append(star_temps[i])
-        usable_star_radii.append(star_radii[i])
-        usable_distances.append(distances[i])
+        usable_temps.append(temperature)
         usable_radii.append(planet_radii[i])
-        usable_archive_temps.append(archive_temps[i])
+        usable_star_temps.append(star_temps[i])
+'''.strip("\n")
+
+code(f'''
+{USABLE_LISTS}
+compared = 0
+agree = 0
+hotter = 0
+{USABLE_LOOP}
+        if archive_temps[i] is not None:
+            compared = compared + 1
+            if abs(temperature - archive_temps[i]) < 10:
+                agree = agree + 1
+            elif temperature > archive_temps[i]:
+                hotter = hotter + 1
 
 print("planets with all three numbers:", len(usable_names), "out of", len(planet_names))
+print("the archive publishes its own temperature for", compared, "of them:", agree,
+      "agree with ours within 10 K, and", hotter, "of the rest are ours running hotter")
 ''')
 
 md("""
-More than half the archive is gone before we start, and no amount of cleverness gets it back: those
-planets were never measured that way. (Six appends to keep six lists in step is also the clearest
-possible argument for the tables library we meet in a few weeks, which does this in one line.)
+3,101 of 6,354. More than half the archive is gone before we start, and no amount of cleverness
+gets it back: those planets were never measured that way. (Four appends to keep four lists in step
+is also the clearest possible argument for the tables library we meet in a few weeks, which does
+this in one line.)
 
-Before trusting our own arithmetic on three thousand worlds, check it against somebody else's. The
-archive publishes its own equilibrium temperature, `pl_eqt`, for some planets — computed by whoever
-wrote the discovery paper, with their own assumptions. Where both exist we can compare. `abs(x)`
-gives the size of a difference without caring which way round it went, and the last three lines of
-the loop are the other thing an accumulator does: hold on to the biggest one seen so far.
-""")
-
-code('''
-ours = []
-theirs = []
-close = 0
-above = 0
-below = 0
-worst_gap = 0
-worst_planet = ""
-worst_distance = 0
-for i in range(len(usable_names)):
-    if usable_archive_temps[i] is not None:
-        temperature = equilibrium_temperature(usable_star_temps[i], usable_star_radii[i],
-                                              usable_distances[i], 0.0)
-        gap = abs(temperature - usable_archive_temps[i])
-        ours.append(temperature)
-        theirs.append(usable_archive_temps[i])
-        if gap < 10:
-            close = close + 1
-        elif temperature > usable_archive_temps[i]:
-            above = above + 1
-        else:
-            below = below + 1
-        if gap > worst_gap:
-            worst_gap = gap
-            worst_planet = usable_names[i]
-            worst_distance = usable_distances[i]
-
-print("planets we can compare against:", len(ours))
-print("of those, within 10 K of the published value:", close)
-print("the rest, ours hotter than theirs:", above, " ours colder:", below)
-print("the largest disagreement:", round(worst_gap), "K, on", worst_planet, "-",
-      worst_distance, "AU from its star")
-''')
-
-code('''
-plt.scatter(theirs, ours, s=3)
-plt.plot([0, 4000], [0, 4000], color="0.6", lw=1)       # where perfect agreement would sit
-plt.xlabel("the archive's published equilibrium temperature (K)")
-plt.ylabel("our equilibrium temperature, albedo 0 (K)")
-plt.title(f"Our arithmetic against the archive's (n = {len(ours)})")
-plt.show()
-''')
-
-md("""
-952 of 1525 agree within 10 K, and the cloud hugs the diagonal, so this is the calculation the
-field uses. The loop counted the rest rather than leaving it to the eye: of the 573 that miss by
-10 K or more, **456 sit above the line and 117 below**. The 456 are our own doing — we let every
-planet absorb all the light it catches, and the discovery papers each used an albedo of their own,
-so our answers run hot.
-
-The 117 below the line are a different animal, and they are the ones your eye goes to, because they
-run far off the diagonal instead of crowding beside it. The worst of them says what they are.
-HD 284149 AB b orbits 431 AU out — four hundred times the width of Earth's orbit — and at that
-distance the starlight our formula is built on has almost nothing left in it, so our answer
-comes out near zero and the two disagree by 2379 K. The archive's number for that planet is not a
-response to its star at all: a young planet photographed that far out is still glowing with the
-heat of its own formation. The formula is not wrong about it. It is answering a question that does
-not apply.
-
-Agreement with the professionals is not agreement with reality, either. Everyone in that figure is
-computing the same quantity, and section 3 already showed what that quantity leaves out.
+The comparison says our arithmetic is the arithmetic the field uses: 952 of the 1,525 published
+values agree with ours inside 10 K. The disagreements are one-sided, which is the informative part.
+Of the 573 that miss, 456 are ours running hotter — exactly what an albedo of 0 does, since we let
+every planet absorb all the light it catches while the discovery papers each allowed for some being
+reflected. Agreement with the professionals is not agreement with reality, though. Everyone in that
+comparison is computing the same quantity, and section 3 already showed what that quantity leaves
+out.
 """)
 
 # ---------------------------------------------------------------- 4c. the survey
@@ -626,59 +561,99 @@ holding loosely.
 
 So a planet inside the temperature window falls into one of three cases, and `None` makes the third
 one unavoidable: rocky, too big to be rocky, or the archive never measured its radius.
+
+That is a second verdict, on the same planet, from a different number — and a function can hand
+back **two** values at once. `return verdict, kind` gives both, and `v, k = check_planet(...)`
+catches them in that order.
 """)
+
+md("""
+### ✏️ Your turn 4
+
+Write a function called `check_planet` that takes a temperature and a radius
+and returns two strings. The first is the verdict on the temperature: `"too cold"` below 273 K,
+`"too hot"` above 373 K, `"liquid water possible"` in between. The second is what kind of planet
+the radius says it is: `"radius unknown"` when the radius `is None`, `"rocky"` below 1.6, and
+`"too big to be rock"` otherwise. Two `if` / `elif` / `else` chains one after the other, then one
+`return`.
+
+Give it a docstring. Then call it twice and print both: on Earth at its own albedo, which is
+`albedo_temps[1]`, with a radius of `1.0`, since one Earth radius is what an Earth radius is; and
+on the first planet in the archive, `usable_temps[0]` and `usable_radii[0]`.
+
+**Use these names**: `check_planet`.
+""")
+
+answer_code('''
+def check_planet(temperature, radius):
+    """the verdict on a world this warm, and whether it is small enough to be rock"""
+    # 1. The first verdict, from the temperature alone: the window is water's own, freezing
+    #    to boiling at Earth's sea-level pressure.
+    if temperature < 273:
+        verdict = "too cold"
+    elif temperature > 373:
+        verdict = "too hot"
+    else:
+        verdict = "liquid water possible"
+    # 2. The second verdict, from a different number entirely. `is None` has to be asked
+    #    first: the archive never measured some of these radii, and comparing None with 1.6
+    #    would stop the notebook with an error rather than give a wrong answer.
+    if radius is None:
+        kind = "radius unknown"
+    elif radius < 1.6:
+        kind = "rocky"
+    else:
+        kind = "too big to be rock"
+    return verdict, kind
+
+
+print("Earth at its own albedo:", check_planet(albedo_temps[1], 1.0))
+print(f"{usable_names[0]}:", check_planet(usable_temps[0], usable_radii[0]))
+''')
 
 md("""
 ### ✏️ Your turn 5
 
-Loop over the usable planets. For each one, call `check_planet` with albedo
-`0.0` — the same "reflecting nothing" pass the class started with — and collect every temperature
-into a list called `all_temps`, which the next cell plots.
+Now the survey. Loop over the usable planets and call `check_planet` on each
+one's `usable_temps[i]` and `usable_radii[i]`, catching both answers.
 
-When the verdict is `"liquid water possible"`, add one to `n_window`, and then sort that planet
-into one of three:
-
-- `usable_radii[i] is None` — add one to `unknown_radius`;
-- `usable_radii[i] < 1.6` — append the planet's name to `rocky_names`;
-- anything else — add one to `too_big`.
+When the verdict is `"liquid water possible"`, add one to `n_window`, and then sort that planet by
+what the second answer said: append its name to `rocky_names` for `"rocky"`, add one to `too_big`
+for `"too big to be rock"`, and one to `unknown_radius` otherwise.
 
 Then print the four counts, and print each rocky candidate's name, temperature and radius, one per
 line. You will need that printout for the homework.
 
-**Use these names**, because the self-check looks for them: `all_temps`, `n_window`,
-`unknown_radius`, `rocky_names` and `too_big`.
+**Use these names**, because the self-check looks for them: `n_window`, `unknown_radius`,
+`rocky_names` and `too_big`.
 """)
 
 answer_code('''
-all_temps = []
 n_window = 0
 unknown_radius = 0
 too_big = 0
 rocky_names = []
 for i in range(len(usable_names)):
-    temperature, verdict = check_planet(usable_star_temps[i], usable_star_radii[i],
-                                        usable_distances[i], 0.0)
-    all_temps.append(temperature)
+    verdict, kind = check_planet(usable_temps[i], usable_radii[i])
     if verdict == "liquid water possible":
         n_window = n_window + 1
-        if usable_radii[i] is None:
-            unknown_radius = unknown_radius + 1
-        elif usable_radii[i] < 1.6:
+        if kind == "rocky":
             rocky_names.append(usable_names[i])
-        else:
+        elif kind == "too big to be rock":
             too_big = too_big + 1
+        else:
+            unknown_radius = unknown_radius + 1
 
 print("inside the window:", n_window)
 print("  of those, rocky:", len(rocky_names), " too big:", too_big,
       " radius never measured:", unknown_radius)
 for i in range(len(usable_names)):
     if usable_names[i] in rocky_names:
-        print(f"  {usable_names[i]}: {round(all_temps[i], 1)} K, {usable_radii[i]} Earth radii")
+        print(f"  {usable_names[i]}: {round(usable_temps[i], 1)} K, {usable_radii[i]} Earth radii")
 ''')
 
 code(f'''
-assert len(all_temps) == len(usable_names), "all_temps needs one entry per planet, not per hit"
-assert unknown_radius > 0, "unknown_radius never moved — add one to it inside the `is None` branch"
+assert unknown_radius > 0, "unknown_radius never moved — nothing reached the `radius unknown` case"
 {check_print("the survey",
              "{n_window} planets in the window: {len(rocky_names)} rocky,",
              "{too_big} too big, {unknown_radius} with no measured radius")}
@@ -694,7 +669,7 @@ The figure below is every one of the three thousand temperatures, with the windo
 """)
 
 code('''
-plt.hist(all_temps, bins=250)
+plt.hist(usable_temps, bins=250)
 plt.axvline(273, color="0.4")
 plt.axvline(373, color="0.4")
 plt.text(323, 105, "liquid water window", ha="center")   # ha= centres both on the band
@@ -703,7 +678,7 @@ plt.xlim(0, 2500)
 plt.ylim(0, 115)                       # room above the bars for the label
 plt.xlabel("equilibrium temperature at albedo 0 (K)")
 plt.ylabel("number of planets")
-plt.title(f"Every planet with the three numbers (n = {len(all_temps)})")
+plt.title(f"Every planet with the three numbers (n = {len(usable_temps)})")
 plt.show()
 ''')
 
@@ -722,9 +697,8 @@ famous = ["TRAPPIST-1 c", "TRAPPIST-1 e", "TRAPPIST-1 f", "TRAPPIST-1 g",
           "Proxima Cen b", "TOI-700 d", "Kepler-186 f", "Kepler-442 b", "K2-18 b"]
 for i in range(len(usable_names)):
     if usable_names[i] in famous:
-        temperature, verdict = check_planet(usable_star_temps[i], usable_star_radii[i],
-                                            usable_distances[i], 0.0)
-        print(f"{usable_names[i]}: {round(temperature, 1)} K, radius {usable_radii[i]} - {verdict}")
+        verdict, kind = check_planet(usable_temps[i], usable_radii[i])
+        print(f"{usable_names[i]}: {round(usable_temps[i], 1)} K - {verdict}, {kind}")
 ''')
 
 md("""
@@ -736,12 +710,12 @@ albedo-0 figure, and Earth at albedo 0 is 278.3 K and *passes*; it was Earth's o
 that pushed it down to 254.0 K. Two numbers computed at two different albedos are not comparable,
 and the temptation to line them up anyway is exactly what makes this test easy to misread. What
 does repeat, at either albedo, is the reason: a formula that knows nothing about air, asked about
-worlds whose whole interest is their air. (Proxima Cen b prints its radius as `None`: it was found
+worlds whose whole interest is their air. (Proxima Cen b comes back `radius unknown`: it was found
 by watching its star wobble, and that method never measures a size.)
 
 It accepts two. TRAPPIST-1 c comes out at 339.9 K, hotter than any of its siblings we looked at,
-and K2-18 b at 282.7 K — and K2-18 b is 2.37 Earth radii, a size our own radius branch had already
-counted as too big to be rock, so the verdict string and the radius disagree about the same planet.
+and K2-18 b at 282.7 K — and K2-18 b's own line reads `liquid water possible, too big to be rock`,
+which is the two halves of `check_planet` contradicting each other about one planet.
 K2-18 b is also the planet the field has argued over hardest in recent years, water vapour in its
 atmosphere and then a series of contested readings of its JWST spectrum, so "liquid water possible"
 is the one verdict on that line nobody should read as a finding.
@@ -778,35 +752,24 @@ Three parts, on the same archive and the same tools. Part 1 is the one everybody
 is the one that takes thinking rather than typing.
 
 Run the cell below first if you have restarted the kernel — after the setup cell at the top, it
-rebuilds everything parts 1 and 2 use: the two constants, `equilibrium_temperature`, and the six
+rebuilds everything parts 1 and 2 use: the two constants, `equilibrium_temperature`, and the four
 `usable_` lists from section 4. The one thing it cannot rebuild is `check_planet`, because that
 one is your own answer to Your turn 4; re-run that cell too and part 1 will find it.
 """)
 
-code(weekkit.CHECKPOINT.format(body='''
+code(weekkit.CHECKPOINT.format(body=f'''
 sun_temp = 5772
 sun_radius_au = 0.00465047
 
 
 def equilibrium_temperature(star_temp, star_radius, distance, albedo):
     """the temperature starlight alone would hold a planet at, in kelvin"""
-    return star_temp * (star_radius * sun_radius_au / (2 * distance)) ** 0.5 * (1 - albedo) ** 0.25
+    starlight = star_temp * (star_radius * sun_radius_au / (2 * distance)) ** 0.5
+    return starlight * (1 - albedo) ** 0.25
 
 
-usable_names = []
-usable_star_temps = []
-usable_star_radii = []
-usable_distances = []
-usable_radii = []
-usable_archive_temps = []
-for i in range(len(planet_names)):
-    if star_temps[i] is not None and star_radii[i] is not None and distances[i] is not None:
-        usable_names.append(planet_names[i])
-        usable_star_temps.append(star_temps[i])
-        usable_star_radii.append(star_radii[i])
-        usable_distances.append(distances[i])
-        usable_radii.append(planet_radii[i])
-        usable_archive_temps.append(archive_temps[i])
+{USABLE_LISTS}
+{USABLE_LOOP}
 
 # Re-run your own check_planet cell (Your turn 4) as well: part 1 calls it, and it is not
 # repeated here, because it is the answer to a question you were asked.
@@ -821,31 +784,17 @@ Class asked which planets could hold liquid water and never asked what they orbi
 temperature is the first number the formula takes, and it has been sitting in `usable_star_temps`
 all along.
 
-It carries more than it looks. A star much cooler than the Sun is also much smaller and fainter,
-so a planet warm enough for liquid water has to sit very close in — close enough to be locked with
-one face to its star for good, and close enough that a stellar flare arrives at full strength.
-Whether these candidates orbit Sun-like stars or cool ones is the most consequential thing about
-the list, and nobody has looked yet.
+It carries more than it looks. A star much cooler than the Sun is smaller and fainter with it, so a
+planet warm enough for liquid water has to orbit very close in — close enough to be held with one
+face to its star for good, and to take a stellar flare at full strength.
 
-Loop over the usable planets and call your own `check_planet` with albedo `0.0`, exactly as
-section 4 did. For every planet whose verdict comes back `"liquid water possible"` **and** whose
-radius is not `None` **and** is below 1.6 — the same rocky candidates section 4 counted — append
-its name to `candidate_names` and its star's temperature to `candidate_star_temps`. Two lists
-growing together inside the same `if`.
+Loop over the usable planets, call your own `check_planet` as section 4 did, and for every planet
+that comes back both `"liquid water possible"` and `"rocky"`, append its name to `candidate_names`
+and its star's temperature to `candidate_star_temps`.
 
-Then print: how many candidates there are; how many of them orbit a star cooler than the Sun's
-5772 K, counted into `cooler_than_sun` with a second loop; and the value of the coolest star in
-the set, `coolest`, together with the planet it belongs to. `min(candidate_star_temps)` gives you
-the coolest value and `.index(...)` gives you its position, exactly as last week's `max` and
-`.index` found the largest earthquake and then its place name.
-
-One thing about `.index` that last week never made you face: it hands back the **first** position
-holding that value and stops looking. Two planets of the same system orbit the same star, so they
-carry the same star temperature to the last decimal — and if that star is the coolest one, `.index`
-will name one of those planets and say nothing about the other. So finish by looping once more over
-the candidates and printing each name beside its star's temperature, one per line. That printout is
-what tells you whether the planet `.index` picked was alone, and it is the one to read before you
-believe any single line above it.
+Then print three numbers: how many candidates there are; how many orbit a star cooler than 5772 K,
+counted into `cooler_than_sun` with a second loop; and `coolest`, the lowest value in
+`candidate_star_temps`, beside the planet `.index` finds for it.
 
 Then, in two or three sentences in the last cell of this part, say what kind of stars these
 candidates orbit: quote `cooler_than_sun` out of your total and name the planet `.index` gave you
@@ -860,10 +809,8 @@ answer_code('''
 candidate_names = []
 candidate_star_temps = []
 for i in range(len(usable_names)):
-    temperature, verdict = check_planet(usable_star_temps[i], usable_star_radii[i],
-                                        usable_distances[i], 0.0)
-    if (verdict == "liquid water possible" and usable_radii[i] is not None
-            and usable_radii[i] < 1.6):
+    verdict, kind = check_planet(usable_temps[i], usable_radii[i])
+    if verdict == "liquid water possible" and kind == "rocky":
         candidate_names.append(usable_names[i])
         candidate_star_temps.append(usable_star_temps[i])
 
@@ -877,10 +824,6 @@ print("rocky candidates:", len(candidate_names))
 print("of those, orbiting a star cooler than the Sun:", cooler_than_sun)
 print("the coolest star of the set:", coolest, "K, around",
       candidate_names[candidate_star_temps.index(coolest)])
-
-# .index stopped at the first match, so print them all and see what it passed over
-for i in range(len(candidate_names)):
-    print(f"  {candidate_names[i]}: star at {candidate_star_temps[i]} K")
 ''')
 
 code(f'''
@@ -909,21 +852,20 @@ md("""
 
 Both of the choices class made were arguable. Pick **one** of these two changes, and only one.
 
-- **Option A — the mirror.** Venus reflects 0.770 of the light that reaches it, and there is no
-  reason a distant rocky planet should reflect nothing. Set `albedo = 0.770`, leave `low = 273` and
-  `high = 373`.
-- **Option B — the floor.** Air can only warm a planet, never cool it, so the albedo-0 equilibrium
-  temperature is a floor rather than an estimate: a world 20 K below freezing on paper could still
-  have liquid water underneath a thick atmosphere. Set `albedo = 0.0`, `low = 250` and
-  `high = 373`.
+- **Option A — the mirror.** Venus reflects 0.770 of the light reaching it, and there is no reason
+  a distant rocky planet should reflect nothing. Set `albedo = 0.770`, `low = 273`, `high = 373`.
+- **Option B — the floor.** Air can only warm a planet, never cool it, so the albedo-0 temperature
+  is a floor rather than an estimate: a world 20 K below freezing on paper could still have liquid
+  water under a thick atmosphere. Set `albedo = 0.0`, `low = 250`, `high = 373`.
 
-Then rerun part 1's loop with your three values in place of the fixed ones, into a list called
-`new_candidates`, and report what moved: how many candidates there are now, how many of part 1's
-`candidate_names` are still on the list, how many dropped off and how many are new. `name in
-candidate_names` is true when that name is somewhere in the list. (The first number stands on its
-own; the other three need part 1 to have run.)
+`usable_temps` holds every temperature at albedo 0, and a different albedo only rescales it:
+`usable_temps[i] * (1 - albedo) ** 0.25`, the same fourth root the formula ends on.
 
-Say which option you took in a comment on the first line.
+Loop over the usable planets, rescale each temperature that way, and append to `new_candidates`
+every planet between `low` and `high` whose radius is not `None` and is below 1.6. Then report what
+moved: how many candidates now, how many of part 1's are still there (`stayed`), how many dropped
+off and how many are new — `name in candidate_names` is true when that name is somewhere in the
+list, and only those last three need part 1 to have run. Name your option in a comment on line 1.
 
 Then, in two or three sentences in the last cell of this part, say what your four numbers mean for
 the class's answer: quote how many candidates you started with and how many you have now, and say
@@ -942,8 +884,7 @@ high = 373
 
 new_candidates = []
 for i in range(len(usable_names)):
-    temperature = equilibrium_temperature(usable_star_temps[i], usable_star_radii[i],
-                                          usable_distances[i], albedo)
+    temperature = usable_temps[i] * (1 - albedo) ** 0.25
     if low <= temperature <= high and usable_radii[i] is not None and usable_radii[i] < 1.6:
         new_candidates.append(usable_names[i])
 
@@ -959,7 +900,9 @@ print("dropped off:", len(candidate_names) - stayed, " newly on:", len(new_candi
 
 code(f'''
 assert albedo == 0.770 or low == 250, "neither knob moved — set up option A or option B"
-assert len(new_candidates) != len(candidate_names), "the count did not move; check what you changed"
+assert len(candidate_names) < len(new_candidates) < 100, \
+    "both options can only ADD planets, and neither adds more than a few dozen — so a count that "\
+    "did not grow, or grew into the hundreds, means the albedo, the window or the radius filter is wrong"
 {check_print("Homework 2",
              "albedo {albedo}, window {low}-{high} K:",
              "{len(new_candidates)} candidates, {stayed} of part 1's still there")}
@@ -1005,13 +948,11 @@ before it goes the way of Venus.
 What the test does not know is how much air TRAPPIST-1 c has. Its answer would be identical for a
 bare rock, for something Earth-like under 1.014 bar, and for something under 92 bar the way Venus
 is — and those three would sit hundreds of degrees apart. It knows nothing about the star either,
-and part 1 is where that shows. All twelve candidates orbit stars cooler than the Sun's 5772 K,
-but that count flatters the pattern: Kepler-1126 c's star is 5678 K, which is barely cooler at all.
-The other eleven run from 2566 K to 4262 K, and TRAPPIST-1's 2566 K is less than half the Sun's. A
-star that cool is small and faint, so the only way TRAPPIST-1 c reaches 339.9 K is by orbiting very
-close in — close enough to be tidally locked and to take its star's flares at full strength. My
-part-1 printout also shows TRAPPIST-1 d sharing that same 2566 K, which is `.index` reporting one
-planet where there were two. None of that is a number the formula ever asks for.
+and part 1 is where that shows. All twelve candidates orbit stars cooler than the Sun's 5772 K, and
+the coolest of them is TRAPPIST-1's own 2566 K, less than half the Sun's. A star that cool is small
+and faint, so the only way TRAPPIST-1 c reaches 339.9 K is by orbiting very close in — close enough
+to be tidally locked and to take its star's flares at full strength. None of that is a number the
+formula ever asks for.
 """)
 
 
@@ -1033,8 +974,13 @@ def build():
     out.mkdir(parents=True, exist_ok=True)
 
     print(f"executing {len(solution.cells)} cells ...")
-    NotebookClient(solution, timeout=600, kernel_name="python3",
-                   resources={"metadata": {"path": str(out)}}).execute()
+    # `kernel_name="python3"` is resolved through JUPYTER_PATH exactly as nbconvert resolves it,
+    # so this in-process driver had the same latent bug as the eighteen subprocess ones: the
+    # kernelspec ipykernel writes starts with a bare "python" and the kernel came from PATH.
+    # weekkit.pinned_kernel makes it this interpreter. See weekkit.execute for the whole story.
+    with weekkit.pinned_kernel():
+        NotebookClient(solution, timeout=600, kernel_name="python3",
+                       resources={"metadata": {"path": str(out)}}).execute()
 
     for nb in (solution, student):
         nb.metadata["kernelspec"] = {"display_name": "Python 3", "language": "python",

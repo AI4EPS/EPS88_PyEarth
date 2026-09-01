@@ -37,6 +37,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import textwrap
 import urllib.request
 
 import numpy as np
@@ -64,12 +65,21 @@ PLATFORM = course["platform"]
 CACHE_BASE = PLATFORM["cache_base"]
 
 # Pearce & Cann (1973) Ti-Zr-Y, in this file's column names. Sr is deliberately NOT here: it is
-# the element the fork adds.
+# the element the fork adds. These are the three ELEMENTS the 1973 paper chose, as raw
+# concentrations — not the ternary coordinates the paper plots, which throw the absolute
+# abundances away and which the notebook never scores. Open-question direction 1 is where a
+# student finds that out, so nothing above it may call this cut "the classic diagram".
 CLASSIC = ["TiO2_wt_percent", "Zr_ppm", "Y_ppm"]
+# Pearce & Cann's SECOND diagram, Ti/100-Zr-Sr/2, in the same raw three-column form. Three
+# columns against three columns is the comparison the model answer to Your turn 5 rests on.
+TIZRSR = ["TiO2_wt_percent", "Zr_ppm", "Sr_ppm"]
 MAJOR_OXIDES = ["SiO2_wt_percent", "TiO2_wt_percent", "Al2O3_wt_percent", "Fe2O3_wt_percent",
                 "FeO_wt_percent", "CaO_wt_percent", "MgO_wt_percent", "MnO_wt_percent",
                 "K2O_wt_percent", "Na2O_wt_percent"]
 MOBILE = ["Sr_ppm", "K2O_wt_percent"]
+# The five the notebook NAMES as mobile in Your turn 4. `weathered` shakes the first two; the
+# other three are measured below so the choice can be justified rather than assumed.
+MOBILE_NAMED = ["Sr_ppm", "K2O_wt_percent", "Rb_ppm", "Ba_ppm", "Cs_ppm"]
 SEEDS = list(range(10))          # split seeds; a single split is what week 11 got burnt on
 FOREST_SEEDS = list(range(10))   # forest seeds, for the importance ranking
 STRENGTHS = [0.0, 0.4, 0.8, 1.2, 1.6]   # simulated alteration, in log units
@@ -97,11 +107,18 @@ missing = basalts[feature_columns].isna().mean()
 def score(rocks, columns, seed=0):
     """Fit a forest on 70% of `rocks` and report how often it is right on the other 30%."""
     labels = rocks["affinity"]
+    # 1. Hold out 30% of the rocks. `stratify=labels` keeps the same mix of affinities on both
+    #    sides, so a rare affinity cannot land entirely in one half and make the score a lottery.
     X_train, X_test, y_train, y_test = train_test_split(
         rocks[columns], labels, test_size=0.3, random_state=seed, stratify=labels)
+    # 2. Fill the blanks with each column's median. The median is learnt from the TRAINING rocks
+    #    and then applied to the test rocks — `fit_transform` on one, `transform` on the other —
+    #    so nothing the forest is about to be tested on can leak into how it was trained.
     filler = SimpleImputer(strategy="median")
     X_train = filler.fit_transform(X_train)
     X_test = filler.transform(X_test)
+    # 3. The forest's own seed is fixed at 0 while the split's seed is free, so re-running with a
+    #    different `seed` changes which rocks were held out and nothing else.
     forest = RandomForestClassifier(n_estimators=200, random_state=0)
     forest.fit(X_train, y_train)
     return forest.score(X_test, y_test)
@@ -117,11 +134,20 @@ def importances(rocks, columns, seed=0):
                      index=columns).sort_values(ascending=False)
 
 
-def weathered(rocks, strength, seed=0):
-    """A copy of the table with the mobile elements multiplied by a random factor."""
+def weathered(rocks, strength, seed=0, mobile=MOBILE):
+    """A copy of the table with the mobile elements multiplied by a random factor.
+
+    `mobile` defaults to the two the notebook shakes, Sr and K2O. It is a parameter only so the
+    five-element variant can be measured once, below, and the choice of two reported rather than
+    left to look like an oversight.
+    """
     rng = np.random.default_rng(seed)
     out = rocks.copy()
-    for name in MOBILE:
+    # Multiply, do not add. Alteration moves an element by a FRACTION of what was there, so a
+    # rock with 300 ppm Sr and one with 30 ppm are disturbed by the same proportion, not the same
+    # amount. `np.exp` of a normal draw is what makes the factor multiplicative and never
+    # negative, and `strength` is the width of that draw in log units.
+    for name in mobile:
         out[name] = out[name] * np.exp(rng.normal(0.0, strength, len(out)))
     return out
 
@@ -155,13 +181,21 @@ drawn = basalts[CLASSIC].dropna()
 M["zr_span"] = float(drawn["Zr_ppm"].max() / drawn["Zr_ppm"].min())
 
 CUTS = {"classic": CLASSIC, "major": MAJOR_OXIDES, "all": feature_columns,
-        "classic_sr": CLASSIC + ["Sr_ppm"]}
+        "classic_sr": CLASSIC + ["Sr_ppm"], "tizrsr": TIZRSR}
 S = {k: swept(basalts, v) for k, v in CUTS.items()}
 for k, v in S.items():
     M[f"{k}_mean"], M[f"{k}_min"], M[f"{k}_max"] = float(v.mean()), float(v.min()), float(v.max())
 M["all_gain"] = M["all_mean"] - M["classic_mean"]
 M["major_gain"] = M["major_mean"] - M["classic_mean"]
 M["sr_gain"] = M["classic_sr_mean"] - M["classic_mean"]
+# Three columns against three columns: Pearce & Cann's two published trios, scored the same way.
+M["tizrsr_gain"] = M["tizrsr_mean"] - M["classic_mean"]
+# The closing states the ORDER of the three cuts without their values, so that a student who has
+# not yet done Your turn 1 cannot read the answer off it. An order is still a measurement.
+assert M["classic_mean"] < M["major_mean"] < M["all_mean"], \
+    "the closing says the oxides beat the three elements and everything beats both; they do not"
+assert M["tizrsr_mean"] > M["classic_mean"], \
+    "the model answer to Your turn 5 says Ti-Zr-Sr outscores Ti-Zr-Y; it does not"
 M["sr_share_of_gain"] = M["sr_gain"] / M["all_gain"]
 
 # per-seed, which is the whole point of sweeping
@@ -197,7 +231,8 @@ M["top"] = [(str(n), float(v), float(missing[n])) for n, v in imp.head(10).items
 M["top_share"] = float(imp.head(10).sum())
 M["rank"] = {c: int(list(imp.index).index(c) + 1)
              for c in ["TiO2_wt_percent", "Sr_ppm", "Zr_ppm", "K2O_wt_percent",
-                       "Nb_ppm", "Y_ppm"]}
+                       "Nb_ppm", "Y_ppm"] + MOBILE_NAMED}
+M["mobile_missing"] = {c: float(missing[c]) for c in MOBILE_NAMED}
 M["top_by_seed"] = sorted({str(importances(basalts, feature_columns, s).index[0])
                            for s in FOREST_SEEDS})
 
@@ -211,6 +246,12 @@ M["weather"] = W
 M["worst_strength"] = STRENGTHS[-1]
 M["sr_left"] = W[STRENGTHS[-1]]["classic_sr"] - W[STRENGTHS[-1]]["classic"]
 M["all_left"] = W[STRENGTHS[-1]]["all"] - W[0.0]["all"]
+
+# `weathered` shakes two of the five elements Your turn 4 names as mobile. Whether that choice
+# decides the answer is a measurement, not a judgement call: shake all five at the strongest
+# strength and re-score the widest cut, the only one that can see the other three at all.
+five = weathered(basalts, STRENGTHS[-1], 500, MOBILE_NAMED)
+M["all_five_shaken"] = float(np.array([score(five, feature_columns, s) for s in SEEDS]).mean())
 
 
 def verify_plan_numbers():
@@ -479,9 +520,13 @@ Start where they did. Two of Ti–Zr–Y, on a log axis because zirconium spans 
 code(f"""
 drawn = basalts[{CLASSIC + ["affinity"]}].dropna()
 
+# a different marker as well as a different colour: this is graded as a printed PDF
+markers = {{"MORB": "o", "OIB": "^", "IAB": "s"}}
+
 for setting in ["MORB", "OIB", "IAB"]:
     rows = drawn[drawn["affinity"] == setting]
-    plt.scatter(rows["Zr_ppm"], rows["TiO2_wt_percent"], s=12, label=setting)
+    plt.scatter(rows["Zr_ppm"], rows["TiO2_wt_percent"], s=12,
+                marker=markers[setting], label=setting)
 
 plt.xscale("log")
 plt.xlabel("Zr (ppm)")
@@ -511,11 +556,18 @@ code(f"""
 def score(rocks, columns, seed=0):
     \"\"\"Fit a forest on 70% of `rocks` and report how often it is right on the other 30%.\"\"\"
     labels = rocks["affinity"]
+    # 1. Hold out 30% of the rocks. `stratify=labels` keeps the same mix of affinities on both
+    #    sides, so a rare affinity cannot land entirely in one half and make the score a lottery.
     X_train, X_test, y_train, y_test = train_test_split(
         rocks[columns], labels, test_size=0.3, random_state=seed, stratify=labels)
+    # 2. Fill the blanks with each column's median. The median is learnt from the TRAINING rocks
+    #    and then applied to the test rocks — `fit_transform` on one, `transform` on the other —
+    #    so nothing the forest is about to be tested on can leak into how it was trained.
     filler = SimpleImputer(strategy="median")
     X_train = filler.fit_transform(X_train)
     X_test = filler.transform(X_test)
+    # 3. The forest's own seed is fixed at 0 while the split's seed is free, so re-running with a
+    #    different `seed` changes which rocks were held out and nothing else.
     forest = RandomForestClassifier(n_estimators=200, random_state=0)
     forest.fit(X_train, y_train)
     return forest.score(X_test, y_test)
@@ -556,6 +608,13 @@ So Pearce and Cann's three elements carry most of the way: **{pct(M['classic_mea
 {M['single_split_spread'] * 100:.1f} points. Any single one of them would have been quotable, and
 would have been {M['single_split_spread'] * 100:.1f} points wrong about its neighbours.
 
+**Read that as the three elements, not as the diagram.** What the forest was given is Ti, Zr and Y
+as raw concentrations. What Pearce and Cann plot is a ternary — each element divided by the sum of
+all three — which keeps the ratios and throws the absolute abundances away. The forest above has
+information the published diagram never had, so {pct(M['classic_mean'])}% is what those three
+*elements* are worth, and the diagram's own score is a separate number this notebook does not
+compute. The open question at the end asks you for it.
+
 That is the result you are handed, and the last thing this notebook will do for you.
 """)
 
@@ -571,12 +630,9 @@ would add to {pct(M['classic_mean'])}%, and run the cell. You check it in the ne
 wrong guess you committed to is worth more than a right answer you were shown.
 """)
 
-code(f"""
-my_guess = 5
-
-print("I think the other", len(feature_columns) - 3, "columns are worth", my_guess,
-      "accuracy points on top of", round(classic.mean() * 100, 1))
-""")
+CELLS.extend(("code", s, a) for s, a in
+             weekkit.predict_cell("5", f"accuracy points from the other "
+                                       f"{M['n_features'] - 3} chemistry columns"))
 
 # --- spine question 2, the fork ---------------------------------------------
 md(f"""
@@ -585,8 +641,8 @@ md(f"""
 This is the one real decision in this track, and there is no correct answer to it. Three cuts are
 defensible:
 
-- **the classic diagram** — `CLASSIC`, the three elements above, the ones a geologist would have
-  plotted by hand and can still interpret;
+- **the classic three elements** — `CLASSIC`, Ti, Zr and Y as measured, the ones a geologist
+  would have plotted by hand and can still interpret;
 - **the ten major oxides** — `MAJOR_OXIDES`, the analysis every laboratory runs on every rock as a
   matter of course, so it is the set most likely to exist for a rock you have not seen yet;
 - **everything** — `feature_columns`, all {M['n_features']} of them, including columns that are
@@ -607,7 +663,7 @@ did your guess in *Predict before you run* miss?
 """)
 
 answer(f"""
-cuts = {{"classic diagram": CLASSIC,
+cuts = {{"classic three elements": CLASSIC,
         "ten major oxides": MAJOR_OXIDES,
         "everything": feature_columns}}
 
@@ -630,7 +686,7 @@ plt.show()
 
 gained = (means[2] - means[0]) * 100
 print("I would report everything:", round(means[2] * 100, 1),
-      "percent, against", round(means[0] * 100, 1), "for the classic diagram —",
+      "percent, against", round(means[0] * 100, 1), "for the classic three elements —",
       round(gained, 1), "points, where I guessed", my_guess,
       "— I was low by", round(gained - my_guess, 1), "points.")
 print("What I missed is that the columns nobody bothered to measure on every rock still carry",
@@ -659,7 +715,7 @@ the thing you can actually talk about.
 ask(f"""
 ### ✏️ Your turn 2
 
-Take the two cuts furthest apart — the classic diagram and everything — and this time keep the
+Take the two cuts furthest apart — the classic three elements and everything — and this time keep the
 **per-seed difference**, not the two means: one number for each seed, `everything minus classic`.
 
 Print the mean difference, its smallest and largest value across the seeds, and how many of the
@@ -676,10 +732,11 @@ for seed in SEEDS:
     differences.append(score(basalts, feature_columns, seed) - score(basalts, CLASSIC, seed))
 differences = np.array(differences)
 
-print("everything minus the classic diagram, per split:", np.round(differences, 3))
+print("everything minus the classic three elements, per split:", np.round(differences, 3))
 print("mean", round(differences.mean(), 3),
       " lowest", round(differences.min(), 3), " highest", round(differences.max(), 3))
-print("splits where the classic diagram won or tied:", (differences <= 0).sum(), "of", len(SEEDS))
+print("splits where the classic three elements won or tied:",
+      (differences <= 0).sum(), "of", len(SEEDS))
 
 plt.bar(SEEDS, differences, color="0.4")
 plt.axhline(differences.mean(), color="firebrick", lw=1.2)
@@ -812,8 +869,8 @@ because what it says stops being trustworthy once seawater has been through the 
 
 A forest cannot make that distinction. It cannot tell an altered sample from a fresh one, so it
 takes every measurement at face value and is rewarded for doing so on a compilation of mostly fresh
-rocks. Choosing the classic diagram over the full chemistry is choosing to give up accuracy you can
-measure in exchange for robustness you cannot — at least, not yet, and not from anything you have
+rocks. Choosing the classic three elements over the full chemistry is choosing to give up
+accuracy you can measure in exchange for robustness you cannot — at least, not yet, and not from anything you have
 computed so far.
 """)
 
@@ -832,20 +889,25 @@ the per-seed range from *Your turn 2*, and where the mobile elements sat in *You
 
 answer_prose(f"""
 I would report the full {M['n_features']}-column model, at {pct(M['all_mean'])}% against
-{pct(M['classic_mean'])}% for the classic diagram and {pct(M['major_mean'])}% for the ten major
-oxides, and I would report it to somebody classifying rocks from a modern, well-characterised
+{pct(M['classic_mean'])}% for the classic three elements and {pct(M['major_mean'])}% for the ten
+major oxides, and I would report it to somebody classifying rocks from a modern, well-characterised
 compilation. The gain is not a split artefact: on the same ten splits the full model beat the
-classic diagram every time, by between {pct(M['gap_all_min'])} and {pct(M['gap_all_max'])} points.
-What a reader loses is interpretability — nobody can draw {M['n_features']} columns on graph paper,
+classic three elements every time, by between {pct(M['gap_all_min'])} and
+{pct(M['gap_all_max'])} points. What a reader loses is interpretability — nobody can draw {M['n_features']} columns on graph paper,
 and a geologist handed a prediction cannot see which measurement produced it. The rock on which I
 would expect my number to be wrong is an altered one: a seafloor basalt whose strontium and
 potassium have been through hydrothermal circulation. My model has never seen one, because this
 compilation is mostly fresh material, and nothing in my accuracy would warn me.
 
 The preference for Ti–Zr–Y is defensible, and I have measured almost nothing about it. What I have
-measured is the cost: {pct(M['sr_gain'])} points to drop strontium from the trio, and
-{pct(M['all_gain'])} points to drop everything back to three elements. What I have only assumed is
-the benefit — that the classic diagram's numbers survive alteration and the others' do not. I know
+measured is the cost, and the sharpest version of it is a comparison the notebook did not set up:
+Pearce and Cann published a second trio, Ti–Zr–Sr, and scoring it the same way over the same ten
+splits takes three lines with `score`. It gets {pct(M['tizrsr_mean'])}%, against
+{pct(M['classic_mean'])}% for Ti–Zr–Y — three columns against three columns, so the
+{pct(M['tizrsr_gain'])} points between them are strontium and nothing else. The trio the community
+kept is the one that scores worse, and dropping from all {M['n_features']} columns back to three
+costs {pct(M['all_gain'])} points on top of that. What I have only assumed is the benefit — that
+Ti–Zr–Y's numbers survive alteration and the others' do not. I know
 from the petrology that titanium, zirconium and yttrium are immobile and that strontium and
 potassium are not, and I can see in my own ranking that {M['top'][1][0]} is rank
 {M['rank']['Sr_ppm']} and {M['top'][3][0]} is rank {M['rank']['K2O_wt_percent']} of
@@ -862,10 +924,11 @@ one a petrologist trusts least — and I have no number for what that costs.
 md(f"""
 {weekkit.CLOSING_HEADING}
 
-Yes, largely. {pct(M['baseline'])}% is what guessing gets you; three elements chosen in 1973 get
-{pct(M['classic_mean'])}%; the ten oxides every laboratory measures get {pct(M['major_mean'])}%;
-and all {M['n_features']} columns, holes filled rather than rows deleted, get
-{pct(M['all_mean'])}%. The setting really is written in the chemistry.
+Yes, largely. {pct(M['baseline'])}% is what guessing gets you, and the three elements chosen in
+1973 get {pct(M['classic_mean'])}%. The ten oxides every laboratory measures beat that, and all
+{M['n_features']} columns, holes filled rather than rows deleted, beat both — by the margins you
+measured in *Your turn 1*, which are yours to quote and are not repeated here. The setting really
+is written in the chemistry.
 
 What the numbers do not settle is which of those you should report, because the best-scoring model
 leans hardest on the measurements a fifty-million-year-old rock is least likely to have kept.
@@ -933,6 +996,18 @@ for key in ORDER:
     ask(f"### ✏️ {heading}\n{guidance.rstrip().format(n=M['n_rows'])}")
     blank_prose()
 
+# The clause the docstring of `weathered` carries: which two of the five mobile elements it
+# shakes, why those two, and the measurement showing the choice does not decide the answer.
+WEATHERED_DOC = textwrap.fill(
+    "Two of the five mobile elements Your turn 4 names, not all five, because these two are the "
+    f"ones the forest leans on: Sr and K2O rank {M['rank']['Sr_ppm']} and "
+    f"{M['rank']['K2O_wt_percent']} of {M['n_features']}, against {M['rank']['Ba_ppm']}, "
+    f"{M['rank']['Rb_ppm']} and {M['rank']['Cs_ppm']} for Ba, Rb and Cs, and Cs is blank on "
+    f"{pct(M['mobile_missing']['Cs_ppm'])}% of the file. Shaking all five instead moves "
+    f"everything at the strongest strength from {M['weather'][STRENGTHS[-1]]['all']:.3f} to "
+    f"{M['all_five_shaken']:.3f}, so which of them I shake does not decide anything below.",
+    width=95, initial_indent="    ", subsequent_indent="    ")
+
 # --- the open question ------------------------------------------------------
 # course.yml's open_question wraps the question in a paragraph of evidence and a correction note.
 # The QUESTION is what the notebook must end on; the evidence is the plan's summary of an audit,
@@ -948,11 +1023,11 @@ Nobody grading this knows the answer, and neither does the literature settle it.
 is the scaffolding; this is the project.
 
 Here is exactly what is established and what is not. Established: on this compilation, more
-chemistry classifies better, by {pct(M['all_gain'])} points over the classic diagram, on every one
-of ten splits. Established: the model's second-most-used column is one that seawater moves. **Not
-established: anything at all about the robustness the classic diagram is supposed to buy.** That
-half of the trade has been argued from mechanism in every sentence above, including the ones in
-this notebook, and never measured.
+chemistry classifies better than the classic three elements, by the margin *Your turn 2* measured,
+on every one of ten splits. Established: the model's second-most-used column is one that seawater
+moves. **Not established: anything at all about the robustness those three elements are supposed
+to buy.** That half of the trade has been argued from mechanism in every sentence above, including
+the ones in this notebook, and never measured.
 
 Four directions, none of them worked out here:
 
@@ -981,9 +1056,8 @@ ask(f"""
 ### ✏️ Your turn 6 — the first move
 
 Before you close this notebook: in a few sentences, name the **one** measurement you would make
-first. What would it show if the classic diagram's robustness is worth its
-{pct(M['all_gain'])}-point cost, what would it show if it is not, and what number would change your
-mind?
+first. What would it show if the robustness of the classic three elements is worth what *Your
+turn 2* says it costs, what would it show if it is not, and what number would change your mind?
 
 Then make the measurement, in the cell below the prose.
 """)
@@ -993,13 +1067,13 @@ I would build an altered version of this compilation and re-score each cut on it
 the only claim in my whole report that I have argued rather than measured. The elements seawater
 moves are strontium and potassium, and the elements it leaves alone are titanium, zirconium and
 yttrium, so I can imitate alteration by multiplying the mobile columns by a random factor and
-leaving the rest untouched. If the classic diagram's robustness is worth its
-{pct(M['all_gain'])}-point cost, then somewhere in the range of factors I try the classic diagram
+leaving the rest untouched. If the robustness of the classic three elements is worth its
+{pct(M['all_gain'])}-point cost, then somewhere in the range of factors I try those three elements
 should catch and overtake the cuts that use strontium: the mobile-element models should fall until
 they are worse than {pct(M['classic_mean'])}%. If it is not worth the cost, the mobile-element
 models should still be ahead at any alteration strength a real rock would plausibly have. The
 number that would change my mind is the crossing point — the alteration strength at which the
-classic diagram wins — measured against what a real altered seafloor basalt looks like.
+classic three elements win — measured against what a real altered seafloor basalt looks like.
 
 I expect the result to be genuinely two-sided, and I expect my own experiment to be the weakest
 part of it. The strength of the shake is mine to choose, and nothing in this file calibrates it, so
@@ -1012,16 +1086,24 @@ measurement of it, and I would say so in a report.
 
 answer(f"""
 def weathered(rocks, strength, seed=0):
-    \"\"\"A copy of the table with strontium and potassium multiplied by a random factor.\"\"\"
+    \"\"\"A copy of the table with strontium and potassium multiplied by a random factor.
+
+{WEATHERED_DOC}
+    \"\"\"
     rng = np.random.default_rng(seed)
     out = rocks.copy()
+    # Only the mobile elements are shaken. Sr and K2O are the two the forest leans on hardest of
+    # the five Your turn 4 names, and the docstring above records what happens if all five go.
+    # Multiply, do not add: alteration moves an element by a FRACTION of what was there, so a rock
+    # with 300 ppm Sr and one with 30 ppm are disturbed in proportion rather than by the same
+    # amount. `np.exp` of a normal draw is what makes the factor multiplicative and never negative.
     for name in ["Sr_ppm", "K2O_wt_percent"]:
         out[name] = out[name] * np.exp(rng.normal(0.0, strength, len(out)))
     return out
 
 
 strengths = {STRENGTHS}
-tracks = {{"classic diagram": CLASSIC,
+tracks = {{"classic three elements": CLASSIC,
           "classic + Sr": CLASSIC + ["Sr_ppm"],
           "everything": feature_columns}}
 
@@ -1044,8 +1126,8 @@ plt.title(f"What alteration costs each cut ({{len(basalts)}} basalts)")
 plt.legend()
 plt.show()
 
-print("The classic diagram is flat by construction — none of its elements moved.")
-edge = np.array(curves["classic + Sr"]) - np.array(curves["classic diagram"])
+print("The classic three elements are flat by construction — none of them moved.")
+edge = np.array(curves["classic + Sr"]) - np.array(curves["classic three elements"])
 print("Adding Sr is worth", round(edge[0], 3), "on fresh rocks and", round(edge[-1], 3),
       "at the strongest alteration I tried, so the whole advantage is gone by then and the",
       "two curves cross at a shake of about", strengths[int(np.argmin(np.abs(edge)))], "—",
@@ -1138,11 +1220,19 @@ def track_ids(cells):
             c["id"] = f"{TRACK['id']}-q{q:02d}-answer"
         elif c["cell_type"] == "markdown" and "Double-click" in s:
             c["id"] = f"{TRACK['id']}-q{q:02d}-prose"
+        # The Predict pair carries an assert but is not a question's self-check: it sits BEFORE
+        # the first ✏️, so the generic branch below would key it to `q00` and collide with the
+        # loading check, which is the real q00. Its two cells get their own ids, and the guess
+        # cell matches in both copies -- solution `= 2`, student `= None`.
+        elif c["cell_type"] == "code" and re.search(r"(?m)^my_guess\w*\s*=", s):
+            c["id"] = f"{TRACK['id']}-predict"
+        elif c["cell_type"] == "code" and re.search(r"assert my_guess\w* is not None", s):
+            c["id"] = f"{TRACK['id']}-predict-check"
         elif c["cell_type"] == "code" and "assert " in s:
             c["id"] = f"{TRACK['id']}-q{q:02d}-check"
         else:
             c["id"] = f"{TRACK['id']}-c{i:03d}"
-    return cells
+    return weekkit.dedupe_ids(cells)
 
 
 def report():
@@ -1179,9 +1269,8 @@ def main():
 
     print(f"\nexecuting {sol_path.name} ...")
     with execution_env() as env:
-        r = subprocess.run([sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook",
-                            "--execute", "--inplace", "--ExecutePreprocessor.timeout=1800",
-                            str(sol_path)], capture_output=True, text=True, cwd=ROOT, env=env)
+        # `env` is the IPYTHONDIR shim above, or None when the cache url already resolves.
+        r = weekkit.execute(sol_path, timeout=1800, env=env)
     if r.returncode:
         print(r.stderr[-4000:])
         sys.exit("the solution did not execute")

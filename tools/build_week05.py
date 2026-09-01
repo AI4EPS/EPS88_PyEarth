@@ -417,9 +417,10 @@ busiest single one will hold? The average day holds {M['lam']:.3f}.
 Change `my_guess` to whatever you think, then run the cell.
 """)
 
-code(f"""
-my_guess = 3
+CELLS.extend(("code", s, a) for s, a in
+             weekkit.predict_cell("3", "earthquakes on the busiest day of a random world"))
 
+code(f"""
 rng = np.random.default_rng({SEED})
 one_world = random_world(rng, n_quakes, n_days)
 
@@ -968,13 +969,20 @@ widening the box or starting the record later — and quote `p1`, `p2` and `p3` 
 answer(f"""
 def forecast(half, start_year):
     \"\"\"The Poisson forecast for a box `half` degrees each side of campus, from `start_year` on.\"\"\"
+    # 1. Narrow the catalogue three times over: to the years asked for, then to the box round
+    #    campus, then to magnitude 6 and above. Sorting by time is what makes the gaps below
+    #    mean anything.
     recent = bay[pd.to_datetime(bay["time"]).dt.year >= start_year]
     near = recent[(abs(recent["latitude"] - {BERK_LAT}) <= half)
                   & (abs(recent["longitude"] - ({BERK_LON})) <= half)]
     big = near[near["mag"] >= 6.0].sort_values("time")
+    # 2. A rate is earthquakes per year, so it is divided by the years this window covers, not
+    #    by the length of the whole record. Starting later means fewer years to divide by.
     rate = len(big) / ({B_END[:4]} - start_year)
     gaps = pd.to_datetime(big["time"]).diff().dropna().dt.days
 
+    # 3. Show the working, then hand back one number. Every `1 - np.exp(-rate * years)` below
+    #    is the Poisson step: the chance of at least one is 1 minus the chance of none.
     print("half-width", half, "degrees, from", start_year, "—", len(big), "earthquakes in",
           {B_END[:4]} - start_year, "years,", round(1 / rate, 1), "years apart on average")
     print(big[["time", "mag", "place"]])
@@ -1094,9 +1102,7 @@ def main():
     sol_path.write_text(json.dumps(sol, indent=1) + "\n")
 
     print(f"executing {sol_path.name} ...")
-    r = subprocess.run([sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook",
-                        "--execute", "--inplace", "--ExecutePreprocessor.timeout=600",
-                        str(sol_path)], capture_output=True, text=True, cwd=ROOT)
+    r = weekkit.execute(sol_path, timeout=600)
     if r.returncode:
         print(r.stderr[-4000:])
         sys.exit("the solution did not execute")

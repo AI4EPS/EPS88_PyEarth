@@ -127,6 +127,10 @@ M["n_blasts"] = int(len(blast_rows))
 M["n_quakes"] = int(len(quake_rows))
 M["n_events"] = int(len(events))
 M["per_blast"] = round(M["n_quakes"] / M["n_blasts"], 1)
+# The spine's first question counts BLASTS AGAINST THE WHOLE CATALOGUE, which is a different
+# number from per_blast (blasts against EARTHQUAKES) and one larger, so it is measured here
+# rather than reused: per_blast rounds to one blast per 46 earthquakes, and this to one in 47.
+M["one_in"] = int(round(M["n_events"] / M["n_blasts"]))
 M["frac_eq"] = float((~events["is_blast"]).mean())
 
 M["blast_depth_median"] = float(blast_rows["depth"].median())
@@ -375,7 +379,7 @@ Today you build that classifier. Then you find out what it actually learned.
 
 md(weekkit.OPENING.format(question=WEEK["question"], datahub=datahub, hook=HOOK.strip()))
 
-md("""
+md(f"""
 ## What you'll be able to do
 
 **The science.** Say what an event catalogue does and does not tell you about the source of a
@@ -388,6 +392,13 @@ with `precision_score`, `recall_score` and `f1_score` rather than with accuracy.
 
 **Eight places where you write something: five in class, three at home.** Each one is headed
 *Your turn*, with an empty cell under it.
+
+**The four questions, in order:**
+
+1. When one event in {M['one_in']} is a blast, what counts as getting it right?
+2. What does a catalogue row actually know about a quarry blast?
+3. Can a fitted model beat two conditions you wrote by hand?
+4. Would the same numbers survive a different cut of the data?
 """)
 
 setup = weekkit.asset_setup_cell(
@@ -430,8 +441,8 @@ print(blasts.head(2))
 code(setup)
 
 # --- section 1 -------------------------------------------------------------
-md("""
-## Two kinds of shaking in one catalogue
+md(f"""
+## When one event in {M['one_in']} is a blast, what counts as getting it right?
 
 Both files came out of the same query: the same box of California and western Nevada, the same
 years, the same magnitude floor. The only difference is what the analyst wrote in the `type`
@@ -484,10 +495,8 @@ print("✓ the two classes —", n_blasts, "quarry blasts and", n_quakes,
       "earthquakes, a ratio of", round(n_quakes / n_blasts, 1), "to 1")
 """)
 
-# --- section 2 -------------------------------------------------------------
+# --- section 2: the second half of spine question 1 -------------------------
 md(f"""
-## Scoring a classifier when one class is rare
-
 That ratio is the whole problem in one number. Quarry blasts are about {M['per_blast']:.0f} times
 rarer than earthquakes here, and a class that rare changes what you are allowed to call success.
 
@@ -501,9 +510,10 @@ every single time, so it never once flags a blast. What accuracy does it get on 
 Change `my_guess` to a fraction between 0 and 1, then run the cell.
 """)
 
-code("""
-my_guess = 0.50
+CELLS.extend(("code", s, a) for s, a in
+             weekkit.predict_cell("0.50", "is the accuracy of a rule that always says earthquake"))
 
+code("""
 always_earthquake = [False] * len(events)
 print("you guessed:  ", my_guess)
 print("this rule got:", round(accuracy_score(events["is_blast"], always_earthquake), 4))
@@ -570,7 +580,7 @@ print("✓ the two ways to cheat — never saying blast scores accuracy",
 
 # --- section 3 -------------------------------------------------------------
 md("""
-## What the catalogue knows about a quarry blast
+## What does a catalogue row actually know about a quarry blast?
 
 Six columns arrived with each event: when it happened, where, how deep, how big, and the label.
 Anything a classifier learns has to come out of the first four, so look at them — starting with
@@ -765,7 +775,7 @@ earthquakes, and {M['blast_weekdays'] * 100:.1f}% land Monday to Friday against
 
 # --- section 4 -------------------------------------------------------------
 md(f"""
-## A rule you can write by hand
+## Can a fitted model beat two conditions you wrote by hand?
 
 So the catalogue offers three kinds of clue: an address that repeats, a depth somebody typed in,
 and a human timetable. Before any model, the rule you already have in your head:
@@ -835,10 +845,8 @@ print("✓ the baseline — two conditions, F1",
       round(f1_score(y_test, hand_rule), 4), "on", len(y_test), "held-out events")
 """)
 
-# --- section 5 -------------------------------------------------------------
+# --- section 5: the second part of spine question 3 -------------------------
 md(f"""
-## Letting the computer draw the line
-
 Two conditions, nothing fitted to anything, F1 {M['hand_f1']:.4f}. Write that number down;
 everything from here is measured against it. Beating it will have to mean clearing it by more
 than the number wanders on its own when the split is re-cut — hold that thought, because you
@@ -861,15 +869,16 @@ logistic regression exactly the same two columns, and {M['n_train']:,} labelled 
 What F1 does it get? Change `my_guess` and run.
 """)
 
-code("""
-my_guess = 0.85
+CELLS.extend(("code", s, a) for s, a in
+             weekkit.predict_cell("0.85", "is the F1 logistic regression gets on hour and depth"))
 
-model_two = LogisticRegression(max_iter=1000).fit(X_train[["hour", "depth"]], y_train)
-guess_two = model_two.predict(X_test[["hour", "depth"]])
+code("""
+model_two_columns = LogisticRegression(max_iter=1000).fit(X_train[["hour", "depth"]], y_train)
+guess_two_columns = model_two_columns.predict(X_test[["hour", "depth"]])
 
 print("you guessed:", my_guess)
-print("it scored:  ", round(f1_score(y_test, guess_two), 4))
-print("it called", guess_two.sum(), "events blasts;", y_test.sum(), "really are")
+print("it scored:  ", round(f1_score(y_test, guess_two_columns), 4))
+print("it called", guess_two_columns.sum(), "events blasts;", y_test.sum(), "really are")
 """)
 
 md(f"""
@@ -877,9 +886,10 @@ Not a little worse than two `if` conditions — several times worse. It flagged
 {M['lr2_flagged']} events as blasts, out of {M['blasts_test']} real ones in the held-out half.
 Draw the line it found and the reason is visible.
 
-`model_two.coef_[0]` holds one number per column and `model_two.intercept_[0]` the offset, and the
-boundary is where they add to zero: `hour_coef * hour + depth_coef * depth + intercept == 0`.
-Rearranged for depth, that is a line you can plot.
+`model_two_columns.coef_[0]` holds one number per column and `model_two_columns.intercept_[0]` the
+offset, and the boundary is where they add to zero:
+`hour_coef * hour + depth_coef * depth + intercept == 0`. Rearranged for depth, that is a line you
+can plot.
 """)
 
 code("""
@@ -887,8 +897,8 @@ plt.scatter(few_quakes["hour"], few_quakes["depth"], s=3, color="0.7", label="ea
 plt.scatter(blast_rows["hour"], blast_rows["depth"], s=3, color="firebrick", label="blasts")
 
 hours = np.arange(0, 24)
-hour_coef, depth_coef = model_two.coef_[0]
-boundary = -(hour_coef * hours + model_two.intercept_[0]) / depth_coef
+hour_coef, depth_coef = model_two_columns.coef_[0]
+boundary = -(hour_coef * hours + model_two_columns.intercept_[0]) / depth_coef
 plt.plot(hours, boundary, color="black", lw=2, label="decision boundary")
 
 plt.ylim(-4, 25)
@@ -919,13 +929,13 @@ prepared. Give it all of them.
 """)
 
 code("""
-model = LogisticRegression(max_iter=1000).fit(X_train, y_train)
-guess = model.predict(X_test)
+model_logistic = LogisticRegression(max_iter=1000).fit(X_train, y_train)
+guess_logistic = model_logistic.predict(X_test)
 
-print("accuracy: ", round(accuracy_score(y_test, guess), 4))
-print("precision:", round(precision_score(y_test, guess), 4))
-print("recall:   ", round(recall_score(y_test, guess), 4))
-print("F1:       ", round(f1_score(y_test, guess), 4))
+print("accuracy: ", round(accuracy_score(y_test, guess_logistic), 4))
+print("precision:", round(precision_score(y_test, guess_logistic), 4))
+print("recall:   ", round(recall_score(y_test, guess_logistic), 4))
+print("F1:       ", round(f1_score(y_test, guess_logistic), 4))
 """)
 
 md("""
@@ -938,33 +948,38 @@ are the misses and the false alarms, counted apart.
 ask("""
 ### ✏️ Your turn 4
 
-Print the confusion matrix of the six-column model with `confusion_matrix(y_test, guess)`. It
-comes back as a 2 by 2 grid of counts: the top row is the events that really were earthquakes and
-the bottom row the ones that really were blasts, and inside each row the first column is "the
-model said earthquake" and the second "the model said blast".
+Print the confusion matrix of the six-column model with
+`confusion_matrix(y_test, guess_logistic)`. It comes back as a 2 by 2 grid of counts: the top row
+is the events that really were earthquakes and the bottom row the ones that really were blasts,
+and inside each row the first column is "the model said earthquake" and the second "the model said
+blast".
 
-Then print the two mistakes on their own lines, so you can see which is larger — the blasts it
-missed, and the earthquakes it falsely flagged.
+Then print the two mistakes on their own lines — the blasts it missed, and the earthquakes it
+falsely flagged. Then one more printed line, in words: which of the two mistakes is it making more
+of — and which of the two would matter more to somebody verifying a test ban?
 
 **Use these names**, because the self-check looks for them: `matrix`.
 """)
 
 answer("""
-matrix = confusion_matrix(y_test, guess)
+matrix = confusion_matrix(y_test, guess_logistic)
 print(matrix)
 
 print("blasts missed:              ", matrix[1][0])
 print("earthquakes falsely flagged:", matrix[0][1])
+
+print("It misses more blasts than it falsely flags earthquakes. To somebody verifying a test ban "
+      "the misses are the worse of the two: a missed event is an explosion nobody looked at, "
+      "while a false alarm only costs an analyst the time it takes to read the waveform and say "
+      "no.")
 """, """
 assert matrix.sum() == len(y_test), "the matrix should count every held-out event exactly once"
 print("✓ the confusion matrix —", matrix[1][1], "blasts caught,", matrix[1][0],
       "missed and", matrix[0][1], "earthquakes falsely flagged")
 """)
 
-# --- section 6 -------------------------------------------------------------
+# --- section 6: the third part of spine question 3 --------------------------
 md("""
-## Scoring the clues instead of drawing a line
-
 There is a second way to use the same six columns, and it draws nothing at all.
 
 > What does a quarry blast usually look like? Shallow, weekday, mid-afternoon. Score each clue
@@ -986,45 +1001,62 @@ recall and F1.
 
 Then print, one per line, the four F1 scores this notebook has produced, so they can be read
 together: the always-earthquake rule, your `hand_rule` from your turn 3, the six-column logistic
-regression (its predictions are in `guess`), and this one.
+regression (its predictions are in `guess_logistic`), and this one. Then one line: does either
+fitted model clear the hand rule, and by how much?
 
-**Use these names**, because the self-check looks for them: `model_nb` and `guess_nb`.
+**Use these names**, because the self-check looks for them: `model_bayes` and `guess_bayes`.
 """)
 
 answer("""
-model_nb = GaussianNB().fit(X_train, y_train)
-guess_nb = model_nb.predict(X_test)
+model_bayes = GaussianNB().fit(X_train, y_train)
+guess_bayes = model_bayes.predict(X_test)
 
-print("precision:", round(precision_score(y_test, guess_nb), 4))
-print("recall:   ", round(recall_score(y_test, guess_nb), 4))
-print("F1:       ", round(f1_score(y_test, guess_nb), 4))
+print("precision:", round(precision_score(y_test, guess_bayes), 4))
+print("recall:   ", round(recall_score(y_test, guess_bayes), 4))
+print("F1:       ", round(f1_score(y_test, guess_bayes), 4))
 
 print("always earthquake:  ", round(f1_score(y_test, [False] * len(y_test), zero_division=0), 4))
 print("hand rule:          ", round(f1_score(y_test, hand_rule), 4))
-print("logistic regression:", round(f1_score(y_test, guess), 4))
-print("naive Bayes:        ", round(f1_score(y_test, guess_nb), 4))
+print("logistic regression:", round(f1_score(y_test, guess_logistic), 4))
+print("naive Bayes:        ", round(f1_score(y_test, guess_bayes), 4))
+
+print("Neither fitted model clears the hand rule: logistic regression finishes",
+      round(f1_score(y_test, hand_rule) - f1_score(y_test, guess_logistic), 4),
+      "of F1 short of it, and naive Bayes",
+      round(f1_score(y_test, hand_rule) - f1_score(y_test, guess_bayes), 4), "short.")
 """, """
-assert len(guess_nb) == len(y_test), "predict on X_test, the half the model was not fitted to"
-print("✓ naive Bayes — F1", round(f1_score(y_test, guess_nb), 4), "on the same",
+assert len(guess_bayes) == len(y_test), "predict on X_test, the half the model was not fitted to"
+print("✓ naive Bayes — F1", round(f1_score(y_test, guess_bayes), 4), "on the same",
       len(y_test), "held-out events")
 """)
 
 # --- section 7 -------------------------------------------------------------
 md("""
-## The same numbers, measured again
+## Would the same numbers survive a different cut of the data?
 
 One split of one catalogue gives one number, and a number that only holds for the window you
 happened to pick is not a result. There are two ways to find out whether these numbers are
 results, and the cheaper one first: the hand rule has nothing fitted to anything, so it can be
 scored on every event of every year with no risk of cheating. Do that.
+
+You wrote those two conditions once, in your turn 3. From here you need them again on every year,
+again on every re-cut split, and twice more in the homework — so give them a name first. `def`
+does that, and putting the two hour bounds in as arguments means every line below says out loud
+which window it is asking about.
 """)
 
 code(f"""
+def two_condition_rule(rows, low, high):
+    \"\"\"True where a row is at or above sea level AND its hour falls inside the window.\"\"\"
+    # the window is an argument rather than fixed at 10 and 17 because you change it later
+    return (rows["depth"] <= 0) & (rows["hour"] >= low) & (rows["hour"] < high)
+
+
 events["year"] = events["time"].str[:4]
 
 for year in range({FIRST_YEAR}, {LAST_YEAR + 1}):
     rows = events[events["year"] == str(year)]
-    guess_year = (rows["depth"] <= 0) & (rows["hour"] >= 10) & (rows["hour"] < 17)
+    guess_year = two_condition_rule(rows, 10, 17)
     print(year, len(rows), "events ", rows["is_blast"].sum(), "blasts  Mmax", rows["mag"].max(),
           " precision", round(precision_score(rows["is_blast"], guess_year), 3),
           " recall", round(recall_score(rows["is_blast"], guess_year), 3),
@@ -1065,20 +1097,29 @@ is on average and whether it keeps its sign, not how wide either of the other tw
 """)
 
 code(f"""
+def score_one_split(seed):
+    \"\"\"Re-cut the catalogue with a different shuffle and score all three predictors on it.\"\"\"
+    # a new seed sends different rows into each half; stratify keeps the blasts as rare in
+    # each half as they are in the whole catalogue, exactly as it did for the pinned split
+    X_fit, X_held, y_fit, y_held = train_test_split(X, y, test_size=0.3,
+                                                    random_state=seed, stratify=y)
+    # the hand rule was fitted to nothing, so it can be scored straight off the held-out half
+    rule_f1 = f1_score(y_held, two_condition_rule(X_held, 10, 17))
+    # each model is fitted on X_fit alone — then all three are judged on the SAME X_held
+    logistic_f1 = f1_score(y_held,
+                           LogisticRegression(max_iter=1000).fit(X_fit, y_fit).predict(X_held))
+    bayes_f1 = f1_score(y_held, GaussianNB().fit(X_fit, y_fit).predict(X_held))
+    return rule_f1, logistic_f1, bayes_f1
+
+
 gaps = []
 for seed in range({M['seed_n']}):
-    X_fit, X_held, y_fit, y_held = train_test_split(X, y, test_size=0.3, random_state=seed,
-                                                    stratify=y)
-    rule = (X_held["depth"] <= 0) & (X_held["hour"] >= 10) & (X_held["hour"] < 17)
-    pred_lr = LogisticRegression(max_iter=1000).fit(X_fit, y_fit).predict(X_held)
-    pred_nb = GaussianNB().fit(X_fit, y_fit).predict(X_held)
+    rule_f1, logistic_f1, bayes_f1 = score_one_split(seed)
 
-    f1_rule = f1_score(y_held, rule)
-    f1_lr = f1_score(y_held, pred_lr)
-    gaps.append(f1_rule - f1_lr)
-    print("split", seed, " hand rule", round(f1_rule, 4), " logistic", round(f1_lr, 4),
-          " naive Bayes", round(f1_score(y_held, pred_nb), 4),
-          " gap", round(f1_rule - f1_lr, 4))
+    gaps.append(rule_f1 - logistic_f1)
+    print("split", seed, " hand rule", round(rule_f1, 4), " logistic", round(logistic_f1, 4),
+          " naive Bayes", round(bayes_f1, 4),
+          " gap", round(rule_f1 - logistic_f1, 4))
 
 print("the gap column — average", round(sum(gaps) / len(gaps), 4),
       " in the rule's favour on", sum(1 for gap in gaps if gap > 0), "of", len(gaps),
@@ -1144,7 +1185,12 @@ features = {FEATURES}
 X = events[features]
 y = events["is_blast"]
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42,
-                                                    stratify=y)'''))
+                                                    stratify=y)
+
+
+def two_condition_rule(rows, low, high):
+    """True where a row is at or above sea level AND its hour falls inside the window."""
+    return (rows["depth"] <= 0) & (rows["hour"] >= low) & (rows["hour"] < high)'''))
 
 ask(f"""
 ### ✏️ Your turn 6
@@ -1157,29 +1203,38 @@ Build `features_no_depth` — the same list as `features`, without `"depth"` —
 F1 of the always-earthquake rule, so you have something to read them against; that one needs
 `zero_division=0` again. With depth, the two models scored {M['lr_f1']:.4f} and {M['nb_f1']:.4f}.
 
-**Use these names**, because the self-check looks for them: `features_no_depth`, `f1_lr_no_depth`
-and `f1_nb_no_depth`.
+Finish by printing one more line that answers the question, in words and on your three numbers:
+which of the two models lost more when depth went, and is what either of them has left a
+classifier at all?
+
+**Use these names**, because the self-check looks for them: `features_no_depth`,
+`f1_logistic_no_depth` and `f1_bayes_no_depth`.
 """)
 
 answer(f"""
 features_no_depth = {NO_DEPTH}
 
-model_lr_nd = LogisticRegression(max_iter=1000).fit(X_train[features_no_depth], y_train)
-model_nb_nd = GaussianNB().fit(X_train[features_no_depth], y_train)
+model_logistic_no_depth = LogisticRegression(max_iter=1000).fit(X_train[features_no_depth],
+                                                                y_train)
+model_bayes_no_depth = GaussianNB().fit(X_train[features_no_depth], y_train)
 
-f1_lr_no_depth = f1_score(y_test, model_lr_nd.predict(X_test[features_no_depth]),
-                          zero_division=0)
-f1_nb_no_depth = f1_score(y_test, model_nb_nd.predict(X_test[features_no_depth]),
-                          zero_division=0)
+f1_logistic_no_depth = f1_score(y_test, model_logistic_no_depth.predict(X_test[features_no_depth]),
+                                zero_division=0)
+f1_bayes_no_depth = f1_score(y_test, model_bayes_no_depth.predict(X_test[features_no_depth]),
+                             zero_division=0)
 
-print("logistic regression, no depth:", round(f1_lr_no_depth, 4))
-print("naive Bayes, no depth:        ", round(f1_nb_no_depth, 4))
+print("logistic regression, no depth:", round(f1_logistic_no_depth, 4))
+print("naive Bayes, no depth:        ", round(f1_bayes_no_depth, 4))
 print("always earthquake:            ",
       round(f1_score(y_test, [False] * len(y_test), zero_division=0), 4))
+
+print("Logistic regression lost more — it fell all the way to the always-earthquake rule's own "
+      "F1, so it stopped flagging blasts entirely; naive Bayes is barely above that. Neither is "
+      "a classifier of quarry blasts any more.")
 """, """
 assert "depth" not in features_no_depth, "the point of this part is to leave depth out"
-print("✓ without depth — logistic regression F1", round(f1_lr_no_depth, 4),
-      "and naive Bayes F1", round(f1_nb_no_depth, 4))
+print("✓ without depth — logistic regression F1", round(f1_logistic_no_depth, 4),
+      "and naive Bayes F1", round(f1_bayes_no_depth, 4))
 """)
 
 ask(f"""
@@ -1191,33 +1246,48 @@ one is yours. Take **one** of these, not both:
 - **wide**, 7 to 19 — catch the early and the late blasts as well
 - **narrow**, 11 to 15 — only the solid middle of the day
 
-Set `my_low` and `my_high` to the window you chose, build `my_rule` on `X_test` the same way you
-built `hand_rule` but with your two numbers in place of 10 and 17, and print its precision, its
-recall and its F1. Then compute the same three for the 10-to-17 window class used, and print them
-underneath, so you can see which of them your choice moved and in which direction.
+Set `my_low` and `my_high` to the window you chose, then build `my_rule` by calling the class
+function on the held-out half with your two numbers in place of 10 and 17:
+`two_condition_rule(X_test, my_low, my_high)`. Print its precision, its recall and its F1. Then
+build the 10-to-17 window class used the same way, score it too, and print it underneath so the
+two are side by side.
+
+Then say it, in one more printed line: which of precision and recall did your window buy, which
+did it sell, and would you defend that trade to somebody who has to act on the flags?
 
 **Use these names**, because the self-check looks for them: `my_low`, `my_high` and `my_rule`.
 """)
 
 answer("""
+# You were asked for ONE window. This answer works both of them, so whichever you picked you can
+# read your own numbers off it — and see what the choice you did not make would have bought.
 my_low = 7
 my_high = 19
 
-my_rule = (X_test["depth"] <= 0) & (X_test["hour"] >= my_low) & (X_test["hour"] < my_high)
-class_rule = (X_test["depth"] <= 0) & (X_test["hour"] >= 10) & (X_test["hour"] < 17)
-other_rule = (X_test["depth"] <= 0) & (X_test["hour"] >= 11) & (X_test["hour"] < 15)
+my_rule = two_condition_rule(X_test, my_low, my_high)
+hand_rule = two_condition_rule(X_test, 10, 17)
+other_rule = two_condition_rule(X_test, 11, 15)
 
 print("mine, 7 to 19:  precision", round(precision_score(y_test, my_rule), 4),
       " recall", round(recall_score(y_test, my_rule), 4),
       " F1", round(f1_score(y_test, my_rule), 4))
-print("class, 10 to 17: precision", round(precision_score(y_test, class_rule), 4),
-      " recall", round(recall_score(y_test, class_rule), 4),
-      " F1", round(f1_score(y_test, class_rule), 4))
+print("class, 10 to 17: precision", round(precision_score(y_test, hand_rule), 4),
+      " recall", round(recall_score(y_test, hand_rule), 4),
+      " F1", round(f1_score(y_test, hand_rule), 4))
 print("the other choice, 11 to 15: precision", round(precision_score(y_test, other_rule), 4),
       " recall", round(recall_score(y_test, other_rule), 4),
       " F1", round(f1_score(y_test, other_rule), 4))
+
+print("My wider window bought recall and sold precision:",
+      round(recall_score(y_test, my_rule) - recall_score(y_test, hand_rule), 4),
+      "more recall for",
+      round(precision_score(y_test, hand_rule) - precision_score(y_test, my_rule), 4),
+      "less precision. I would not defend that trade to somebody who has to act on the flags,",
+      "because it makes", round(100 * (1 - precision_score(y_test, my_rule))),
+      "percent of everything it flags a false alarm.")
 """, """
-assert (my_low, my_high) != (10, 17), "pick one of the two windows offered, not the one class used"
+assert (my_low, my_high) == (7, 19) or (my_low, my_high) == (11, 15), "pick one of the two \
+windows offered — wide is 7 to 19, narrow is 11 to 15 — not the 10 to 17 class used"
 print("✓ your window —", my_low, "to", my_high, "gives precision",
       round(precision_score(y_test, my_rule), 4), "and recall",
       round(recall_score(y_test, my_rule), 4))
@@ -1285,9 +1355,7 @@ def main():
     sol_path.write_text(json.dumps(sol, indent=1) + "\n")
 
     print(f"executing {sol_path.name} ...")
-    r = subprocess.run([sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook",
-                        "--execute", "--inplace", "--ExecutePreprocessor.timeout=900",
-                        str(sol_path)], capture_output=True, text=True, cwd=ROOT)
+    r = weekkit.execute(sol_path, timeout=900)
     if r.returncode:
         print(r.stderr[-6000:])
         sys.exit("the solution did not execute")

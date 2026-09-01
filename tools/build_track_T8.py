@@ -183,19 +183,31 @@ M["down_trace"] = DOWN_TRACE
 # --- the network
 def network_says_up(seconds, epochs=EPOCHS, seed=0):
     """Train a network on `seconds` of waveform; one True/False per held-out recording."""
+    # 1. Cut the same stretch of trace out of every recording. A 1-D convolution reads a stack
+    #    of channels, so `unsqueeze(1)` inserts the length-1 channel dimension it expects.
     window = cut(seconds)
     x = torch.tensor(window).unsqueeze(1)
     x_train, x_test = x[is_train], x[is_test]
+    # 2. What the network has to learn is a sign, so the answer it is shown is a sign: +1 where
+    #    the first motion is up, -1 where it is down.
     y_train = torch.tensor(np.where(up_train, 1.0, -1.0).astype("float32")).reshape(-1, 1)
 
+    # 3. Fix the random numbers before the layers are built, so the network starts from the same
+    #    weights every time and a second run gives the same answer as the first.
     torch.manual_seed(seed)
     net = nn.Sequential(
         nn.Conv1d(1, 8, 7, stride=2, padding=3), nn.ReLU(),
         nn.Conv1d(8, 16, 7, stride=2, padding=3), nn.ReLU(),
         nn.Flatten(),
+        # Each convolution steps two samples at a time, so the trace comes out a quarter as
+        # long as it went in; `Flatten` lays those 16 shortened channels end to end, which is
+        # where 16 x a quarter of the window comes from.
         nn.Linear(16 * ((window.shape[1] + 3) // 4), 1))
     optimiser = torch.optim.Adam(net.parameters(), lr=0.005)
     loss_function = nn.MSELoss()
+    # 4. Train for a fixed number of passes rather than stopping when the loss looks good
+    #    enough: the sweep trains one network per window length, and comparing their scores is
+    #    only fair if every network got the same amount of training.
     for epoch in range(epochs):
         order = torch.randperm(len(x_train))
         for start in range(0, len(x_train), 32):
@@ -204,6 +216,9 @@ def network_says_up(seconds, epochs=EPOCHS, seed=0):
             optimiser.zero_grad()
             loss.backward()
             optimiser.step()
+    # 5. Hand back one True/False per held-out recording, not the fraction it got right. A
+    #    fraction can only be compared with another fraction; the answers themselves can be
+    #    asked WHICH recordings the network missed.
     return net(x_test).detach().numpy().ravel() > 0
 
 
@@ -264,27 +279,38 @@ torch.set_num_threads(DEFAULT_THREADS)
 for k in sorted(M):
     print(f"  measured  {k:>18} = {M[k]}")
 
-# The plan records this track's numbers from an audit of an EARLIER build of the .npz. A builder
-# does not edit the plan, so every figure that does not reproduce is printed here.
-PLAN = {"one-line rule 0.828, read literally (one sample after the pick)":
-            (0.828, M["rule_by_offset"][1]),
-        "one-line rule 0.828, at its best": (0.828, M["rule_best_mean"]),
-        "CNN 0.843": (0.843, M["network_best"]),
-        "CNN at 0.1 s 0.846": (0.846, M["sweep"][0.1]),
-        "CNN at 10 s 0.777": (0.777, M["sweep"][10]),
-        "label agreement 0.825": (0.825, M["agree_all"]),
-        "clearest-arrival plateau 0.89": (0.89, M["agree_top_decile"])}
+# Does every number the plan quotes still reproduce? This USED to be a hand-transcribed table of
+# course.yml's figures, which is two records of one fact and drifted the moment the plan was
+# corrected: the transcription kept reporting DRIFT against numbers course.yml no longer claimed.
+# So read the plan itself. Every 0.NNN in T8's open_question must be within 0.02 of something
+# this build measured; one that matches nothing is a claim the notebook cannot support.
+MEASURED = {"rule read literally (one sample after the pick)": M["rule_by_offset"][1],
+            "rule at its best": M["rule_best_mean"],
+            "network, best window": M["network_best"],
+            "network at 0.1 s": M["sweep"][0.1],
+            "network at 5 s": M["sweep"][5],
+            "network at 10 s": M["sweep"][10],
+            "label agreement, all": M["agree_all"],
+            "label agreement, clearest quarter": M["agree_quartile"][3],
+            "label agreement, clearest tenth": M["agree_top_decile"],
+            "rule with the flat traces removed": M["rule_off_flat"],
+            "network with the flat traces removed": M["net_off_flat"]}
 print(f"  DATA DEFECT  {M['n_flat']} of the {M['n_labelled']} labelled vertical traces "
       f"({M['n_flat'] / M['n_labelled']:.1%}) are CONSTANT at exactly {M['flat_values']} for all "
       f"{M['n_samples']} samples — no arrival, no first motion, nothing to read. Both methods "
       f"score {M['rule_on_flat']} / {M['net_on_flat']} on them (chance) and "
       f"{M['rule_off_flat']} / {M['net_off_flat']} with them left out; "
       f"{M['disagree_flat']} of the {M['n_disagree']} disagreements between the two methods ARE "
-      f"them. Not in notes/dataset-audit/ncedc-phasenet.md and not in course.yml — the audit's "
-      f"fix for the spikes (clipping at ±10) is what flattened them.")
-for name, (planned, got) in PLAN.items():
-    if abs(planned - got) > 0.02:
-        print(f"  PLAN DRIFT  course.yml T8 says {name}; measured {got} on the shipped file")
+      f"them. Recorded 2026-08-31 in notes/dataset-audit/ncedc-phasenet.md and in course.yml's "
+      f"T8 open_question — the audit's own fix for the spikes (clipping at ±10) is what "
+      f"flattened them.")
+_plan_numbers = sorted({float(x) for x in re.findall(r"\b0\.\d{3}\b",
+                                                    TRACK["open_question"])})
+for planned in _plan_numbers:
+    near = [(k, v) for k, v in MEASURED.items() if abs(planned - v) <= 0.02]
+    if not near:
+        print(f"  PLAN DRIFT  course.yml T8 quotes {planned}, which matches nothing this build "
+              f"measured: {', '.join(f'{k} {v}' for k, v in MEASURED.items())}")
 if TRACK["data"].count("1,233") == 0 or TRACK["data"].count("1,115") == 0:
     print(f"  PLAN DRIFT  course.yml T8 `data:` no longer names the label counts")
 elif (M["n_up"], M["n_down"]) != (1233, 1115):
@@ -477,29 +503,13 @@ The file also carries `magnitude`, `distance_km`, `depth_km`, `station` and `snr
 recording. Any of them comes out the same way as the arrays below, filtered with the same mask.
 """)
 
-code(f'''
-import numpy as np
-import matplotlib.pyplot as plt
-import torch
-from torch import nn
-from sklearn.metrics import accuracy_score
-
-# house style, set once, so every plot cell below holds only what matters
-plt.rcParams.update({{"figure.figsize": (7, 4), "figure.dpi": 110,
-                     "axes.grid": True, "grid.alpha": 0.3, "axes.axisbelow": True}})
-
-WAVEFORMS = ("{DATA_URL}")
-
-
-def load():
-    """Read the waveform file, downloading it from the course release the first time."""
-    try:
-        return np.load("phasenet_ncedc.npz")
-    except FileNotFoundError:
-        torch.hub.download_url_to_file(WAVEFORMS, "phasenet_ncedc.npz", progress=False)
-        return np.load("phasenet_ncedc.npz")
-
-
+code(weekkit.download_setup_cell(
+    imports="import numpy as np\nimport torch\nfrom torch import nn\n"
+            "from sklearn.metrics import accuracy_score\n",
+    const="WAVEFORMS", url=DATA_URL, filename="phasenet_ncedc.npz",
+    docstring="Read the waveform file, downloading it from the course release the first "
+              "time.",
+    unpack=f'''
 data = load()
 labelled = (data["polarity"] == "U") | (data["polarity"] == "D")
 
@@ -519,7 +529,7 @@ print("each recording:", vertical.shape[1], "samples =",
 print("the P arrives between", round(p_index.min() / SAMPLE_RATE, 2), "and",
       round(p_index.max() / SAMPLE_RATE, 2), "seconds in")
 print("largest value anywhere in the file:", round(float(np.abs(data["waveform"]).max()), 2))
-'''.strip("\n"))
+'''.strip("\n")))
 
 code(f"""
 assert vertical.shape == (len(up), {M['n_samples']}), \\
@@ -722,11 +732,9 @@ and run the cell — you will find out two questions from now, and a wrong guess
 is worth more than a right answer you were shown.
 """)
 
-code(f"""
-my_guess_seconds = 2
-
-print("I think", my_guess_seconds, "seconds of waveform after the pick will score highest")
-""")
+CELLS.extend(("code", s, a) for s, a in
+             weekkit.predict_cell("2", "seconds of waveform after the pick will score highest",
+                                  name="my_guess_seconds"))
 
 ask(f"""
 ### ✏️ Your turn 2
@@ -766,25 +774,37 @@ one line you sharpened in Your turn 1, and by how much?**
 """)
 
 answer(f"""
-def network_says_up(seconds, epochs={EPOCHS}):
+def network_says_up(seconds):
     \"\"\"Train a network on `seconds` of waveform after the pick; one True/False per held-out
     recording.\"\"\"
+    # 1. Cut the same stretch of trace out of every recording. A 1-D convolution reads a stack
+    #    of channels, so `unsqueeze(1)` inserts the length-1 channel dimension it expects.
     window = cut(seconds)
     x = torch.tensor(window).unsqueeze(1)
     x_train = x[is_train]
     x_test = x[is_test]
+    # 2. What the network has to learn is a sign, so the answer it is shown is a sign: +1 where
+    #    the first motion is up, -1 where it is down.
     y_train = torch.tensor(np.where(up_train, 1.0, -1.0).astype("float32")).reshape(-1, 1)
 
+    # 3. Fix the random numbers before the layers are built, so the network starts from the same
+    #    weights every time and a second run of this cell gives the same answer as the first.
     torch.manual_seed(0)
     net = nn.Sequential(
         nn.Conv1d(1, 8, 7, stride=2, padding=3), nn.ReLU(),
         nn.Conv1d(8, 16, 7, stride=2, padding=3), nn.ReLU(),
         nn.Flatten(),
+        # Each convolution steps two samples at a time, so the trace comes out a quarter as
+        # long as it went in; `Flatten` lays those 16 shortened channels end to end, which is
+        # where 16 x a quarter of the window comes from.
         nn.Linear(16 * ((window.shape[1] + 3) // 4), 1))
     optimiser = torch.optim.Adam(net.parameters(), lr=0.005)
     loss_function = nn.MSELoss()
 
-    for epoch in range(epochs):
+    # 4. Train for a fixed {EPOCHS} passes rather than stopping when the loss looks good enough.
+    #    The sweep further down trains one of these networks per window length and compares the
+    #    scores, and that comparison is only fair if every network got the same amount of training.
+    for epoch in range({EPOCHS}):
         order = torch.randperm(len(x_train))
         for start in range(0, len(x_train), 32):
             batch = order[start:start + 32]
@@ -792,6 +812,9 @@ def network_says_up(seconds, epochs={EPOCHS}):
             optimiser.zero_grad()
             loss.backward()
             optimiser.step()
+    # 5. Hand back one True/False per held-out recording, not the fraction it got right. A
+    #    fraction can only be compared with another fraction; the answers themselves can be
+    #    asked WHICH recordings the network missed, which the last two sections do.
     return net(x_test).detach().numpy().ravel() > 0
 
 
@@ -1049,9 +1072,12 @@ md(f"""
 The ground's first move is written in the three or four samples immediately after the P pick, and
 one line of arithmetic reads it correctly on {M['rule']:.1%} of the {M['n_test']} held-out
 recordings against {M['baseline']:.1%} for a rule that never looks at the waveform — so yes, a
-machine can tell, and it does not need to be much of a machine. What this notebook has deliberately not told
-you is where your own network landed on that scale, and that comparison, not the network, is the
-project.
+machine can tell, and it does not need to be much of a machine. Do not quote that {M['rule']:.1%}
+on its own, though: {M['n_flat'] / M['n_labelled']:.1%} of this file is a flat line at the
+clipping bound with no arrival in it at all, nothing can beat a coin toss on those, and *Your turn
+5* measured what the sharpened rule reads once they are set aside. Report both, or neither is the
+answer. What this notebook has deliberately not told you is where your own network landed on that
+scale, and that comparison, not the network, is the project.
 """)
 
 md(track_summary())
@@ -1266,11 +1292,19 @@ def track_ids(cells):
             c["id"] = f"{TRACK['id']}-q{q:02d}-answer"
         elif c["cell_type"] == "markdown" and "Double-click" in s:
             c["id"] = f"{TRACK['id']}-q{q:02d}-prose"
+        # The Predict pair carries an assert but is not a question's self-check: it sits BEFORE
+        # the first ✏️, so the generic branch below would key it to `q00` and collide with the
+        # loading check, which is the real q00. Its two cells get their own ids, and the guess
+        # cell matches in both copies -- solution `= 2`, student `= None`.
+        elif c["cell_type"] == "code" and re.search(r"(?m)^my_guess\w*\s*=", s):
+            c["id"] = f"{TRACK['id']}-predict"
+        elif c["cell_type"] == "code" and re.search(r"assert my_guess\w* is not None", s):
+            c["id"] = f"{TRACK['id']}-predict-check"
         elif c["cell_type"] == "code" and "assert " in s:
             c["id"] = f"{TRACK['id']}-q{q:02d}-check"
         else:
             c["id"] = f"{TRACK['id']}-c{i:03d}"
-    return cells
+    return weekkit.dedupe_ids(cells)
 
 
 def main():
@@ -1287,22 +1321,12 @@ def main():
     run_dir = pathlib.Path(tempfile.mkdtemp(prefix="trackT8-run-"))
     shutil.copy(LOCAL, run_dir / "phasenet_ncedc.npz")
 
-    # Execute with THIS interpreter, not with whatever the machine's `python3` kernelspec points
-    # at: this track needs torch, so its build interpreter is not the shared environment, and
-    # `-m nbconvert` would otherwise dispatch to a kernel without it.
-    kernel = run_dir / "kernels" / "eps88"
-    kernel.mkdir(parents=True)
-    (kernel / "kernel.json").write_text(json.dumps(
-        {"argv": [sys.executable, "-m", "ipykernel_launcher", "-f", "{connection_file}"],
-         "display_name": "Python 3", "language": "python"}))
-
+    # weekkit.execute pins the kernel to THIS interpreter — this track needs torch, which the
+    # shared base environment does not carry. run_dir is the cwd because the notebook keeps its
+    # 44 MB download beside itself.
     print(f"executing {sol_path.name} in {run_dir} ...")
     started = time.time()
-    r = subprocess.run([sys.executable, "-m", "nbconvert", "--to", "notebook",
-                        "--execute", "--inplace", "--ExecutePreprocessor.timeout=3600",
-                        "--ExecutePreprocessor.kernel_name=eps88", str(sol_path)],
-                       capture_output=True, text=True, cwd=run_dir,
-                       env={**os.environ, "JUPYTER_PATH": str(run_dir)})
+    r = weekkit.execute(sol_path, timeout=3600, cwd=run_dir)
     shutil.rmtree(run_dir, ignore_errors=True)
     if r.returncode:
         print(r.stderr[-6000:])

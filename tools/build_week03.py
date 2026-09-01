@@ -273,15 +273,20 @@ sentence about it, so those have a second cell as well.
 4. Where does old ocean floor end up?
 """)
 
-setup = weekkit.SETUP_CELL.format(
+setup = weekkit.setup_cell(
     imports="import numpy as np\n",
     figsize="(7, 4)",
     cache_base=CACHE_BASE,
-    signature="start, end, minmag",
-    docstring="Fetch one window of the USGS earthquake catalogue; fall back to the cached copy.",
-    url_expr=('f"https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&orderby=time-asc"\n'
-              '                       f"&starttime={start}&endtime={end}&minmagnitude={minmag}"'),
-    cache_expr='f"week03_{start}_{end}_M{minmag}.csv"',
+    # NO PARAMETERS. This week reads ONE window and reads it at one call site, so `start`, `end`
+    # and `minmag` were three names a student had to carry for a query that never varies -- and
+    # week 3 is early enough that every name costs. Weeks 1, 5 and 12 keep the parameter form
+    # because the STUDENT changes the query there, which is the teaching; here nobody does.
+    signature="",
+    docstring="Fetch this week's window of the USGS earthquake catalogue; fall back to the "
+              "cached copy.",
+    url_expr=('"https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&orderby=time-asc"\n'
+              f'                       "&starttime={START}&endtime={END}&minmagnitude={MINMAG}"'),
+    cache_expr=f'"{CACHE_NAME}"',
     unpack=f'''
 def elevation(planet):
     """Read one planet's 1-degree elevation grid: row 0 is the north, column 0 is -180 degrees."""
@@ -294,7 +299,7 @@ earth = elevation("earth")
 mars = elevation("mars")
 coast = pd.read_csv(CACHE + "/coastlines.csv")
 
-quakes = load("{START}", "{END}", {MINMAG})
+quakes = load()
 bins = np.arange(-10000, 21000, 250)       # 250-metre bins, the same ones for both planets
 print("elevation grids:", earth.shape, mars.shape, " catalogue:", quakes.shape)
 '''.strip("\n"))
@@ -380,9 +385,10 @@ What fraction of Earth's solid surface lies below sea level? Commit to a number 
 the next cell — change `my_guess` to whatever you think, then run it.
 """)
 
-code("""
-my_guess = 0.70
+CELLS.extend(("code", s, a) for s, a in
+             weekkit.predict_cell("0.70", "of Earth's solid surface lies below sea level"))
 
+code("""
 below = earth < 0
 fraction_below = below.sum() / earth.size
 
@@ -769,7 +775,7 @@ mars = elevation("mars")
 below = earth < 0
 fraction_below = below.sum() / earth.size
 
-quakes = load("{START}", "{END}", {MINMAG})
+quakes = load()
 quakes["year"] = quakes["time"].str[:4]
 quakes = quakes[["year", "depth", "mag", "type", "place"]]"""))
 
@@ -981,9 +987,7 @@ def main():
     sol_path.write_text(json.dumps(sol, indent=1) + "\n")
 
     print(f"executing {sol_path.name} ...")
-    r = subprocess.run([sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook",
-                        "--execute", "--inplace", "--ExecutePreprocessor.timeout=600",
-                        str(sol_path)], capture_output=True, text=True, cwd=ROOT)
+    r = weekkit.execute(sol_path, timeout=600)
     if r.returncode:
         print(r.stderr[-4000:])
         sys.exit("the solution did not execute")

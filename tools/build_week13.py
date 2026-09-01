@@ -191,41 +191,47 @@ def first_trigger(ratio, threshold):
     return int(above[0])
 
 
-def sta_lta_score(short, long, threshold):
-    """Fraction of test traces STA/LTA places within half a second of the analyst's pick."""
-    hits = 0
+# One helper, returning ONE True/False per held-out trace. It used to return the FRACTION, which
+# is a scalar, and the notebook needs the vector three separate times — so "run STA/LTA on every
+# held-out trace and keep its first trigger" was written out by hand twice more, once in the
+# class cell that splits the test set by arrival time and once by the STUDENT in Your turn 6,
+# whose prompt had to say "the way sta_lta_score does, except keeping one True/False per
+# recording instead of one total". A helper the week hands out and then cannot use is week 1's
+# `columns()` again. Take `.mean()` wherever the fraction is what is wanted.
+def sta_lta_hits(short, long, threshold):
+    """True/False per held-out trace: did STA/LTA land within half a second of the pick?"""
+    hits = []
     for i in np.nonzero(~is_train)[0]:
         pick = first_trigger(sta_lta(strength[i], short, long), threshold)
-        if pick is not None and abs(pick - p_index[i]) <= 50:
-            hits = hits + 1
-    return hits / M["n_test"]
+        hits.append(pick is not None and abs(pick - p_index[i]) <= 50)
+    return np.array(hits)
 
 
-M["stalta_textbook"] = round(sta_lta_score(50, 500, 3), 3)
+textbook_ok = sta_lta_hits(50, 500, 3)
+M["stalta_textbook"] = round(float(textbook_ok.mean()), 3)
 SWEEP = [(30, 300, 3), (20, 200, 3), (50, 500, 5)]
-M["stalta_sweep"] = {f"{a}, {b}, {c}": round(sta_lta_score(a, b, c), 3) for a, b, c in SWEEP}
+sweep_hits = {f"{a}, {b}, {c}": sta_lta_hits(a, b, c) for a, b, c in SWEEP}
+M["stalta_sweep"] = {k: round(float(v.mean()), 3) for k, v in sweep_hits.items()}
 M["stalta_best_setting"], M["stalta_best"] = max(M["stalta_sweep"].items(), key=lambda kv: kv[1])
+best_ok = sweep_hits[M["stalta_best_setting"]]
 
 # WHERE the textbook setting's misses are, which is the whole lesson of this section: with
 # long=500 the ratio is pinned at zero for the first five seconds, so a P arriving before 4.5 s
 # cannot be found however strong it is. Split the held-out set on that and score each half.
 #
-# BOTH settings are scored on BOTH halves, in one pass. The old version scored only the textbook
-# setting here and then set its 0.602 on the late traces beside the sweep's 0.602 over all 741 —
-# two different denominators, and two rounded numbers agreeing is a coincidence, not a
-# demonstration. The claim "off the dead zone they are the same picker" is the load-bearing one
-# in this section, so the notebook now runs the comparison it rests on.
+# BOTH settings are scored on BOTH halves. The old version scored only the textbook setting here
+# and then set its 0.602 on the late traces beside the sweep's 0.602 over all 741 — two different
+# denominators, and two rounded numbers agreeing is a coincidence, not a demonstration. The claim
+# "off the dead zone they are the same picker" is the load-bearing one in this section, so the
+# notebook runs the comparison it rests on — with `sta_lta_hits`, which is exactly that scoring
+# pass. The loop below survives only for the two quantities that are NOT it: whether the textbook
+# setting triggered on the S instead, and whether it triggered at all.
 BEST = tuple(int(x) for x in M["stalta_best_setting"].split(", "))
-textbook_ok, best_ok, on_the_s, never = [], [], [], []
+on_the_s, never = [], []
 for i in np.nonzero(~is_train)[0]:
     pick = first_trigger(sta_lta(strength[i], 50, 500), 3)
-    tuned = first_trigger(sta_lta(strength[i], BEST[0], BEST[1]), BEST[2])
     never.append(pick is None)
-    textbook_ok.append(pick is not None and abs(pick - p_index[i]) <= 50)
-    best_ok.append(tuned is not None and abs(tuned - p_index[i]) <= 50)
     on_the_s.append(pick is not None and abs(pick - s_index[i]) <= 50)
-textbook_ok = np.array(textbook_ok)
-best_ok = np.array(best_ok)
 on_the_s = np.array(on_the_s)
 never = np.array(never)
 early = p_test < 450                    # the long window has not filled until sample 500
@@ -473,17 +479,21 @@ def first_trigger(ratio, threshold):
         return None
     return int(above[0])'''
 
-# Written once here because it is used in a class cell AND named by Your turn 6, which a student
-# may reach on a cold kernel: a checkpoint that rebuilds the picker but not the function that
-# scores it is a NameError from the prompt's own words.
-SRC_STALTA_SCORE = '''def sta_lta_score(short, long, threshold):
-    """Fraction of test traces STA/LTA places within half a second of the analyst's pick."""
-    hits = 0
+# Written once here because it is used in three class cells AND named by Your turn 6, which a
+# student may reach on a cold kernel: a checkpoint that rebuilds the picker but not the function
+# that scores it is a NameError from the prompt's own words.
+#
+# It hands back ONE True/False per held-out trace rather than a fraction, and `.mean()` turns that
+# into the fraction wherever the fraction is what is wanted. The scalar version forced the same
+# loop to be written out again in the cell that splits the test set by arrival time, and a third
+# time by the student in Your turn 6.
+SRC_STALTA_HITS = '''def sta_lta_hits(short, long, threshold):
+    """True/False per held-out trace: did STA/LTA land within half a second of the pick?"""
+    hits = []
     for i in np.nonzero(~is_train)[0]:
         pick = first_trigger(sta_lta(strength[i], short, long), threshold)
-        if pick is not None and abs(pick - p_index[i]) <= 50:
-            hits = hits + 1
-    return hits / (~is_train).sum()'''
+        hits.append(pick is not None and abs(pick - p_index[i]) <= 50)
+    return np.array(hits)'''
 
 SRC_TARGET = f'''def make_target(pick_index, sigma):
     """A bump centred on each trace's P arrival: what we want the network to output."""
@@ -519,6 +529,8 @@ def within_half_second(picks, truth):
 
 def train_picker(sigma=20, epochs=25):
     """Train the picker; hand back the model, and the loss and test score after every epoch."""
+    # 1. Set up. The seed fixes the random weights the network starts from, so the cell gives
+    #    the same answer every time it runs and your numbers match the ones written below.
     torch.manual_seed(0)
     model = make_picker()
     optimiser = torch.optim.Adam(model.parameters(), lr=0.005)
@@ -526,22 +538,32 @@ def train_picker(sigma=20, epochs=25):
     y_train = torch.tensor(make_target(p_index[is_train], sigma))
     losses, scores = [], []
     for epoch in range(epochs):
+        # 2. One epoch. Shuffle the traces, then hand them over 32 at a time rather than all
+        #    at once: every small batch gets its own step, so one pass improves the weights
+        #    many times over instead of once.
         order = torch.randperm(len(x_train))
         total = 0.0
         for start in range(0, len(x_train), 32):
             batch = order[start:start + 32]
+            # 3. The step itself: measure the miss, work out which way each weight would have
+            #    to move, then move them. `zero_grad` clears those directions before
+            #    `backward` works out new ones, because PyTorch adds them up — leave it out
+            #    and every batch is still carrying the ones before it.
             loss = loss_function(model(x_train[batch]).squeeze(1), y_train[batch])
             optimiser.zero_grad()
             loss.backward()
             optimiser.step()
             total = total + loss.item() * len(batch)
+        # 4. Record both at the end of each epoch: the loss on what it trained on, and the
+        #    score on traces it has never seen. Plotted against the epoch, those two are the
+        #    learning curve, and they are the only view you get of what training is doing.
         losses.append(total / len(x_train))
         scores.append(within_half_second(picks_from(model, x_test), p_test))
     return model, losses, scores'''
 
 # The checkpoint rebuilds everything the homework touches, silently: the split, the classical
 # picker and the function that scores it, the network apparatus and the trained model itself.
-SRC_CHECKPOINT = "\n\n".join([SRC_SPLIT, SRC_STRENGTH, SRC_STALTA, SRC_STALTA_SCORE, SRC_TARGET,
+SRC_CHECKPOINT = "\n\n".join([SRC_SPLIT, SRC_STRENGTH, SRC_STALTA, SRC_STALTA_HITS, SRC_TARGET,
                               SRC_MODEL, SRC_TRAIN,
                               "picker, losses, scores = train_picker()\n"
                               "net_picks = picks_from(picker, x_test)"])
@@ -585,31 +607,22 @@ when more training stops buying anything.
 
 **Eight places where you write something: five in class, three at home.** Each one is headed
 *Your turn*, with an empty cell under it.
+
+**The four questions, in order:**
+
+1. What is in a seismogram, and why is the arrival time the number a seismologist wants?
+2. Was there an earthquake at all — and does loudness say when it started?
+3. How well can a picker do with numbers we choose by hand?
+4. Can a machine that chooses its own numbers beat it?
 """)
 
-code(f'''
-import numpy as np
-import matplotlib.pyplot as plt
-import torch
-from torch import nn
-from sklearn.linear_model import LinearRegression
-
-# house style, set once, so every plot cell below holds only what matters
-plt.rcParams.update({{"figure.figsize": (7, 4), "figure.dpi": 110,
-                     "axes.grid": True, "grid.alpha": 0.3, "axes.axisbelow": True}})
-
-WAVEFORMS = ("{DATA_URL}")
-
-
-def load():
-    """Read the waveform file, downloading it from the course release the first time."""
-    try:
-        return np.load("phasenet_ncedc.npz")
-    except FileNotFoundError:
-        torch.hub.download_url_to_file(WAVEFORMS, "phasenet_ncedc.npz", progress=False)
-        return np.load("phasenet_ncedc.npz")
-
-
+code(weekkit.download_setup_cell(
+    imports="import numpy as np\nimport torch\nfrom torch import nn\n"
+            "from sklearn.linear_model import LinearRegression\n",
+    const="WAVEFORMS", url=DATA_URL, filename="phasenet_ncedc.npz",
+    docstring="Read the waveform file, downloading it from the course release the first "
+              "time.",
+    unpack='''
 # 42 MB of waveforms — too big to keep beside the notebook, so it arrives from a release of the
 # course repository rather than from the repository itself, and is kept once it has arrived.
 data = load()
@@ -635,11 +648,11 @@ print("P arrives between", round(p_index.min() / SAMPLE_RATE, 2), "and",
       round(p_index.max() / SAMPLE_RATE, 2), "seconds in")
 print("samples sitting exactly on the ±10 cut-off:",
       round((np.abs(waveform) >= 10).mean(), 3))
-'''.strip("\n"))
+'''.strip("\n")))
 
 # --- section 1 -------------------------------------------------------------
 md(f"""
-## Twenty seconds of ground motion
+## What is in a seismogram, and why is the arrival time the number a seismologist wants?
 
 `waveform` holds {M['n_traces']:,} recordings. Each one is a small array of its own: **3 rows**,
 because a seismometer measures the ground moving east, north and up-down at the same time, and
@@ -907,7 +920,7 @@ being quiet — and not on how big it gets.
 
 # --- section 3 -------------------------------------------------------------
 md("""
-## The classical automatic picker
+## How well can a picker do with numbers we choose by hand?
 
 Seismology has had an automatic answer to this for decades, and it is two averages and a
 division. Take the average power over a **short** window ending at the current sample, take it
@@ -944,24 +957,26 @@ second of the analyst's? Commit to a number before you run the next cell — cha
 whatever you think, then run it.
 """)
 
+CELLS.extend(("code", s, a) for s, a in
+             weekkit.predict_cell("0.85", "of the held-out recordings get a pick within half a "
+                                          "second of the analyst's"))
+
 code(f"""
-my_guess = 0.85
-
-
-{SRC_STALTA_SCORE}
+{SRC_STALTA_HITS}
 
 
 print("you guessed:", my_guess)
 print("textbook setting (0.5 s, 5 s, threshold 3):",
-      round(sta_lta_score(50, 500, 3), 3))
+      round(sta_lta_hits(50, 500, 3).mean(), 3))
 """)
 
 ask(f"""
 ### ✏️ Your turn 3
 
-One setting is not a result. Run `sta_lta_score` on three more settings and print all three, so
-that we know whether {M['stalta_textbook']:.3f} is what STA/LTA can do or merely what this
-particular setting does. Try these:
+One setting is not a result. Run `sta_lta_hits` on three more settings and print the fraction each
+one gets, so that we know whether {M['stalta_textbook']:.3f} is what STA/LTA can do or merely what
+this particular setting does. `sta_lta_hits` hands back one True/False per held-out trace, so
+`.mean()` on it is the fraction. Try these:
 
 | short | long | threshold |
 |---|---|---|
@@ -981,7 +996,7 @@ instant.)
 answer(f"""
 stalta_scores = []
 for short, long, threshold in [(30, 300, 3), (20, 200, 3), (50, 500, 5)]:
-    score = sta_lta_score(short, long, threshold)
+    score = sta_lta_hits(short, long, threshold).mean()
     stalta_scores.append(score)
     print(short, long, threshold, "->", round(score, 3))
 
@@ -990,7 +1005,7 @@ print("best of the four:", round(best_stalta, 3))
 """, f"""
 assert max(stalta_scores) > {M['stalta_textbook']}, \\
     "at least one of these three should beat the textbook setting's {M['stalta_textbook']}; " \\
-    "if none does, check the argument order — sta_lta_score(short, long, threshold)"
+    "if none does, check the argument order — sta_lta_hits(short, long, threshold)"
 print("✓ the sweep — STA/LTA's best of four settings is",
       round(100 * best_stalta, 1), "%")
 """)
@@ -1015,20 +1030,18 @@ by side were taken over the same recordings.
 """)
 
 code(f"""
-textbook_ok = []
-best_ok = []
+textbook_ok = sta_lta_hits(50, 500, 3)
+best_ok = sta_lta_hits({BEST[0]}, {BEST[1]}, {BEST[2]})        # your winner from Your turn 3
+
+# two things `sta_lta_hits` does not answer: did the textbook setting land on the S instead, and
+# did it trigger at all? Both need the pick itself rather than whether it was right.
 on_the_s = []
 never = []
 for i in np.nonzero(~is_train)[0]:
     pick = first_trigger(sta_lta(strength[i], 50, 500), 3)
-    tuned = first_trigger(sta_lta(strength[i], {BEST[0]}, {BEST[1]}), {BEST[2]})  # your winner
     never.append(pick is None)
-    textbook_ok.append(pick is not None and abs(pick - p_index[i]) <= 50)
-    best_ok.append(tuned is not None and abs(tuned - p_index[i]) <= 50)
     on_the_s.append(pick is not None and abs(pick - s_index[i]) <= 50)
 
-textbook_ok = np.array(textbook_ok)
-best_ok = np.array(best_ok)
 on_the_s = np.array(on_the_s)
 never = np.array(never)
 early = p_index[~is_train] < 450        # a P this early is gone before the ratio starts moving
@@ -1087,10 +1100,8 @@ That is still the number to beat. Anything we build now has to beat {M['stalta_b
 have built decoration.
 """)
 
-# --- section 4 -------------------------------------------------------------
+# --- section 4: the second half of spine question 3 -------------------------
 md(f"""
-## Sliding a pattern-detector along the signal
-
 Look again at what each of STA/LTA's two averages is. Take a small list of weights — one over the
 window length, repeated — line it up against the samples ending at the current one, multiply and
 add. Then move along one sample and do it again. That sliding-and-summing has a name: it is a
@@ -1206,7 +1217,7 @@ let it choose the numbers.
 
 # --- section 5 -------------------------------------------------------------
 md(f"""
-## Letting the machine choose the numbers
+## Can a machine that chooses its own numbers beat it?
 
 **{WORDS['Neural network']}** That is all a neural network is. Take the piece it stacks first.
 **{WORDS['Perceptron']}** That is a **perceptron**. Put several of them side by side, feed their
@@ -1305,10 +1316,8 @@ picker, losses, scores = train_picker()
 print("trained for", len(losses), "epochs")
 """)
 
-# --- section 6 -------------------------------------------------------------
+# --- section 6: the second half of spine question 4 -------------------------
 md("""
-## Watching it learn
-
 Two lines, on two axes because they are in different units. On the left, the loss on the data the
 network trained on. On the right, the fraction of **held-out** traces it picks within half a
 second — recordings of earthquakes it has never seen.
@@ -1443,7 +1452,7 @@ open.
 
 Two of the three train a network from scratch, so start them and let them run. If you restarted
 the kernel since class, run the checkpoint cell first: it rebuilds everything class built — the
-held-out split, the classical picker and `sta_lta_score` that scores it, the target, the network
+held-out split, the classical picker and `sta_lta_hits` that scores it, the target, the network
 and the trained model itself — and prints nothing. Because it retrains, it is the slow cell rather
 than a free one.
 """)
@@ -1462,10 +1471,12 @@ Split the held-out recordings in half at the median of their `snr` and report fo
 network's accuracy and STA/LTA's on the quiet half, and both again on the loud half. Score
 STA/LTA at its best setting from Your turn 3 — short {M['stalta_best_setting'].split(', ')[0]},
 long {M['stalta_best_setting'].split(', ')[1]}, threshold
-{M['stalta_best_setting'].split(', ')[2]} — the way `sta_lta_score` does, except keeping one
-True/False per recording instead of one total.
+{M['stalta_best_setting'].split(', ')[2]} — with `sta_lta_hits`, which already hands back the one
+True/False per held-out recording this part needs.
 
-Finish by printing how much accuracy each method loses going from the loud half to the quiet half.
+Print how much accuracy each method loses going from the loud half to the quiet half. Then answer
+the question this part opened with, in one more printed line: is the network ahead everywhere, or
+only where the signal is faint — and quote those two losses as your reason.
 
 **Use these names**, because the self-check looks for them: `classic_ok` and `network_ok`, each
 one True/False per held-out recording, and `quiet` for the mask picking out the quiet half.
@@ -1475,14 +1486,9 @@ answer(f"""
 snr_test = snr[~is_train]
 quiet = snr_test < np.median(snr_test)
 
-classic_ok = []
-for i in np.nonzero(~is_train)[0]:
-    pick = first_trigger(sta_lta(strength[i], {M['stalta_best_setting'].split(', ')[0]},
-                                 {M['stalta_best_setting'].split(', ')[1]}),
-                         {M['stalta_best_setting'].split(', ')[2]})
-    classic_ok.append(pick is not None and abs(pick - p_index[i]) <= 50)
-
-classic_ok = np.array(classic_ok)
+classic_ok = sta_lta_hits({M['stalta_best_setting'].split(', ')[0]},
+                          {M['stalta_best_setting'].split(', ')[1]},
+                          {M['stalta_best_setting'].split(', ')[2]})
 network_ok = np.abs(net_picks - p_test) <= 50
 
 print("quiet half,", quiet.sum(), "recordings: network", round(network_ok[quiet].mean(), 3),
@@ -1492,6 +1498,12 @@ print("loud half, ", (~quiet).sum(), "recordings: network", round(network_ok[~qu
 print("lost going quiet: network",
       round(network_ok[~quiet].mean() - network_ok[quiet].mean(), 3),
       " STA/LTA", round(classic_ok[~quiet].mean() - classic_ok[quiet].mean(), 3))
+
+print("The network is ahead on both halves, but its lead is made on the quiet one: going from",
+      "the loud half to the quiet half it gives up",
+      round(network_ok[~quiet].mean() - network_ok[quiet].mean(), 3),
+      "while STA/LTA gives up", round(classic_ok[~quiet].mean() - classic_ok[quiet].mean(), 3),
+      "so the faint arrivals are where the learned picker earns its keep.")
 """, """
 assert len(classic_ok) == len(network_ok) == len(quiet), \
     "one True/False per held-out recording, for both methods"
@@ -1638,23 +1650,11 @@ def main():
     run_dir = pathlib.Path(tempfile.mkdtemp(prefix="wk13-run-"))
     shutil.copy(LOCAL, run_dir / "phasenet_ncedc.npz")
 
-    # Execute with THIS interpreter, not with whatever the machine's `python3` kernelspec
-    # points at. Week 13 is the only week that needs torch, so it is the only week whose build
-    # interpreter is not the shared environment — and `-m jupyter nbconvert` dispatches to
-    # whichever `jupyter-nbconvert` is first on PATH, which silently ran the wrong Python and
-    # failed on `import torch`.
-    kernel = run_dir / "kernels" / "eps88"
-    kernel.mkdir(parents=True)
-    (kernel / "kernel.json").write_text(json.dumps(
-        {"argv": [sys.executable, "-m", "ipykernel_launcher", "-f", "{connection_file}"],
-         "display_name": "Python 3", "language": "python"}))
-
+    # weekkit.execute pins the kernel to THIS interpreter — this week needs torch, which
+    # the shared base environment does not carry. run_dir is the cwd because the notebook
+    # keeps its 42 MB download beside itself.
     print(f"executing {sol_path.name} in {run_dir} ...")
-    r = subprocess.run([sys.executable, "-m", "nbconvert", "--to", "notebook",
-                        "--execute", "--inplace", "--ExecutePreprocessor.timeout=2400",
-                        "--ExecutePreprocessor.kernel_name=eps88", str(sol_path)],
-                       capture_output=True, text=True, cwd=run_dir,
-                       env={**os.environ, "JUPYTER_PATH": str(run_dir)})
+    r = weekkit.execute(sol_path, timeout=2400, cwd=run_dir)
     shutil.rmtree(run_dir, ignore_errors=True)
     if r.returncode:
         print(r.stderr[-6000:])

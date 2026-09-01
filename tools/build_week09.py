@@ -638,11 +638,8 @@ Change `my_guess` to 1, 2 or 3 and run the cell — committing to a wrong answer
 than being told the right one.
 """)
 
-code("""
-my_guess = 3
-
-print("I think degree", my_guess, "will come closest")
-""")
+CELLS.extend(("code", s, a) for s, a in
+             weekkit.predict_cell("3", "is the degree that will come closest"))
 
 ask(f"""
 ### ✏️ Your turn 2
@@ -1107,9 +1104,7 @@ def main():
     sol_path.write_text(json.dumps(sol, indent=1) + "\n")
 
     print(f"executing {sol_path.name} ...")
-    r = subprocess.run([sys.executable, "-m", "jupyter", "nbconvert", "--to", "notebook",
-                        "--execute", "--inplace", "--ExecutePreprocessor.timeout=600",
-                        str(sol_path)], capture_output=True, text=True, cwd=ROOT)
+    r = weekkit.execute(sol_path, timeout=600)
     if r.returncode:
         print(r.stderr[-4000:])
         sys.exit("the solution did not execute")
