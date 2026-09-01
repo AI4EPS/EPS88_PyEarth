@@ -740,7 +740,7 @@ plain_words:
   - {idea: "Monte Carlo",          module: S2,  words: "Make up a world where the effect is absent, a thousand times, and see how often chance alone beats what you measured."}
   - {idea: "Linear regression",    module: ML1, words: "Draw the best straight line. Best means the smallest total miss."}
   - {idea: "Fit through the origin", module: ML1, words: "Sometimes physics already knows one point on the line. Make the line go through it."}
-  - {idea: "Log axes",             module: S3,  words: "When the values span factors of a thousand, plot the exponents instead and a curve becomes a line."}
+  - {idea: "Log axes",             module: D4,  words: "When the values span factors of a thousand, plot the exponents instead and a curve becomes a line."}
   - {idea: "Power law",            module: S3,  words: "Every step up in size divides the count by the same factor — which lets you predict the sizes you have never seen."}
   - {idea: "Bootstrap",            module: S4,  words: "Ask the data the same question a thousand times, using a different random slice of itself each time."}
   - {idea: "Confidence interval",  module: S4,  words: "Not one number but the range your number would have wandered over, had the world rolled differently."}

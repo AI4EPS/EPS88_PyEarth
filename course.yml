@@ -79,7 +79,11 @@ calendar:
 # module's extension into assigned reading — it is written and published either way.
 schedule:
   - n: 1
-    frozen_until: 2026-09-09        # the Wednesday after week 1's deadline
+    frozen_until: 2026-09-09        # INCLUSIVE: the late deadline, Wed 23:59, not the Sunday
+                                    # due date. A late submitter is still holding the old
+                                    # notebook on the 9th, so nothing may be deployed until
+                                    # the 10th. Build the repair earlier if you like; the
+                                    # freeze is on DEPLOYING, which is what would hurt.
     frozen_because: >
       Taught 2026-08-31. 46 students hold this notebook, nbgitpuller gives their copy priority
       on a merge, and the deployed Gradescope bundle stores its released self-checks — so any
@@ -339,6 +343,14 @@ schedule:
       constants:
         vei: {tambora: 7, st_helens: 5}   # logarithmic: a hundredfold in erupted volume
         earthquake_energy: "log10 E = 1.5M + 4.8 — an M9 releases ~32,000x an M6"
+      authoritative: >
+        The Smithsonian GVP WFS layer names are unversioned and the reply carries no data
+        version (version=1.0.0 in the URL is the WFS protocol), and GVP edits VEI values and
+        dates continuously — so the query cannot be pinned. data/week04_gvp_eruptions.csv and
+        data/week04_gvp_volcanoes.csv are AUTHORITATIVE for every number in week 4's prose and
+        model answers; the notebook still reads live, and the Setup cell tells students that a
+        slightly different live number is the archive having moved. The same applies to week 7
+        and track T3, which read the same layers.
       verified: 2026-08-30
     exercise: "Colour the earthquakes by depth, then overlay the trenches. Say where the deep events are and why they sit where they do — you are looking at subducting slabs."
     note: >
@@ -453,7 +465,11 @@ schedule:
       # build read `M3.5_to_6.9` as the sample, dropped the five M7s from `mags`, and every count
       # and fit below was computed on the truncated catalogue. It is the training range.
       sample: >
-        EVERY event the slice returns, M7 and above INCLUDED — 6,287 rows. The cumulative counts
+        EVERY EARTHQUAKE the slice returns, M7 and above INCLUDED — 6,263 of the 6,287 rows. The
+        query carries no `eventtype`, so it also returns 16 underground nuclear tests at the
+        Nevada Test Site (8 of them M5.0+, the thin top of the class fitting range), 6 quarry
+        blasts and 2 sonic booms; the notebook drops all 24 visibly, in one line, and says why.
+        The cumulative counts
         are of the whole catalogue, because a point labelled "number at or above magnitude 6" has
         to be that number: without the M7s it reads 16 where California holds 21, and at 6.5 it
         reads 5 where California holds 10. Removing them steepens the line, lowers the predicted
@@ -465,7 +481,12 @@ schedule:
         back, and it is what makes magnitude 7 an extrapolation: the line is measured where the
         data is thick and then asked about a level it was never fitted at.
       expect:
-        M3.5_to_6.9: 6282        # the training-range slice; the SAMPLE is 6287, the five M7s too
+        earthquakes: 6263        # of 6,287 rows returned: the query carries no eventtype, so it
+                                 # also hands back 16 Nevada Test Site nuclear tests (8 of them
+                                 # M5.2+, inside every fitting range), 6 quarry blasts and 2 sonic
+                                 # booms. The notebook drops all 24 VISIBLY and says why — those
+                                 # rows are week 10's subject, and &eventtype=earthquake would
+                                 # delete the connection silently. The five M7s stay in.
         M7_plus: 5
         # BUILD THE MAGNITUDE LEVELS FROM INTEGERS, not np.arange: arange(3.5, 5.05, 0.1)[3] is
         # 3.8000000000000003, so `mags >= level` silently drops all 214 events recorded at exactly
@@ -475,7 +496,10 @@ schedule:
         # 1.54 — the numbers this pin and the audit both carried until 2026-08-31 — and the last
         # of those is 43% low, because at level 6.0 the truncation removes a quarter of the point
         # the line's top end rests on.
-        fits: {"M3.5-5.0": 1.49, "M4.0-5.5": 1.87, "M4.5-6.0": 2.21}   # predicted M7+ in 36 years
+        fits: {"M3.5-5.0": 1.37, "M4.0-5.5": 1.59, "M4.5-6.0": 2.15}   # predicted M7+ in 36 years
+        # RE-MEASURED 2026-08-31 on earthquakes only. The 1.49/1.87/2.21 this block held
+        # until then were fitted with the nuclear tests still in the catalogue. Week 8
+        # fits the same three ranges on the same file and reproduces all three exactly.
       verified: 2026-08-31
     exercise: "Fit Gutenberg-Richter on M3.5-5.0 in California, predict how many M7+ to expect in 36 years, then count the real ones. Write down whether you think your model failed — you cannot settle it yet."
     note_critical: >
@@ -523,6 +547,20 @@ schedule:
 
     pinned:
       slice: "San Francisco sea level, 1,503 monthly means 1900-2025"
+      earthquake_sample: >
+        The earthquake half reads WEEK 7'S FILE — the identical query, minmagnitude=3.5 with NO
+        maxmagnitude, 6,287 rows — and drops the 24 non-earthquakes (16 nuclear tests at the
+        Nevada Test Site, 6 quarry blasts, 2 sonic booms) VISIBLY in the notebook, leaving 6,263.
+        The five M7+ events STAY IN the counted catalogue: a cumulative count is a property of the
+        catalogue, not of a subsample. The query used to carry &maxmagnitude=6.9, which
+        notes/dataset-audit/usgs-fdsn.md §4.2 forbids by name, and it carried the blasts as well.
+        Fitted at 4.0-5.5 the three catalogues give 1.64 (as shipped), 1.87 (untruncated, blasts
+        in) and 1.59 (clean) — the two faults pushed opposite ways, which is why the wrong number
+        looked right.
+      training_range: >
+        The MAGNITUDE RANGE the line is fitted over — 4.0-5.5 in class, which is week 7's middle
+        alternative and returns week 7's own 1.59. The homework's forks, 3.5-5.0 and 4.5-6.0,
+        return 1.37 and 2.15, again matching week 7 exactly.
       expect:
         slope_mm_per_yr: 1.965
         ci95_iid: [1.877, 2.050]
@@ -540,12 +578,15 @@ schedule:
       whole YEARS roughly doubles it to [1.79, 2.14]. Teach the IID version, then show the block
       version as the extension — the interval getting WIDER when you respect the data's structure
       is the honest lesson.
-      Also verified: the California M7 forecast gives a CI of [1.01, 2.50] against 5 observed.
+      Also verified: the California M7 forecast is 1.59 M7+ per 36 years with a 95% CI of
+      [0.96, 2.37] against 5 observed, fitted 4.0-5.5 on the whole catalogue with the
+      non-earthquakes dropped — week 7's own middle answer, to the digit.
       ⚠️ CORRECTED 2026-08-31 — this line used to end "which turns an ambiguous 'maybe
       unlucky' into a model that is demonstrably failing". That is the error the week
-      EXISTS to teach against: [1.01, 2.50] is an interval on a RATE and 5 is a COUNT, and
+      EXISTS to teach against: an interval on a RATE and 5 is a COUNT, and
       comparing them is a category error. The count interval is [0, 5], so 5 sits on its
-      edge, not outside it. Takeaway 3 now says check you are comparing like with like
+      edge, not outside it. The rate figures themselves were corrected the same day: they
+      were [1.01, 2.50] on a catalogue truncated at M6.9 with the nuclear tests still in. Takeaway 3 now says check you are comparing like with like
       before calling a model broken. The builder was right to disobey this note.
     takeaways:
       - "A single number is not an answer. Report an interval."
@@ -562,10 +603,20 @@ schedule:
     pinned:
       slice: "NOAA Mauna Loa monthly, 1958-03 to 2026-07, live"
       expect:
-        holdout: "fit 1958-2000 only, then predict 2026"
-        predicted_2026_ppm: {linear: 400.8, quadratic: 426.6, cubic: 388.3}
-        observed_2026_ppm: 430.3           # cubic is WORSE than linear: too flexible extrapolates
-      verified: 2026-08-30
+        holdout: "fit the COMPLETE years 1959-2000 only, then predict 2025"
+        predicted_2025_ppm: {linear: 400.8, quadratic: 423.6, cubic: 392.9}
+        observed_2025_ppm: 427.35          # cubic is WORSE than linear: too flexible extrapolates
+      verified: 2026-08-31
+      verified_note: >
+        ⚠️ CORRECTED 2026-08-31. This block was a MIXTURE of three readings and no single
+        computation produced it: 400.8 is the complete-years fit predicting 2025, 426.6 and 430.3
+        are the all-years fit predicting 2026, and 388.3 reproduces under none of the four
+        combinations. The notebook fits complete years and predicts 2025, and is right. The
+        observed 430.3 was worse than a mismatch — it recorded as verified truth the average of
+        seven months of 2026, which is exactly the part-year seasonal bias the notebook measures
+        at +1.15 ppm and spends a section eliminating. Reproduce with np.polyfit on
+        (year - 1959), as tools/build_week09.py does; raw powers of the year are numerically
+        hopeless and make all three degrees agree near 400.
     exercise: "Fit degrees 1 to 9, plot train and test error against degree, and pick a degree with a reason."
     note: >
       The same failure twice: the Hubble line breaks at high z, which is the accelerating
@@ -577,14 +628,14 @@ schedule:
         data: "NOAA Mauna Loa monthly, 1958-03 to 2026-07, live, a few KB"
         the_fork: "How flexible a model? Linear, quadratic or cubic?"
         what_happens: >
-          HOLD OUT 26 YEARS. Fit only 1958-2000, then predict 2026 and check. linear -> 400.8 ppm (error -29.5) · quadratic -> 426.6 (error -3.7) · cubic -> 388.3 (error -42.0), WORSE THAN LINEAR. Observed 430.3. Too simple misses the acceleration; too flexible extrapolates catastrophically. This is bias-variance made physical rather than described, and the stake is real: on the 1958-2000 holdout fit, linear reaches 500 ppm in 2100 and quadratic in 2051 — a half-century decided by a modelling choice. (Fitting the FULL record instead moves the linear crossing to 2075; say which fit a number came from, every time.)
+          HOLD OUT 25 YEARS. Fit only the complete years 1959-2000, then predict 2025 and check. linear -> 400.8 ppm (error -26.5) · quadratic -> 423.6 (error -3.7) · cubic -> 392.9 (error -34.5), WORSE THAN LINEAR. Observed 427.35. Too simple misses the acceleration; too flexible extrapolates catastrophically. This is bias-variance made physical rather than described, and the stake is real: on that holdout fit, linear reaches 500 ppm in 2099 and quadratic in 2053, while the cubic turns over and never reaches it at all — a half-century decided by a modelling choice. (Fitting the FULL record instead moves the linear crossing to 2075; say which fit a number came from, every time.)
         check: "SELF-VALIDATING — 26 years of held-out data the student compares against"
         note: >
           The best demonstration of week 9 available: overfitting punished in EXTRAPOLATION, not just test error.
     takeaways:
       - "Too simple misses the pattern; too flexible memorises the noise."
       - "Hold out data you already have, then check — it is the cheapest honest test there is."
-      - "The CO2 curve is bending, and which model you choose decides the decade by which it crosses 500 ppm."
+      - "The CO2 curve is bending: a straight line fitted to the whole record starts ten ppm below the record's own first year."
   - n: 10
     date: 2026-11-09
     slug: 10_earthquake_or_explosion
@@ -888,7 +939,11 @@ schedule:
           clipped at write time — verified 2026-08-31: max|x| is exactly 10.0000 and 6.2% of
           samples sit on the bound — so the 0.0%-accuracy collapse is NOT reproducible from the
           file students download, and a week must not claim it is. One side effect is real and
-          teachable: 39 of 2,500 recordings are railed flat at the bound with zero variance.
+          teachable: 203 of the 2,500 recordings have a VERTICAL component railed flat at the
+          bound with zero variance — 186 of them among the 2,348 that carry a polarity label —
+          and 39 are flat on all three components. Per component the counts are 68 / 74 / 203.
+          Week 13 and track T8 both read the vertical, so 203 is the number that binds them;
+          the three-component 39 understates it fivefold.
       expect:
         # WHAT THESE ARE: measurements of the SHIPPED notebook, not targets and not sanity bands.
         # Every number below was produced by tools/build_week13.py on the release asset with its
@@ -1049,40 +1104,67 @@ project:
         Does a neural network actually beat a well-designed parametric GMPE, or does it only
         look that way under a random split? Measured on this data, a random forest beats the
         classic three-parameter form by +0.039 R2 on a random split and +0.023 split by event;
-        split by STATION the advantage is +0.012 with a 95% interval of [-0.006, +0.030], which
-        straddles zero; and trained outside Italy and tested in Italy it LOSES by 0.094. So the
-        advantage does not survive an honest split, and reverses only when the test set is a
-        region the model never saw — consistent with the forest memorising site terms rather
-        than learning physics. Whether ML genuinely improves ground-motion prediction under
-        honest validation is unresolved in the literature and decidable with this dataset. And
-        sigma (0.445 log10, decomposing to tau = 0.306 between earthquakes and phi = 0.324
-        within them) is the quantity seismic hazard actually consumes, so reducing it is a real
-        goal rather than a leaderboard.
+        split by STATION the advantage falls to +0.012 with a 95% interval of [-0.006, +0.030],
+        which straddles zero; and trained outside Italy and tested in Italy it LOSES by 0.094.
+        So the advantage does not survive an honest split, and reverses when the test set is a
+        region the model never saw. The reversal is not the flexible model recognising stations
+        it was trained on: the station split already shares no station between training and test
+        (share-a-station 0.000) and the forest is still ahead there. Nor is it the border as
+        such — hold out Greece and the gap is -0.004, hold out Turkey and it is +0.001, no
+        reversal at all. What Italy does is put the test set outside the region the training
+        records cover: its median source distance is 64 km against 115 km elsewhere, and a
+        piecewise-constant forest cannot return a value its training records never reached, so
+        on the Italian records it stops at -0.46 in log10 PGA while the equation reaches -0.07
+        and the recordings themselves reach -0.08. The parametric form extrapolates because its
+        shape carries the physics; a forest can only interpolate among what it was shown.
+        (Romania reverses too, by -0.095, for a different reason worth keeping separate: its
+        earthquakes are intermediate-depth, median 120 km against 13 km elsewhere, depth is not
+        one of the three features, and the equation's own R2 there is negative — both models
+        fail and the forest fails harder.) Whether ML genuinely improves ground-motion
+        prediction under honest validation is unresolved in the literature and decidable with
+        this dataset. And sigma (0.445 log10, decomposing to tau = 0.306 between earthquakes and
+        phi = 0.324 within them) is the quantity seismic hazard actually consumes, so reducing
+        it is a real goal rather than a leaderboard.
       open_question_note: >
-        ⚠️ CORRECTED 2026-08-31 from the T1 build; kept out of the student text above. Two
-        errors. (a) A SIGN ERROR: this said the forest "LOSES by 0.012 split by station". It is
-        AHEAD by 0.012 there — the honest statement is that the gap's interval straddles zero,
-        not that it reverses. The sign genuinely flips only at the region holdout. (b) The
+        ⚠️ CORRECTED 2026-08-31 from the T1 build and again the same day from an independent
+        review; kept out of the student text above, which now reads as though it had always been
+        right. THREE errors, in the order they were found. (a) A SIGN ERROR: the first version
+        said the forest "LOSES by 0.012 split by station". It is AHEAD by 0.012 there — the
+        honest statement is that the gap's interval straddles zero, not that it reverses. The
+        sign genuinely flips only at the region holdout. (c) A CORRECT CONCLUSION UNDER A WRONG
+        MECHANISM, which survived (a): the second version attributed the Italian reversal to
+        "the forest memorising site terms". It cannot be that — the station split already shares
+        no station between train and test (0.000) and the forest is still ahead there — and it
+        is not the border either, since holding out Greece gives -0.004 and Turkey +0.001. The
+        mechanism is extrapolation, and Romania's reversal has a third cause again
+        (intermediate-depth Vrancea events, median 120 km, and depth is not a feature). (b) The
         sigma decomposition did not close: it read tau 0.371, phi 0.337, sigma 0.448, but
         sqrt(0.371^2 + 0.337^2) = 0.501. The audit's tau was the naive standard deviation of
         per-event mean residuals, which inflates it with within-event sampling noise; the
         row-weighted terms are orthogonal by construction and do close (0.3055, 0.3238 ->
         0.4452). Both original figures came from 5-fold cross-validation, which CLAUDE.md
         excludes from this course, so neither was reproducible as written.
-      uses: [ML1, S3, S4, ML2, ML4, ML6]
+      uses: [ML1, ML3, S3, S4, ML2, ML4, ML6]
       evidence: notes/dataset-audit/ground-motion.md
 
     - id: T2
       field: climate
       title: "Is the CO2 seasonal cycle getting stronger?"
-      data: "NOAA Mauna Loa monthly 1958-2026, plus Barrow at 71N for the comparison"
+      data: "NOAA GML in-situ monthly CO2, one file per station in one layout: Mauna Loa
+        1974-2025 (624 rows, 12 gaps), plus Barrow 71N, Samoa 14S and the South Pole for the
+        latitude ladder"
       fork: "What is 'amplitude' — peak-to-trough, detrended residual, or a Fourier term? They disagree."
       open_question: >
-        The seasonal breath is growing faster at high latitude — Mauna Loa's detrended swing
-        grows at +0.118 ppm per decade against Barrow's +0.969. But the four-station ladder is
-        NOT monotone in latitude: South Pole -90 gives 4.0 %/decade, Samoa -14 gives 12.9,
-        Mauna Loa +19.5 gives 1.8, Barrow +71.3 gives 5.8. How far north does it scale, and what
-        does it say about which ecosystems are doing the breathing?
+        The seasonal breath is growing faster at high latitude: Mauna Loa's detrended swing grows
+        at +0.118 ppm per decade and Barrow's at +0.969. Each is fitted over its own station's
+        complete years, 46 and 48 of them, so as printed the two are not quite like with like —
+        but cut to the years both stations have, however that cut is made, the ratio between them
+        lands between 7.7 and 8.2, so the roughly eightfold gap is in the record and not in the
+        window. The four-station ladder is less forgiving. Put every station on the one window all
+        four share, 1980-2018, and it is NOT monotone in latitude: the South Pole -90 gives 3.0
+        %/decade, Samoa -14 gives 12.9, Mauna Loa +19.5 gives 2.1, Barrow +71.3 gives 5.3, on 32
+        to 39 complete years apiece — and only three of the four intervals clear zero. How far
+        north does it scale, and what does it say about which ecosystems are doing the breathing?
       open_question_note: >
         ⚠️ CORRECTED 2026-08-31, from building the track. This asked the student to compare
         "Mauna Loa +12.9% and Barrow +24.7%". BOTH numbers reproduce exactly and they are still
@@ -1094,7 +1176,7 @@ project:
         programme. This note is for whoever edits the plan; it is NOT student-facing, which is
         why it is a separate key — the first version of this correction went inside
         open_question and would have printed into the notebook.
-      uses: [ML1, S4, ML2]
+      uses: [D1, D2, S2, S4, ML1]
       evidence: notes/dataset-audit/noaa-climate.md
 
     - id: T3
@@ -1125,19 +1207,24 @@ project:
         Every instrument has shown us a different galaxy — Kepler small and far, TESS bright and
         near. What does the REAL population look like? Transit probability goes as 1/a and is
         computable from the columns present, so a defensible bias correction is within reach.
-      uses: [D2, ML1, ML2, ML5]
+      uses: [D2, S3, S4, ML1]
       evidence: notes/dataset-audit/exoplanet.md
 
     - id: T5
       field: oceanography / hydrology
       title: "Does El Nino really bring rain to California?"
-      data: "NOAA Nino 3.4 1948-2026 plus USGS discharge; 234 natural CA gauges have 50+ years"
-      fork: "Which river — and which water year? The contrast survives Oct-Sep but collapses under a calendar year."
+      data: "NOAA Nino 3.4 1948-2026 plus USGS discharge; 192 natural CA gauges have 50+ years"
+      fork: "Which river — and which twelve months are a year? The calendar year triples the northern correlation and leaves the southern one alone."
       open_question: >
-        The signal is strong in the south (r = +0.36) and absent in the north (+0.087); the paired
-        bootstrap on the difference gives +0.222, CI [+0.039, +0.398]. WHERE does it switch off,
-        and is the boundary sharp or gradual? Every student takes a different gauge, so the class
-        assembles a map no single project could produce.
+        Over 77 water years the southern gauge (Arroyo Seco nr Soledad, 36.28N) gives r = +0.309
+        and the northern one (Eel R at Scotia) +0.087; the paired bootstrap on the difference
+        gives +0.222, CI [+0.034, +0.385]. The sign is robust and the size is not: across four
+        twelve-month windows the southern correlation holds between +0.301 and +0.317 while the
+        northern one runs +0.087 to +0.311, so the gap ranges from +0.222 to +0.007 and it is the
+        northern gauge the calendar convention moves. On the storm season the index measures,
+        Dec-Mar, the gap is +0.174. WHERE does it switch off, and is the boundary sharp or
+        gradual? Every student takes a different gauge, so the class assembles a map no single
+        project could produce.
       uses: [ML1, S4, ML3]
       evidence: notes/dataset-audit/noaa-climate.md
 
@@ -1174,15 +1261,22 @@ project:
       data: "data/phasenet_ncedc.npz — 2,500 traces, polarity labels 1,233 U / 1,115 D"
       fork: "How much waveform around the pick do you give the model?"
       open_question: >
-        A one-line physics rule — the sign of the first sample after the pick, relative to the
-        pre-pick mean — already scores 0.828, and the CNN reaches only 0.843. So the project is not
-        "can a network do this" but "why does the network barely beat one line, and what would it
-        take to do better?" The window sweep is the evidence: 0.1 s gives 0.846 and 10 s gives
-        0.777, a monotone decline, because polarity lives entirely in the first swing and
-        everything after it is noise. Roughly 10% of the labels are irreducibly wrong (the sign of
-        the first swing disagrees with the analyst 17.5% of the time, plateauing near 0.89 even on
-        the clearest arrivals), so every model lands at 0.81-0.85 — AT THE CEILING. Is the
-        remaining gap model capacity, or is it the labels? Deciding that is the project.
+        A one-line physics rule — the first swing after the pick, measured against the pre-pick
+        background — already scores 0.803 as the notebook writes it, and 0.830 when it averages
+        the first five samples instead of reading one. The CNN does not catch that: its best
+        window is the shortest, 0.1 s, at 0.825. So the project is not "can a network do this"
+        but "why does a network lose to one line, and what would it take to beat it?" The window
+        sweep is the evidence: every window longer than 0.1 s scores worse, falling to 0.670 at
+        5 s and 0.682 at 10 s — polarity lives in the first swing, and the extra seconds give the
+        network room to memorise rather than anything to read. Two things cap every method here.
+        186 of the 2,348 labelled recordings (7.9%) are a flat line at the file's own clipping
+        bound, with no arrival in them at all and nothing better than a coin toss available on
+        them; setting them aside lifts the one line to 0.859 and the network to 0.856 together,
+        so they explain part of the ceiling and none of the choice between the two methods. The
+        sign of the first swing then disagrees with the analyst on 20.5% of all recordings — but
+        that disagreement sits where the swing is small: agreement is 0.917 on the clearest
+        quarter and 0.962 on the clearest tenth, so where the seismogram is legible the labels
+        are demonstrably not the limit. Is the remaining gap model capacity, or is it the labels?
       uses: [ML3, ML6]
       evidence: notes/dataset-audit/ncedc-phasenet.md
 
@@ -1196,8 +1290,9 @@ project:
   coverage_rule: >
     Do not assume the tracks split into "statistics" and "machine learning" — they do not, and an
     earlier version of this rule said so wrongly. Read each track's `uses:`. T3 is the only purely
-    statistical one; T1 reaches furthest, from a straight line to a neural network, and T4, T5 and
-    T7 all end in a classifier or a clustering step.
+    statistical one; T1 reaches furthest, from a straight line to a neural network. T7 ends in a
+    classifier and T5 in a bootstrap on a correlation, while T4 ends in a transit-probability
+    weighted fraction — so "every track ends in a model" is not a rule either.
     Whatever a project uses, it must name the METHOD FAMILY and say why the question needs it. The rubric's 25 points for method choice reward fit, not sophistication:
     a justified chi-squared beats an unjustified neural network.
   choose: >
