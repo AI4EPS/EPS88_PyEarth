@@ -12,13 +12,6 @@ exclude_docs: |
   notebooks/*.ipynb
   !notebooks/01_birthquake.ipynb
   !notebooks/01b_practice.ipynb
-  !notebooks/T1_how_hard_will_it_shake.ipynb
-  !notebooks/T2_getting_stronger.ipynb
-  !notebooks/T3_july_or_the_catalogue.ipynb
-  !notebooks/T4_more_planets_or_better_telescopes.ipynb
-  !notebooks/T5_el_nino_and_the_rivers.ipynb
-  !notebooks/T7_from_its_chemistry_alone.ipynb
-  !notebooks/T8_which_way_first.ipynb
   !notebooks/01b_practice_solution.ipynb
 repo_name: "AI4EPS/EPS88_PyEarth"
 repo_url: "https://github.com/AI4EPS/EPS88_PyEarth"
@@ -39,11 +32,3 @@ nav:
     - "Week 1.5 — lists, loops, choices, and a function of your own": notebooks/01b_practice.ipynb
   - Solutions:
     - "Week 1.5 — lists, loops, choices, and a function of your own — solutions": notebooks/01b_practice_solution.ipynb
-  - Projects:
-    - "T1: How hard will the ground shake at distance R from a magnitude M earthquake?": notebooks/T1_how_hard_will_it_shake.ipynb
-    - "T2: Is the CO2 seasonal cycle getting stronger?": notebooks/T2_getting_stronger.ipynb
-    - "T3: July has 400 eruptions and December has 212. Is that the Earth, or the catalogue?": notebooks/T3_july_or_the_catalogue.ipynb
-    - "T4: Are we finding more Earth-like planets, or just better telescopes?": notebooks/T4_more_planets_or_better_telescopes.ipynb
-    - "T5: Does El Nino really bring rain to California?": notebooks/T5_el_nino_and_the_rivers.ipynb
-    - "T7: Can you tell where a basalt erupted from its chemistry alone?": notebooks/T7_from_its_chemistry_alone.ipynb
-    - "T8: Which way did the ground first move — and can a machine tell?": notebooks/T8_which_way_first.ipynb
