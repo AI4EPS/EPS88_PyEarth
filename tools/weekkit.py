@@ -350,6 +350,52 @@ def tiers():
     return "\n".join(out)
 
 
+# Which library a call belongs to. The summary groups by this, because "np.percentile sits with
+# the other numpy" is the mental model a student needs and modules.yml order is not it — the flat
+# chronological table it used to emit put plt.hist between `n = n + 1` and `def`.
+# Order matters and is course.yml's platform.libraries: python first, the libraries after it.
+# Inference, not a field on 125 entries — but it REFUSES rather than guesses. A `receiver.method`
+# whose receiver it does not know raises, and that entry gets an explicit `group:` in modules.yml.
+# One did: rng.integers, whose rng comes from np.random.default_rng.
+_GROUP_RULES = [
+    ("matplotlib",   r"^plt\."),
+    ("pytorch",      r"^(torch|nn)\.|^(loss|optimiser)\."),
+    ("numpy",        r"^np\.|^(grid|array)\."),
+    ("pandas",       r"^pd\.|^(table|column|series|counts)\."),
+    ("scikit-learn", r"^(Linear|Logistic)Regression|^GaussianNB|^DecisionTree|^RandomForest|^SVC"
+                     r"|^KMeans|^DBSCAN|^PCA\(|^SimpleImputer|^StandardScaler|^train_test_split"
+                     r"|^(accuracy|precision|recall|f1)_score|^confusion_matrix"
+                     r"|^(model|forest|filler|pca)\."),
+    ("python",       r"^list\."),
+]
+
+
+# course.yml's platform.libraries are lowercase identifiers. These are how each project writes
+# its own name, which is what a student should see and what they should search the web for.
+GROUP_NAMES = {"python": "Python", "numpy": "NumPy", "pandas": "pandas",
+               "matplotlib": "Matplotlib", "scikit-learn": "scikit-learn", "pytorch": "PyTorch"}
+
+
+def function_group(fn):
+    """Which of course.yml's six libraries a `functions:` entry belongs to.
+
+    `group:` on the entry wins. Otherwise the name is matched against _GROUP_RULES, and a name
+    of the form `something.method` whose receiver is unknown raises — silently filing it under
+    Python is how rng.integers spent a term in the wrong half of the table.
+    """
+    if fn.get("group"):
+        return fn["group"]
+    name = fn["name"].strip()
+    for g, pat in _GROUP_RULES:
+        if re.match(pat, name):
+            return g
+    if re.match(r"^\w+\.", name):
+        raise ValueError(
+            f"cannot tell which library {name!r} belongs to. Add `group: <library>` to its "
+            f"entry in modules.yml, or teach _GROUP_RULES about its receiver.")
+    return "python"
+
+
 def week_cheatsheet(week_n, module_ids=None):
     """The notebook's closing summary, generated from course.yml and modules.yml.
 
@@ -391,7 +437,21 @@ def week_cheatsheet(week_n, module_ids=None):
            if f.get("remember", True)]
     if fns:
         out += ["", "### Code you met this week", "", "| Function | What it does |", "|---|---|"]
-        out += [f"| `{f['name']}` | {f['does']} |" for f in fns]
+        # Grouped by library, in course.yml's own order. A separator row only when the week
+        # actually spans more than one: a heading over the single group it has is noise, and
+        # five of the thirteen weeks are one library from top to bottom.
+        order = course["platform"]["libraries"]
+        seen = {}
+        for f in fns:
+            seen.setdefault(function_group(f), []).append(f)
+        groups = [g for g in order if g in seen]
+        if len(seen) > len(groups):                      # a group: nobody declared in libraries
+            raise ValueError(f"week {week_n}: {sorted(set(seen) - set(order))} is not one of "
+                             f"course.yml platform.libraries")
+        for g in groups:
+            if len(groups) > 1:
+                out.append(f"| **{GROUP_NAMES.get(g, g)}** | |")
+            out += [f"| `{f['name']}` | {f['does']} |" for f in seen[g]]
     return "\n".join(out)
 
 
