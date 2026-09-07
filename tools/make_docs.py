@@ -41,11 +41,24 @@ drop_line = ("No weekly notebook is dropped." if _d == 0 else
 # Reference-style links. Inline, every row carried a ~250-character DataHub URL, so the table
 # source was one unreadable column of percent-encoding and a row could not be checked by eye.
 # The rendering is identical; the definitions collect at the foot of the file.
-rows = "\n".join(
-    f"| {s['n']} | [{s['question']}][w{s['n']}] | "
-    f"{', '.join(mods[m]['topic'] for m in s['modules'])} | {s['field'].capitalize()} |"
-    for s in weeks)
-link_defs = "\n".join(f"[w{s['n']}]: {link(s['slug'])}" for s in weeks)
+# Practice notebooks are not weeks — no grade, no modules — but they belong IN the week table, in
+# the order a student meets them. A section of their own reads as optional extra material.
+# `after:` says which week one follows; the +0.5 slots it between that week and the next without
+# inventing a fake `n`.
+practice = [pr for pr in c.get("practice", [])
+            if (ROOT / "docs" / "notebooks" / f'{pr["slug"]}.ipynb').exists()]
+entries = ([(s["n"], f"w{s['n']}", str(s["n"]), s["question"],
+             ", ".join(mods[m]["topic"] for m in s["modules"]), s["field"].capitalize(), s["slug"])
+            for s in weeks]
+           + [(pr["after"] + 0.5, f"p{i}", pr["n_label"], pr["question"],
+               pr["topic"], pr["field"], pr["slug"])
+              for i, pr in enumerate(practice)])
+entries.sort(key=lambda e: e[0])
+
+rows = "\n".join(f"| {label} | [{q}][{ref}] | {topic} | {field} |"
+                 for _sort, ref, label, q, topic, field, _slug in entries)
+link_defs = "\n".join(f"[{ref}]: {link(slug)}"
+                      for _sort, ref, _l, _q, _t, _f, slug in entries)
 
 
 def longdate(v):
@@ -85,12 +98,12 @@ grading_line = " · ".join(f"{k.replace('_', ' ')} **{v}%**"
 
 ## The weeks
 
-Each link opens that week's notebook in your own DataHub account.
+Each link opens that notebook in your own DataHub account. Week 1.5 is practice — not
+graded, nothing to submit, and its worked solutions are published alongside it.
 
 | Week | Earth-science question | Python | Field |
 |---:|---|---|---|
 {rows}
-
 ## How the course works
 
 One notebook a week. You work in it during class and continue in the same file at home. The

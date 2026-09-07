@@ -10,6 +10,7 @@ docs_dir: docs/
 # with it. Exclusion is the only thing standing between the release policy and the web.
 exclude_docs: |
   notebooks/*_solution.ipynb
+  !notebooks/01b_practice_solution.ipynb
 repo_name: "AI4EPS/EPS88_PyEarth"
 repo_url: "https://github.com/AI4EPS/EPS88_PyEarth"
 
@@ -26,6 +27,7 @@ nav:
   - Home: README.md
   - Weeks:
     - "Week 1: What was your birthquake?": notebooks/01_birthquake.ipynb
+    - "Week 1.5 — lists, loops, choices, and a function of your own": notebooks/01b_practice.ipynb
     - "Week 2: Which of these worlds could have liquid water — and why does your test reject Earth?": notebooks/02_liquid_water.ipynb
     - "Week 3: Earth's elevation has two peaks. So does Mars's. Same reason?": notebooks/03_two_peaks.ipynb
     - "Week 4: Where do earthquakes and volcanoes happen — and why there?": notebooks/04_where_and_why.ipynb
@@ -38,6 +40,8 @@ nav:
     - "Week 11: Where does a volcano get its magma?": notebooks/11_where_magma.ipynb
     - "Week 12: Can you find a fault that nobody mapped?": notebooks/12_hidden_fault.ipynb
     - "Week 13: Can a machine hear an earthquake?": notebooks/13_machine_hears.ipynb
+  - Solutions:
+    - "Week 1.5 — lists, loops, choices, and a function of your own — solutions": notebooks/01b_practice_solution.ipynb
   - Projects:
     - "T1: How hard will the ground shake at distance R from a magnitude M earthquake?": notebooks/T1_how_hard_will_it_shake.ipynb
     - "T2: Is the CO2 seasonal cycle getting stronger?": notebooks/T2_getting_stronger.ipynb

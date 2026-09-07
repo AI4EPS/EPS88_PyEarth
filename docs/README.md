@@ -14,11 +14,13 @@ None. No programming experience is assumed — we build Python from zero. EPS 88
 
 ## The weeks
 
-Each link opens that week's notebook in your own DataHub account.
+Each link opens that notebook in your own DataHub account. Week 1.5 is practice — not
+graded, nothing to submit, and its worked solutions are published alongside it.
 
 | Week | Earth-science question | Python | Field |
 |---:|---|---|---|
 | 1 | [What was your birthquake?][w1] | Notebooks, lists | Seismology |
+| 1.5 | [Practice — no class on Labor Day][p0] | Lists, loops, if, functions | — |
 | 2 | [Which of these worlds could have liquid water — and why does your test reject Earth?][w2] | Loops, Functions | Planetary science |
 | 3 | [Earth's elevation has two peaks. So does Mars's. Same reason?][w3] | Arrays, Tables | Planetary science / oceanography |
 | 4 | [Where do earthquakes and volcanoes happen — and why there?][w4] | Plotting, Maps | Seismology / volcanology |
@@ -31,7 +33,6 @@ Each link opens that week's notebook in your own DataHub account.
 | 11 | [Where does a volcano get its magma?][w11] | SVM, Decision Trees | Volcanology / petrology |
 | 12 | [Can you find a fault that nobody mapped?][w12] | Clustering | Seismology / tectonics |
 | 13 | [Can a machine hear an earthquake?][w13] | Neural networks | Seismology |
-
 ## How the course works
 
 One notebook a week. You work in it during class and continue in the same file at home. The
@@ -56,6 +57,7 @@ weekly notebook **75%** · project **15%** · participation **10%**
 `python` · `numpy` · `pandas` · `matplotlib` · `scikit-learn` · `pytorch`
 
 [w1]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F01_birthquake.ipynb&branch=main
+[p0]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F01b_practice.ipynb&branch=main
 [w2]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F02_liquid_water.ipynb&branch=main
 [w3]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F03_two_peaks.ipynb&branch=main
 [w4]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F04_where_and_why.ipynb&branch=main

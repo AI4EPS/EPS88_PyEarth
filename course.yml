@@ -1022,6 +1022,17 @@ policy:
   solution_rationale: >
     A two-day accommodation extension ends Tuesday, so a Wednesday release never collides with it,
     and the reader window is a fixed Wednesday–Sunday.
+  # WHICH answer keys are public, by notebook slug. This is the ONE record; .gitignore still
+  # denies every *_solution.ipynb by default, and three things read this list to make an
+  # exception for what is on it:
+  #   tools/check_solution_release.py  a tracked solution NOT listed is an accidental commit
+  #   tools/make_mkdocs.py             a listed solution is un-excluded and put in the nav
+  #   tools/release_solution.py        appends to it, and is the only thing that should
+  # Release day is `solution_release` above, and it is a deliberate act, never a timer: a date
+  # in a file cannot un-publish an answer key it got wrong. Post at the END of Wednesday — the
+  # late window runs to Wed 23:59, so a morning release hands the answers to a student who can
+  # still submit.
+  solutions_released: [01b_practice]
   late: "10% per day; nothing accepted once solutions post"
   # No separate day cap: solutions post the Wednesday after the Sunday due date, so the
   # release IS the cutoff. A second number here could only drift out of step with it.
@@ -1031,6 +1042,28 @@ policy:
   # policy when you have decided what it is. What holds for building notebooks either way:
   #   * a weekly notebook carries NO AI-disclosure cell (tried, removed — nobody read it)
   #   * the FINAL PROJECT does: project.required_of_every_project.ai_disclosure
+
+# ------------------------------------------------------------------ practice
+# Notebooks that are not weeks: no grade, nothing submitted, no Gradescope. They exist because
+# the calendar left a hole, and they are published with their solution from day one — which is
+# why 01b_practice is in solutions_released above.
+practice:
+  - slug: 01b_practice
+    # It sits IN the week table, between the weeks it bridges — not in a section of its own, which
+    # reads as optional extra material rather than as part of the run of the course.
+    n_label: "1.5"
+    after: 1                  # slots into the table just after this week
+    title: "Week 1.5 — lists, loops, choices, and a function of your own"
+    question: "Practice — no class on Labor Day"
+    topic: "Lists, loops, if, functions"
+    field: "—"
+    when: "the Labor Day gap, 7-13 September"
+    why: >
+      Monday 7 September is Labor Day, so weeks 1 and 2 are a fortnight apart. This fills the gap
+      with the whole of week 2's Python — P3 and P4 — so that Monday 14 September spends its 100
+      minutes on the exoplanet science rather than on syntax. TEACH WEEK 2 AS IF NOBODY DID IT:
+      it is ungraded, so some students will not, and a Monday planned on the assumption they did
+      would split the room.
 
 project:
   question_shape: "From this data, make a quantified claim with stated uncertainty, and say how much to trust it."
