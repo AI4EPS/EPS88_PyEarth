@@ -23,7 +23,7 @@ nothing to submit, and its worked solutions are published alongside it.
 | Week | Earth-science question | Python | Field |
 |---:|---|---|---|
 | 1 | [What was your birthquake?][w1] | Notebooks, lists | Seismology |
-| 1.5 | [Practice — no class on Labor Day][p0] · [solutions][p0s] | Lists, loops, if, functions | — |
+| 1.5 | [Practice — no class on Labor Day][p0] · [solutions][p0s] | Lists, loops, if, functions | Practice — not graded |
 | 2 | Which of these worlds could have liquid water — and why does your test reject Earth? | Loops, Functions | Planetary science |
 | 3 | Earth's elevation has two peaks. So does Mars's. Same reason? | Arrays, Tables | Planetary science / oceanography |
 | 4 | Where do earthquakes and volcanoes happen — and why there? | Plotting, Maps | Seismology / volcanology |
