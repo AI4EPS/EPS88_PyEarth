@@ -47,3 +47,13 @@ data/_*
 # under the interpreter that launched them. The copy in this .venv has been patched too, which
 # only matters if you start Jupyter by hand; it is not what the builds rely on and it will come
 # back wrong if you reinstall ipykernel.
+
+# The build harness lives in AI4EPS/EPS88_PyEarth_build, checked out beside this repo.
+# nbgitpuller clones THIS repo into every student's DataHub folder, so what is here is what a
+# student sees: the notebooks, the data they read, and the site. Nothing that decides what to
+# write belongs in it. The build repo writes into this one; see its README.
+tools/
+TEMPLATE.md
+course.yml
+modules.yml
+SCHEDULE.md
