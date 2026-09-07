@@ -92,7 +92,7 @@ def main():
     as an import side effect, and without paying for a subprocess to avoid that."""
     bad = 0
     bad += run("the plan", "check_course.py")
-    bad += run("solution release", "check_solution_release.py")
+    bad += run("release state", "check_release.py")
     bad += generated_is_current()
     bad += run("the checkers themselves", "selftest_checks.py")
     bad += run("the autograder", "selftest_gradescope.py")

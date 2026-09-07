@@ -29,5 +29,5 @@ jobs:
       # The guard reads that list, so releasing a week no longer means editing this file — the
       # previous version of this step could only ever assert "none tracked" and would have gone
       # red on the first Wednesday of the term.
-      - name: Only released solution notebooks are tracked
-        run: python tools/check_solution_release.py
+      - name: Only released notebooks are tracked
+        run: python tools/check_release.py

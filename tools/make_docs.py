@@ -21,6 +21,11 @@ instructor_line = (f"Instructor [{_m.group(1)}](mailto:{_m.group(2)})" if _m
                    else f"Instructor {c['instructor']}")
 
 
+# Only notebooks course.yml says are RELEASED. Every week exists on the builder's disk
+# and only the released ones are on main, so an existence check would generate one thing
+# here and another on CI — which is exactly what generated_is_current() fails on.
+RELEASED = set(c["policy"].get("notebooks_released", []))
+
 def link(slug):
     repo_name = p["repo"].rstrip("/").split("/")[-1]
     q = up.urlencode({"repo": p["repo"],
@@ -29,24 +34,22 @@ def link(slug):
     return f"{p['datahub']}/hub/user-redirect/git-pull?{q}"
 
 
-# Only weeks whose notebook exists. make_mkdocs.py has guarded this since the site was set up;
-# this generator did not, and published DataHub links for eleven weeks nobody has built.
-weeks = [s for s in c["schedule"] if s["modules"]
-         and (ROOT / "docs" / "notebooks" / f'{s["slug"]}.ipynb').exists()]
+# EVERY week the term teaches is in the table, whether or not its notebook is out yet: the table
+# is what the course looks like, and cutting it to the two weeks released so far makes a
+# thirteen-week course read as empty. What release controls is the LINK. An unreleased week shows
+# its question and its topic and goes nowhere, so nobody can open a file that is still being
+# edited, and nobody has to wonder what is coming.
+weeks = [s for s in c["schedule"] if s["modules"]]
 _d = c["policy"]["drop_lowest"]
 drop_line = ("No weekly notebook is dropped." if _d == 0 else
              "The lowest weekly notebook is dropped." if _d == 1 else
              f"The {_d} lowest weekly notebooks are dropped.")
 
-# Reference-style links. Inline, every row carried a ~250-character DataHub URL, so the table
-# source was one unreadable column of percent-encoding and a row could not be checked by eye.
-# The rendering is identical; the definitions collect at the foot of the file.
 # Practice notebooks are not weeks — no grade, no modules — but they belong IN the week table, in
 # the order a student meets them. A section of their own reads as optional extra material.
 # `after:` says which week one follows; the +0.5 slots it between that week and the next without
 # inventing a fake `n`.
-practice = [pr for pr in c.get("practice", [])
-            if (ROOT / "docs" / "notebooks" / f'{pr["slug"]}.ipynb').exists()]
+practice = list(c.get("practice", []))
 entries = ([(s["n"], f"w{s['n']}", str(s["n"]), s["question"],
              ", ".join(mods[m]["topic"] for m in s["modules"]), s["field"].capitalize(), s["slug"])
             for s in weeks]
@@ -55,10 +58,14 @@ entries = ([(s["n"], f"w{s['n']}", str(s["n"]), s["question"],
               for i, pr in enumerate(practice)])
 entries.sort(key=lambda e: e[0])
 
-rows = "\n".join(f"| {label} | [{q}][{ref}] | {topic} | {field} |"
-                 for _sort, ref, label, q, topic, field, _slug in entries)
+# Reference-style links. Inline, every row carried a ~250-character DataHub URL, so the table
+# source was one unreadable column of percent-encoding and a row could not be checked by eye.
+# The rendering is identical; the definitions collect at the foot of the file.
+rows = "\n".join(
+    f"| {label} | " + (f"[{q}][{ref}]" if slug in RELEASED else q) + f" | {topic} | {field} |"
+    for _sort, ref, label, q, topic, field, slug in entries)
 link_defs = "\n".join(f"[{ref}]: {link(slug)}"
-                      for _sort, ref, _l, _q, _t, _f, slug in entries)
+                      for _sort, ref, _l, _q, _t, _f, slug in entries if slug in RELEASED)
 
 
 def longdate(v):
@@ -98,12 +105,14 @@ grading_line = " · ".join(f"{k.replace('_', ' ')} **{v}%**"
 
 ## The weeks
 
-Each link opens that notebook in your own DataHub account. Week 1.5 is practice — not
-graded, nothing to submit, and its worked solutions are published alongside it.
+Each link opens that notebook in your own DataHub account. **A week with no link has not been
+released yet** — each one goes up before the class that uses it. Week 1.5 is practice: not graded,
+nothing to submit, and its worked solutions are published alongside it.
 
 | Week | Earth-science question | Python | Field |
 |---:|---|---|---|
 {rows}
+
 ## How the course works
 
 One notebook a week. You work in it during class and continue in the same file at home. The

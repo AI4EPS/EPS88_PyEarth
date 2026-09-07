@@ -1032,6 +1032,20 @@ policy:
   # in a file cannot un-publish an answer key it got wrong. Post at the END of Wednesday — the
   # late window runs to Wed 23:59, so a morning release hands the answers to a student who can
   # still submit.
+  # WHICH notebooks exist on main at all. A week is built weeks ahead and edited in the days
+  # before it is taught, so an unreleased one is not left in the public repo for a student to
+  # start early on a version that is about to change. .gitignore denies every
+  # docs/notebooks/*.ipynb; tools/release.py is the only thing that should stage one past it.
+  # The project tracks are here from the start on purpose — project.choose says the track
+  # notebooks ARE the spec and a student may read ahead.
+  notebooks_released: [01_birthquake, 01b_practice,
+                       T1_how_hard_will_it_shake,
+                       T2_getting_stronger,
+                       T3_july_or_the_catalogue,
+                       T4_more_planets_or_better_telescopes,
+                       T5_el_nino_and_the_rivers,
+                       T7_from_its_chemistry_alone,
+                       T8_which_way_first]
   solutions_released: [01b_practice]
   late: "10% per day; nothing accepted once solutions post"
   # No separate day cap: solutions post the Wednesday after the Sunday due date, so the

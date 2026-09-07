@@ -1,5 +1,9 @@
-# Solutions are released the Wednesday after the due date, with `git add -f`
-docs/notebooks/*_solution.ipynb
+# NOTHING under docs/notebooks/ is public until it is deliberately released. A week is built
+# weeks ahead and edited in the days before it is taught; one sitting on main is one a student
+# can start early, on a version that is about to change. course.yml's policy.notebooks_released
+# and policy.solutions_released are the record of what is out, and tools/release.py is the only
+# thing that should stage one past this line.
+docs/notebooks/*.ipynb
 
 # Snapshots taken before substantive edits to a markdown file
 .history/
