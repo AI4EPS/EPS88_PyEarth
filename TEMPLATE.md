@@ -11,6 +11,16 @@ docs/notebooks/07_transformations.ipynb            derived: the solution with th
 `tools/build_weekNN.py` emits both from one source so they cannot drift. Links and the closing
 summary are generated from `course.yml` and `modules.yml`, never typed.
 
+**Maintaining this file.** What lives here is the judgement no checker can make; anything that can
+be expressed as a check becomes a check instead, in the same edit that fixes it. Two rules keep it
+from silting up, because it is read on every build:
+
+- **When a rule is misread, rewrite the rule.** Never append the correction to it. A rule carrying
+  its own misreading makes every later reader hold three things where one would do.
+- **Cite the evidence, do not retell it.** The defect ledger is `../notes/defects.yml`, one entry
+  per failure that reached a human; name the entry in brackets and let it hold the detail. A war
+  story told twice is a story that can now disagree with itself.
+
 ---
 
 ## 1. The shape of a notebook
@@ -86,6 +96,17 @@ The class/homework split is about **when**, not whose work it is:
    `locator_params(integer=True)` are formatting; a summary that lists them alongside `max()`
    tells a student the two matter equally, and a summary that lists everything teaches nothing.
 
+   **The summary is a reference, so its rows are written like one.** `week_cheatsheet()` groups
+   them by library; what you control is the `functions:` entries it reads. One entry, one idea —
+   six operators in a cell, or three joined with `·`, are three entries pretending to be one. Every
+   `name:` is code, because one plain-text row among twenty monospace ones reads as a mistake:
+   `"""docstring"""`, never `a docstring`. A name whose receiver `function_group` does not know
+   raises; give that entry a `group:` rather than letting it file itself under Python.
+
+   **A sentence about the course is a claim.** Grep before writing "every week", "the only", or
+   "nothing after this" — the notebooks are on disk. Three such sentences shipped in one closing
+   and all three were false.
+
 ### Two devices that must appear
 
 **Predict before you run.** Before any surprising result, a cell asking them to commit to a number
@@ -119,10 +140,13 @@ one week to the next. The room is 100 minutes and a beginner needs about ten of 
 counting reading it, typing it and getting it wrong once. If a week wants more, it is too big:
 move something into the buffer.
 
-**At most two questions a week are answered in prose.** This is a data-science course: they are
-here to write code, and a week where they type more sentences than statements has drifted. Prose
-earns its place where a number cannot carry the meaning — which of two defensible readings the
-data supports, what a result rules out — never as a way to check they were paying attention.
+**At most two questions a week are answered in prose ALONE.** Only a question whose entire output
+is a paragraph counts against this; one that writes code and closes with a sentence of answer is a
+code question, and §4 requires that closing sentence of every part. This is a data-science course:
+they are here to write code, and a week where they type more sentences than statements has
+drifted. Prose earns its place where a number cannot carry the meaning — which of two defensible
+readings the data supports, what a result rules out — never as a way to check they were paying
+attention.
 
 ---
 
@@ -210,10 +234,9 @@ part 1.**
    reads as the one that was secretly wrong.
 3. **Explain** — one paragraph about *their own numbers*, checked against the week's takeaways.
    Make them quote their own output back (*"your two counts differ by a factor of ___"*).
-   **"Explain" names this part's SIZE, not a monopoly on thinking.** Part 3 is where a paragraph
-   is owed; it is not the only part that owes an answer. Read literally the other way, this line
-   licensed twelve weeks of parts 1 and 2 that ask for nothing but output — measured, 21 of 36 —
-   with every part 3 passing and almost no part 1 or 2 in the course doing so.
+   **"Explain" names this part's SIZE, not a monopoly on thinking.** Part 3 is where a *paragraph*
+   is owed. Parts 1 and 2 still end in a question and still answer it, in a sentence — see the
+   rule below, which binds all three. [defects: explain-question-is-clerical]
 
 **Every part ends in a question, not a list of names to produce.** A part that says "print the
 prediction, the count, and the ratio" and stops has asked for arithmetic; the student can finish
@@ -224,11 +247,6 @@ at your answer") is not a question and does not discharge this: week 1's part 2 
 exactly that and never once asked why the prediction was so much larger than the count. Nor does
 naming the purpose — "print them underneath, so you can see which of them your choice moved" sets
 up an ask and never makes it.
-
-**The two-prose-questions cap counts WHOLE questions, not closing sentences.** A part whose only
-output is prose is a prose question and counts against the cap; one sentence closing a part that
-also writes code does not. Otherwise the cap forbids the rule above, which is how a week ends up
-with three parts of arithmetic and one paragraph at the end carrying all the thinking.
 
 **Design the homework from the week's takeaways, not from the class cells.** Name the takeaway each
 part serves before writing the part, and check the set: a takeaway no part touches was taught and
@@ -378,11 +396,9 @@ as the prose. Write it to be **copied**, not admired.
   two lines, that is one idea wearing two faces and they will not connect them. A helper defined
   in setup and never called before the homework is worse than no helper — it is unexplained
   furniture in the first cell they read.
-  Week 1 shipped five helpers, about twenty call shapes, a `load_yours` called zero times in the
-  student copy, and — because its `columns()` hands back six parallel lists — eleven six-name
-  unpackings under seven different prefixes: `times`, `my_times`, `day_times`, `week_times`,
-  `month_times`, `all_times`, `low_times`. **Forty-two names for one idea**, in the week that
-  assumes no programming. Every other week has zero, because they use a dataframe directly.
+  Week 1 shipped **forty-two names for one idea**, in the week that assumes no programming; every
+  other week has zero, because they use a dataframe directly.
+  [defects: forty-two-names-for-one-idea]
 - **The count is a proxy. The test is whether a student is confused.** Counting helpers is how
   you FIND the problem; it is not what you are solving, and pushed past its range it starts
   making things worse. Merging two clear eight-line functions into one dense sixteen-line one
@@ -409,11 +425,9 @@ as the prose. Write it to be **copied**, not admired.
   and add the filename to `.gitignore`: the notebook downloads it into the working directory, and
   nothing else stops 42 MB being committed into a repo nbgitpuller clones onto 46 accounts.
 - **It is graded from the notebook a student submits, and read without being re-run.** They
-  upload the `.ipynb` itself to Gradescope — NOT a PDF; every notebook says so, and an autograder
-  reads the file. This paragraph used to say "graded as a PDF … upload it to Canvas", which was
-  the same mistake as the URGENT one fixed in the notebooks themselves on 2026-08-31, surviving
-  one level up in the rules; a reviewer found it while judging a figure against it.
-  What follows from it is unchanged, because the grader still READS rather than runs: everything
+  upload the `.ipynb` itself to Gradescope — NOT a PDF, and not to Canvas; every notebook says so,
+  and an autograder reads the file. [defects: the-rule-that-still-said-pdf]
+  The grader READS rather than runs, so everything
   that earns marks has to be legible as saved output — no output wider than the page (a line
   clipped at the right margin is ungradeable, and a twenty-column DataFrame is exactly that),
   figures readable at page width and never relying on colour alone, and every self-check ending
