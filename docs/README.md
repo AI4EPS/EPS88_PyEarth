@@ -52,7 +52,7 @@ weekly notebook **75%** · project **15%** · participation **10%**
   Due Sunday 23:59. The lowest weekly notebook is dropped.
 - **Participation** — assessed from your contribution in class; nothing is submitted separately.
 - **Project** — a track notebook or a question of your own. Lightning talks
-  Monday 7 December; notebook due Wednesday 16 December, 23:59.
+  Monday 7 December.
 
 **Late work** — 10% per day; nothing accepted once solutions post.
 
