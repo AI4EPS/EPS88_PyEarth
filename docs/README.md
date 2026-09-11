@@ -4,7 +4,7 @@
 
 Mondays 12:00–2:00 pm, McCone 265 · 2 units · **Instructor [Weiqiang Zhu](mailto:zhuwq@berkeley.edu)**
 
-Office hours Tuesdays 12:30–1:30 pm, 285 McCone.
+Office hours Tuesdays 12:00–1:00 pm, 285 McCone.
 
 One question a week, answered with data and code you write yourself. Where do earthquakes and volcanoes happen, and why there? Which worlds besides Earth could hold liquid water? Is carbon dioxide rising faster than it used to? Can a machine learn to hear an earthquake?
 
