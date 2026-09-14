@@ -30,9 +30,9 @@ plugins:
 nav:
   - Home: README.md
   - Weeks:
-    - "Week 1: What was your birthquake?": notebooks/01_birthquake.ipynb
+    - "Week 1 — What was your birthquake?": notebooks/01_birthquake.ipynb
     - "Week 1.5 (not graded) — lists, loops, choices, and a function of your own": notebooks/01b_practice.ipynb
-    - "Week 2: Which of these worlds could have liquid water — and why does your test reject Earth?": notebooks/02_liquid_water.ipynb
+    - "Week 2 — Which of these worlds could have liquid water — and why does your test reject Earth?": notebooks/02_liquid_water.ipynb
   - Solutions:
-    - "Week 1.5 — solutions": notebooks/01b_practice_solution.ipynb
-    - "Week 1 — solutions": notebooks/01_birthquake_solution.ipynb
+    - "Week 1 — What was your birthquake?": notebooks/01_birthquake_solution.ipynb
+    - "Week 1.5 (not graded) — lists, loops, choices, and a function of your own": notebooks/01b_practice_solution.ipynb
