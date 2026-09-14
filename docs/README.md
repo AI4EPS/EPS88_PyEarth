@@ -22,9 +22,9 @@ nothing to submit, and its worked solutions are published alongside it.
 
 | Week | Earth-science question | Python | Field |
 |---:|---|---|---|
-| 1 | [What was your birthquake?][w1] | Notebooks, lists | Seismology |
+| 1 | [What was your birthquake?][w1] · [solutions][w1s] | Notebooks, lists | Seismology |
 | 1.5 | [Practice — no class on Labor Day][p0] · [solutions][p0s] | Lists, loops, if, functions | Practice — not graded |
-| 2 | Which of these worlds could have liquid water — and why does your test reject Earth? | Loops, Functions | Planetary science |
+| 2 | [Which of these worlds could have liquid water — and why does your test reject Earth?][w2] | Loops, Functions | Planetary science |
 | 3 | Earth's elevation has two peaks. So does Mars's. Same reason? | Arrays, Tables | Planetary science / oceanography |
 | 4 | Where do earthquakes and volcanoes happen — and why there? | Plotting, Maps | Seismology / volcanology |
 | 5 | Do earthquakes cluster — or is that just what randomness looks like? | Probability, Monte Carlo | Seismology |
@@ -62,4 +62,6 @@ weekly notebook **75%** · project **15%** · participation **10%**
 
 [w1]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F01_birthquake.ipynb&branch=main
 [p0]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F01b_practice.ipynb&branch=main
+[w2]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F02_liquid_water.ipynb&branch=main
+[w1s]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F01_birthquake_solution.ipynb&branch=main
 [p0s]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F01b_practice_solution.ipynb&branch=main
