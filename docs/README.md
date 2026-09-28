@@ -26,7 +26,7 @@ nothing to submit, and its worked solutions are published alongside it.
 | 1.5 | [Practice — no class on Labor Day][p0] · [solutions][p0s] | Lists, loops, if, functions | Practice — not graded |
 | 2 | [Which of these worlds could have liquid water — and why does your test reject Earth?][w2] · [solutions][w2s] | Loops, Functions | Planetary science |
 | 3 | [Earth's elevation has two peaks. So does Mars's. Same reason?][w3] | Arrays, Tables | Planetary science / oceanography |
-| 4 | Where do earthquakes and volcanoes happen — and why there? | Plotting, Maps | Seismology / volcanology |
+| 4 | [Where do earthquakes and volcanoes happen — and why there?][w4] | Plotting, Maps | Seismology / volcanology |
 | 5 | Do earthquakes cluster — or is that just what randomness looks like? | Probability, Monte Carlo | Seismology |
 | 6 | How old is the universe? | Linear regression | Astronomy |
 | 7 | How often does a Tambora happen? | Feature engineering | Volcanology |
@@ -64,6 +64,7 @@ weekly notebook **75%** · project **15%** · participation **10%**
 [p0]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F01b_practice.ipynb&branch=main
 [w2]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F02_liquid_water.ipynb&branch=main
 [w3]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F03_two_peaks.ipynb&branch=main
+[w4]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F04_where_and_why.ipynb&branch=main
 [w1s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/01_birthquake_solution/
 [p0s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/01b_practice_solution/
 [w2s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/02_liquid_water_solution/

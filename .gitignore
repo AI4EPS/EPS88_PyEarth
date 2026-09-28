@@ -57,3 +57,7 @@ TEMPLATE.md
 course.yml
 modules.yml
 SCHEDULE.md
+
+# Week 1 repaired for the next offering, built beside the frozen taught copy by the build
+# repo's build_week01.py until its frozen_until date. Never released this term.
+docs/notebooks_v2/
