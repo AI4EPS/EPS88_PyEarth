@@ -30,12 +30,12 @@ nothing to submit, and its worked solutions are published alongside it.
 | 5 | [A big earthquake has just struck. What will the next week bring?][w5] | Probability, simulation | Seismology |
 | 6 | [How old is the universe?][w6] | Linear regression | Astronomy |
 | 7 | [When will CO2 pass 450 ppm?][w7] | Model selection | Climate |
-| 8 | Was our earthquake forecast wrong — or were we just unlucky? | Confidence intervals | Seismology / oceanography |
-| 9 | How often does a Tambora happen? | Feature engineering | Volcanology |
-| 10 | Earthquake or explosion — how does the world verify a nuclear test ban? | Logistic regression | Seismology / policy |
-| 11 | Where does a volcano get its magma? | Trees and SVM, Cross-validation | Volcanology / petrology |
-| 12 | Can you find a fault that nobody mapped? | Clustering | Seismology / tectonics |
-| 13 | Can a machine hear an earthquake? | Neural networks | Seismology |
+| 8 | Is Earth's magnetic field about to flip? | Confidence intervals | Geomagnetism |
+| 9 | Earthquake or nuclear explosion? | Logistic regression | Seismology / policy |
+| 10 | Quarry blast or earthquake? | Trees and SVM, Cross-validation | Seismology |
+| 11 | Can a computer draw California's climate map? | Clustering | Climate / seismology |
+| 12 | How hard will the ground shake? | Neural networks | Engineering seismology |
+| 13 | Can a machine hear an earthquake? | Convolutional networks | Seismology |
 
 ## How the course works
 
