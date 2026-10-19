@@ -12,7 +12,7 @@ The datasets are the ones research uses, not simplified teaching examples: the U
 
 ## Prerequisites
 
-None. No programming experience is assumed — we build Python from zero. EPS 88 is a Data 8 connector; students who have taken Data 8 will recognize some of the statistics and move faster, but nothing here requires it.
+None. No programming or statistics is assumed — we build Python from zero, and every statistical idea is taught here the first time it is used. EPS 88 is a Data 8 connector, but nothing here requires Data 8.
 
 ## The weeks
 
@@ -29,11 +29,11 @@ nothing to submit, and its worked solutions are published alongside it.
 | 4 | [Where do earthquakes and volcanoes happen — and why there?][w4] | Plotting, Maps | Seismology / volcanology |
 | 5 | [A big earthquake has just struck. What will the next week bring?][w5] | Probability, simulation | Seismology |
 | 6 | [How old is the universe?][w6] | Linear regression | Astronomy |
-| 7 | How often does a Tambora happen? | Feature engineering | Volcanology |
+| 7 | [When will CO2 pass 450 ppm?][w7] | Model selection | Climate |
 | 8 | Was our earthquake forecast wrong — or were we just unlucky? | Confidence intervals | Seismology / oceanography |
-| 9 | Is CO2 rising faster than it used to? | Model selection | Climate |
+| 9 | How often does a Tambora happen? | Feature engineering | Volcanology |
 | 10 | Earthquake or explosion — how does the world verify a nuclear test ban? | Logistic regression | Seismology / policy |
-| 11 | Where does a volcano get its magma? | SVM, Decision Trees | Volcanology / petrology |
+| 11 | Where does a volcano get its magma? | Trees and SVM, Cross-validation | Volcanology / petrology |
 | 12 | Can you find a fault that nobody mapped? | Clustering | Seismology / tectonics |
 | 13 | Can a machine hear an earthquake? | Neural networks | Seismology |
 
@@ -67,6 +67,7 @@ weekly notebook **75%** · project **15%** · participation **10%**
 [w4]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F04_where_and_why.ipynb&branch=main
 [w5]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F05_what_comes_next.ipynb&branch=main
 [w6]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F06_age_of_the_universe.ipynb&branch=main
+[w7]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F07_co2_450_ppm.ipynb&branch=main
 [w1s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/01_birthquake_solution/
 [p0s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/01b_practice_solution/
 [w2s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/02_liquid_water_solution/
