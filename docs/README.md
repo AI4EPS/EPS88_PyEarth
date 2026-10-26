@@ -28,7 +28,7 @@ nothing to submit, and its worked solutions are published alongside it.
 | 3 | [Earth's elevation has two peaks. So does Mars's. Same reason?][w3] · [solutions][w3s] | Arrays, Tables | Planetary science / oceanography |
 | 4 | [Where do earthquakes and volcanoes happen — and why there?][w4] · [solutions][w4s] | Plotting, Maps | Seismology / volcanology |
 | 5 | [A big earthquake has just struck. What will the next week bring?][w5] · [solutions][w5s] | Probability, simulation | Seismology |
-| 6 | [How old is the universe?][w6] | Linear regression | Astronomy |
+| 6 | [How old is the universe?][w6] · [solutions][w6s] | Linear regression | Astronomy |
 | 7 | [When will CO2 pass 450 ppm?][w7] | Model selection | Climate |
 | 8 | [How long was the Earth frozen?][w8] | Confidence intervals | Geochronology |
 | 9 | Earthquake or nuclear explosion? | Logistic regression | Seismology / policy |
@@ -75,3 +75,4 @@ weekly notebook **75%** · project **15%** · participation **10%**
 [w3s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/03_two_peaks_solution/
 [w4s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/04_where_and_why_solution/
 [w5s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/05_what_comes_next_solution/
+[w6s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/06_age_of_the_universe_solution/

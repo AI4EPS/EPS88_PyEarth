@@ -25,6 +25,7 @@ exclude_docs: |
   !notebooks/03_two_peaks_solution.ipynb
   !notebooks/04_where_and_why_solution.ipynb
   !notebooks/05_what_comes_next_solution.ipynb
+  !notebooks/06_age_of_the_universe_solution.ipynb
 repo_name: "AI4EPS/EPS88_PyEarth"
 repo_url: "https://github.com/AI4EPS/EPS88_PyEarth"
 
@@ -56,3 +57,4 @@ nav:
     - "Week 3 — Earth's elevation has two peaks. So does Mars's. Same reason?": notebooks/03_two_peaks_solution.ipynb
     - "Week 4 — Where do earthquakes and volcanoes happen — and why there?": notebooks/04_where_and_why_solution.ipynb
     - "Week 5 — A big earthquake has just struck. What will the next week bring?": notebooks/05_what_comes_next_solution.ipynb
+    - "Week 6 — How old is the universe?": notebooks/06_age_of_the_universe_solution.ipynb
