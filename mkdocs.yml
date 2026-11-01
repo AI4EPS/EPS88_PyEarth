@@ -19,6 +19,7 @@ exclude_docs: |
   !notebooks/06_age_of_the_universe.ipynb
   !notebooks/07_co2_450_ppm.ipynb
   !notebooks/08_how_long_frozen.ipynb
+  !notebooks/09_explosion_or_earthquake.ipynb
   !notebooks/01b_practice_solution.ipynb
   !notebooks/01_birthquake_solution.ipynb
   !notebooks/02_liquid_water_solution.ipynb
@@ -50,6 +51,7 @@ nav:
     - "Week 6 — How old is the universe?": notebooks/06_age_of_the_universe.ipynb
     - "Week 7 — When will CO2 pass 450 ppm?": notebooks/07_co2_450_ppm.ipynb
     - "Week 8 — How long was the Earth frozen?": notebooks/08_how_long_frozen.ipynb
+    - "Week 9 — Earthquake or nuclear explosion?": notebooks/09_explosion_or_earthquake.ipynb
   - Solutions:
     - "Week 1 — What was your birthquake?": notebooks/01_birthquake_solution.ipynb
     - "Week 1.5 (not graded) — lists, loops, choices, and a function of your own": notebooks/01b_practice_solution.ipynb

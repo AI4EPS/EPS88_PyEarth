@@ -31,7 +31,7 @@ nothing to submit, and its worked solutions are published alongside it.
 | 6 | [How old is the universe?][w6] · [solutions][w6s] | Linear regression | Astronomy |
 | 7 | [When will CO2 pass 450 ppm?][w7] | Model selection | Climate |
 | 8 | [How long was the Earth frozen?][w8] | Confidence intervals | Geochronology |
-| 9 | Earthquake or nuclear explosion? | Logistic regression | Seismology / policy |
+| 9 | [Earthquake or nuclear explosion?][w9] | Logistic regression | Seismology / policy |
 | 10 | Quarry blast or earthquake? | Trees and SVM, Cross-validation | Seismology |
 | 11 | Can a computer draw California's climate map? | Clustering | Climate / seismology |
 | 12 | How hard will the ground shake? | Neural networks | Engineering seismology |
@@ -69,6 +69,7 @@ weekly notebook **75%** · project **15%** · participation **10%**
 [w6]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F06_age_of_the_universe.ipynb&branch=main
 [w7]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F07_co2_450_ppm.ipynb&branch=main
 [w8]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F08_how_long_frozen.ipynb&branch=main
+[w9]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F09_explosion_or_earthquake.ipynb&branch=main
 [w1s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/01_birthquake_solution/
 [p0s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/01b_practice_solution/
 [w2s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/02_liquid_water_solution/
