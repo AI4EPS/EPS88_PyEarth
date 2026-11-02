@@ -29,7 +29,7 @@ nothing to submit, and its worked solutions are published alongside it.
 | 4 | [Where do earthquakes and volcanoes happen — and why there?][w4] · [solutions][w4s] | Plotting, Maps | Seismology / volcanology |
 | 5 | [A big earthquake has just struck. What will the next week bring?][w5] · [solutions][w5s] | Probability, simulation | Seismology |
 | 6 | [How old is the universe?][w6] · [solutions][w6s] | Linear regression | Astronomy |
-| 7 | [When will CO2 pass 450 ppm?][w7] | Model selection | Climate |
+| 7 | [When will CO2 pass 450 ppm?][w7] · [solutions][w7s] | Model selection | Climate |
 | 8 | [How long was the Earth frozen?][w8] | Confidence intervals | Geochronology |
 | 9 | [Earthquake or nuclear explosion?][w9] | Logistic regression | Seismology / policy |
 | 10 | Quarry blast or earthquake? | Trees and SVM, Cross-validation | Seismology |
@@ -77,3 +77,4 @@ weekly notebook **75%** · project **15%** · participation **10%**
 [w4s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/04_where_and_why_solution/
 [w5s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/05_what_comes_next_solution/
 [w6s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/06_age_of_the_universe_solution/
+[w7s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/07_co2_450_ppm_solution/
