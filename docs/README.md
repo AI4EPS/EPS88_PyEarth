@@ -6,7 +6,7 @@ Mondays 12:00–2:00 pm, McCone 265 · 2 units · **Instructor [Weiqiang Zhu](ma
 
 Office hours Tuesdays 12:00–1:00 pm, 285 McCone.
 
-One question a week, answered with data and code you write yourself. Where do earthquakes and volcanoes happen, and why there? Which worlds besides Earth could hold liquid water? Is carbon dioxide rising faster than it used to? Can a machine learn to hear an earthquake?
+One question a week, answered with data and code you write yourself. Where do earthquakes and volcanoes happen, and why there? Which worlds besides Earth could hold liquid water? When will carbon dioxide pass 450 ppm? Can a machine learn to hear an earthquake?
 
 The datasets are the ones research uses, not simplified teaching examples: the USGS earthquake catalogue, NASA's Exoplanet Archive, the Smithsonian's record of volcanic eruptions, and the seismic recordings used to train published deep-learning models. Python begins from zero in the first week, which ends with a figure you have plotted yourself, and reaches a neural network in the last. In between you learn to fit a model to data, to state how far it can be trusted, and to distinguish a real result from a coincidence. Thirteen notebooks, then a project of your own.
 
@@ -32,7 +32,7 @@ nothing to submit, and its worked solutions are published alongside it.
 | 7 | [When will CO2 pass 450 ppm?][w7] · [solutions][w7s] | Model selection | Climate |
 | 8 | [How long was the Earth frozen?][w8] | Confidence intervals | Geochronology |
 | 9 | [Earthquake or nuclear explosion?][w9] | Logistic regression | Seismology / policy |
-| 10 | [Where was this basalt made?][w10] | Trees and SVM, Cross-validation | Geochemistry |
+| 10 | [Where was this basalt made?][w10] | Random forests and SVM, Cross-validation | Geochemistry |
 | 11 | Can a computer draw California's climate map? | Clustering | Climate / seismology |
 | 12 | If CO2 jumped to four times, how warm would Earth get, and when? | Neural networks | Climate science |
 | 13 | Can a machine hear an earthquake? | Convolutional networks | Seismology |
