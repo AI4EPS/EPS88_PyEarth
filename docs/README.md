@@ -34,7 +34,7 @@ nothing to submit, and its worked solutions are published alongside it.
 | 9 | [Earthquake or nuclear explosion?][w9] | Logistic regression | Seismology / policy |
 | 10 | [Where was this basalt made?][w10] | Trees and SVM, Cross-validation | Geochemistry |
 | 11 | Can a computer draw California's climate map? | Clustering | Climate / seismology |
-| 12 | How hard will the ground shake? | Neural networks | Engineering seismology |
+| 12 | If CO2 jumped to four times, how warm would Earth get, and when? | Neural networks | Climate science |
 | 13 | Can a machine hear an earthquake? | Convolutional networks | Seismology |
 
 ## How the course works
@@ -51,8 +51,10 @@ weekly notebook **75%** · project **15%** · participation **10%**
 - **Weekly notebook** — one file per week, class work and homework together, submitted once.
   Due Sunday 23:59. The lowest weekly notebook is dropped.
 - **Participation** — assessed from your contribution in class; nothing is submitted separately.
-- **Project** — a track notebook or a question of your own. Lightning talks
-  Monday 7 December.
+- **Project** — a track notebook or a question of your own, in teams of one to three.
+  Released Wednesday 25 November; leaderboards close
+  Sunday 13 December, 23:59; notebook due
+  Wednesday 16 December, 23:59. No class on Monday 7 December.
 
 **Late work** — 10% per day; nothing accepted once solutions post.
 
