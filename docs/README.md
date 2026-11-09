@@ -39,7 +39,7 @@ nothing to submit, and its worked solutions are published alongside it.
 | 14a | [How hard will the ground shake at distance R from a magnitude M earthquake?][t0] | Final project | Seismology / engineering |
 | 14b | [Record monthly warmth in the Pacific: is a record El Niño coming, and how far ahead can we forecast it?][t1] | Final project | Oceanography / climate |
 | 14c | [Is Mars's air thinning, or is Curiosity just climbing?][t2] | Final project | Planetary science |
-| 14d | [Rock, carbon or metal: what are asteroids made of?][t3] | Final project | Planetary science |
+| 14d | [Rock, carbon or metal: what are asteroids made of?][t3] | Final project | Planetary science / geochemistry |
 | 14e | [Your own question][t4] | Final project | Student's choice |
 
 ## How the course works
