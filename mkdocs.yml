@@ -34,6 +34,7 @@ exclude_docs: |
   !notebooks/05_what_comes_next_solution.ipynb
   !notebooks/06_age_of_the_universe_solution.ipynb
   !notebooks/07_co2_450_ppm_solution.ipynb
+  !notebooks/08_how_long_frozen_solution.ipynb
 repo_name: "AI4EPS/EPS88_PyEarth"
 repo_url: "https://github.com/AI4EPS/EPS88_PyEarth"
 
@@ -74,3 +75,4 @@ nav:
     - "Week 5 — A big earthquake has just struck. What will the next week bring?": notebooks/05_what_comes_next_solution.ipynb
     - "Week 6 — How old is the universe?": notebooks/06_age_of_the_universe_solution.ipynb
     - "Week 7 — When will CO2 pass 450 ppm?": notebooks/07_co2_450_ppm_solution.ipynb
+    - "Week 8 — How long was the Earth frozen?": notebooks/08_how_long_frozen_solution.ipynb

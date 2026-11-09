@@ -30,7 +30,7 @@ nothing to submit, and its worked solutions are published alongside it.
 | 5 | [A big earthquake has just struck. What will the next week bring?][w5] · [solutions][w5s] | Probability, simulation | Seismology |
 | 6 | [How old is the universe?][w6] · [solutions][w6s] | Linear regression | Astronomy |
 | 7 | [When will CO2 pass 450 ppm?][w7] · [solutions][w7s] | Model selection | Climate |
-| 8 | [How long was the Earth frozen?][w8] | Confidence intervals | Geochronology |
+| 8 | [How long was the Earth frozen?][w8] · [solutions][w8s] | Confidence intervals | Geochronology |
 | 9 | [Earthquake or nuclear explosion?][w9] | Logistic regression | Seismology / policy |
 | 10 | [Where was this basalt made?][w10] | Random forests and SVM, Cross-validation | Geochemistry |
 | 11 | Can a computer sort the ocean into its water masses? | Clustering | Oceanography |
@@ -90,3 +90,4 @@ weekly notebook **75%** · project **15%** · participation **10%**
 [w5s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/05_what_comes_next_solution/
 [w6s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/06_age_of_the_universe_solution/
 [w7s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/07_co2_450_ppm_solution/
+[w8s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/08_how_long_frozen_solution/
