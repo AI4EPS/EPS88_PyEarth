@@ -36,6 +36,11 @@ nothing to submit, and its worked solutions are published alongside it.
 | 11 | Can a computer sort the ocean into its water masses? | Clustering | Oceanography |
 | 12 | If CO2 jumped to four times, how warm would Earth get, and when? | Neural networks | Climate science |
 | 13 | Can a machine hear an earthquake? | Convolutional networks | Seismology |
+| 14a | [How hard will the ground shake at distance R from a magnitude M earthquake?][t0] | Final project | Seismology / engineering |
+| 14b | [Record monthly warmth in the Pacific: is a record El Niño coming, and how far ahead can we forecast it?][t1] | Final project | Oceanography / climate |
+| 14c | [Is Mars's air thinning, or is Curiosity just climbing?][t2] | Final project | Planetary science |
+| 14d | [Rock, carbon or metal: what are asteroids made of?][t3] | Final project | Planetary science |
+| 14e | [Your own question][t4] | Final project | Student's choice |
 
 ## How the course works
 
@@ -51,7 +56,7 @@ weekly notebook **75%** · project **15%** · participation **10%**
 - **Weekly notebook** — one file per week, class work and homework together, submitted once.
   Due Sunday 23:59. The lowest weekly notebook is dropped.
 - **Participation** — assessed from your contribution in class; nothing is submitted separately.
-- **Project** — a track notebook or a question of your own, in teams of one to three.
+- **Project** — one of the final-project notebooks (14a–14e above), individual work.
   Released Sunday 8 November; due Wednesday 16 December, 23:59.
   No class on Monday 7 December.
 
@@ -72,6 +77,11 @@ weekly notebook **75%** · project **15%** · participation **10%**
 [w8]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F08_how_long_frozen.ipynb&branch=main
 [w9]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F09_explosion_or_earthquake.ipynb&branch=main
 [w10]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F10_where_basalt.ipynb&branch=main
+[t0]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F14a_ground_shaking.ipynb&branch=main
+[t1]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F14b_el_nino.ipynb&branch=main
+[t2]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F14c_mars_weather.ipynb&branch=main
+[t3]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F14d_asteroids.ipynb&branch=main
+[t4]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F14e_your_own_question.ipynb&branch=main
 [w1s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/01_birthquake_solution/
 [p0s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/01b_practice_solution/
 [w2s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/02_liquid_water_solution/

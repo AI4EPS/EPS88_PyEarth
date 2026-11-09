@@ -60,6 +60,11 @@ nav:
     - "Week 8 — How long was the Earth frozen?": notebooks/08_how_long_frozen.ipynb
     - "Week 9 — Earthquake or nuclear explosion?": notebooks/09_explosion_or_earthquake.ipynb
     - "Week 10 — Where was this basalt made?": notebooks/10_where_basalt.ipynb
+    - "Week 14a (final project) — How hard will the ground shake at distance R from a magnitude M earthquake?": notebooks/14a_ground_shaking.ipynb
+    - "Week 14b (final project) — Record monthly warmth in the Pacific: is a record El Niño coming, and how far ahead can we forecast it?": notebooks/14b_el_nino.ipynb
+    - "Week 14c (final project) — Is Mars's air thinning, or is Curiosity just climbing?": notebooks/14c_mars_weather.ipynb
+    - "Week 14d (final project) — Rock, carbon or metal: what are asteroids made of?": notebooks/14d_asteroids.ipynb
+    - "Week 14e (final project) — Your own question": notebooks/14e_your_own_question.ipynb
   - Solutions:
     - "Week 1 — What was your birthquake?": notebooks/01_birthquake_solution.ipynb
     - "Week 1.5 (not graded) — lists, loops, choices, and a function of your own": notebooks/01b_practice_solution.ipynb
@@ -69,9 +74,3 @@ nav:
     - "Week 5 — A big earthquake has just struck. What will the next week bring?": notebooks/05_what_comes_next_solution.ipynb
     - "Week 6 — How old is the universe?": notebooks/06_age_of_the_universe_solution.ipynb
     - "Week 7 — When will CO2 pass 450 ppm?": notebooks/07_co2_450_ppm_solution.ipynb
-  - Projects:
-    - "14a: How hard will the ground shake at distance R from a magnitude M earthquake?": notebooks/14a_ground_shaking.ipynb
-    - "14b: Record monthly warmth in the Pacific: is a record El Niño coming, and how far ahead can we forecast it?": notebooks/14b_el_nino.ipynb
-    - "14c: Is Mars's air thinning, or is Curiosity just climbing?": notebooks/14c_mars_weather.ipynb
-    - "14d: Rock, carbon or metal: what are asteroids made of?": notebooks/14d_asteroids.ipynb
-    - "14e: Your own question": notebooks/14e_your_own_question.ipynb
