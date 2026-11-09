@@ -57,7 +57,7 @@ weekly notebook **75%** · project **15%** · participation **10%**
   Due Sunday 23:59. The lowest weekly notebook is dropped.
 - **Participation** — assessed from your contribution in class; nothing is submitted separately.
 - **Project** — one of the final-project notebooks (14a–14e above), individual work.
-  Released Sunday 8 November; due Wednesday 16 December, 23:59.
+  Posted Sunday 8 November; uploads on Gradescope open Wednesday 25 November, 12:00; due Wednesday 16 December, 23:59.
   No class on Monday 7 December.
 
 **Late work** — 10% per day; nothing accepted once solutions post.
