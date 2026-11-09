@@ -1,6 +1,4 @@
-# EPS 88 — PyEarth
-
-*A Python Introduction to Earth Science*
+# EPS88 — PyEarth: A Python Introduction to Earth Science*
 
 ![EPS 88 PyEarth: the science questions and the computing skills of the course](images/eps88_pyearth.jpg)
 
