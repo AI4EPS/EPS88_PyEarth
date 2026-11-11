@@ -1,7 +1,5 @@
 # EPS88 — PyEarth: A Python Introduction to Earth Science
 
-![EPS 88 PyEarth: the science questions and the computing skills of the course](images/eps88_pyearth.jpg)
-
 Mondays 12:00–2:00 pm, McCone 265 · 2 units · **Instructor [Weiqiang Zhu](mailto:zhuwq@berkeley.edu)**
 
 Office hours Tuesdays 12:00–1:00 pm, 285 McCone.
