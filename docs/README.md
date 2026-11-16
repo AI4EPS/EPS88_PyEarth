@@ -29,7 +29,7 @@ nothing to submit, and its worked solutions are published alongside it.
 | 6 | [How old is the universe?][w6] · [solutions][w6s] | Linear regression | Astronomy |
 | 7 | [When will CO2 pass 450 ppm?][w7] · [solutions][w7s] | Model selection | Climate |
 | 8 | [How long was the Earth frozen?][w8] · [solutions][w8s] | Confidence intervals | Geochronology |
-| 9 | [Earthquake or nuclear explosion?][w9] | Logistic regression | Seismology / policy |
+| 9 | [Earthquake or nuclear explosion?][w9] · [solutions][w9s] | Logistic regression | Seismology / policy |
 | 10 | [Where was this basalt made?][w10] | Random forests and SVM, Cross-validation | Geochemistry |
 | 11 | [Can a computer sort the ocean into its water masses?][w11] | Clustering | Oceanography |
 | 12 | If CO2 jumped to four times, how warm would Earth get, and when? | Neural networks | Climate science |
@@ -90,3 +90,4 @@ weekly notebook **75%** · project **15%** · participation **10%**
 [w6s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/06_age_of_the_universe_solution/
 [w7s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/07_co2_450_ppm_solution/
 [w8s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/08_how_long_frozen_solution/
+[w9s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/09_explosion_or_earthquake_solution/
