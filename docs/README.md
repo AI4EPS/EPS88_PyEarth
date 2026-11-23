@@ -32,7 +32,7 @@ nothing to submit, and its worked solutions are published alongside it.
 | 9 | [Earthquake or nuclear explosion?][w9] · [solutions][w9s] | Logistic regression | Seismology / policy |
 | 10 | [Where was this basalt made?][w10] | Random forests and SVM, Cross-validation | Geochemistry |
 | 11 | [Can a computer sort the ocean into its water masses?][w11] | Clustering | Oceanography |
-| 12 | If CO2 jumped to four times, how warm would Earth get, and when? | Neural networks | Climate science |
+| 12 | [If CO2 jumped to four times, how warm would Earth get, and when?][w12] | Neural networks | Climate science |
 | 13 | Can a machine hear an earthquake? | Convolutional networks | Seismology |
 | 14a | [How hard will the ground shake at distance R from a magnitude M earthquake?][t0] | Final project | Seismology / engineering |
 | 14b | [Record monthly warmth in the Pacific: is a record El Niño coming, and how far ahead can we forecast it?][t1] | Final project | Oceanography / climate |
@@ -76,6 +76,7 @@ weekly notebook **75%** · project **15%** · participation **10%**
 [w9]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F09_explosion_or_earthquake.ipynb&branch=main
 [w10]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F10_where_basalt.ipynb&branch=main
 [w11]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F11_water_masses.ipynb&branch=main
+[w12]: https://colab.research.google.com/github/AI4EPS/EPS88_PyEarth/blob/main/docs/notebooks/12_climate_pinn.ipynb
 [t0]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F14a_ground_shaking.ipynb&branch=main
 [t1]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F14b_el_nino.ipynb&branch=main
 [t2]: https://datahub.berkeley.edu/hub/user-redirect/git-pull?repo=https%3A%2F%2Fgithub.com%2FAI4EPS%2FEPS88_PyEarth&urlpath=lab%2Ftree%2FEPS88_PyEarth%2Fdocs%2Fnotebooks%2F14c_mars_weather.ipynb&branch=main

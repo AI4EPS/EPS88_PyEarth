@@ -22,6 +22,7 @@ exclude_docs: |
   !notebooks/09_explosion_or_earthquake.ipynb
   !notebooks/10_where_basalt.ipynb
   !notebooks/11_water_masses.ipynb
+  !notebooks/12_climate_pinn.ipynb
   !notebooks/14a_ground_shaking.ipynb
   !notebooks/14b_el_nino.ipynb
   !notebooks/14c_mars_weather.ipynb
@@ -64,6 +65,7 @@ nav:
     - "Week 9 — Earthquake or nuclear explosion?": notebooks/09_explosion_or_earthquake.ipynb
     - "Week 10 — Where was this basalt made?": notebooks/10_where_basalt.ipynb
     - "Week 11 — Can a computer sort the ocean into its water masses?": notebooks/11_water_masses.ipynb
+    - "Week 12 — If CO2 jumped to four times, how warm would Earth get, and when?": notebooks/12_climate_pinn.ipynb
     - "Week 14a (final project) — How hard will the ground shake at distance R from a magnitude M earthquake?": notebooks/14a_ground_shaking.ipynb
     - "Week 14b (final project) — Record monthly warmth in the Pacific: is a record El Niño coming, and how far ahead can we forecast it?": notebooks/14b_el_nino.ipynb
     - "Week 14c (final project) — Is Mars's air thinning, or is Curiosity just climbing?": notebooks/14c_mars_weather.ipynb
