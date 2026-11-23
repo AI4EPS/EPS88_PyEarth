@@ -38,6 +38,7 @@ exclude_docs: |
   !notebooks/07_co2_450_ppm_solution.ipynb
   !notebooks/08_how_long_frozen_solution.ipynb
   !notebooks/09_explosion_or_earthquake_solution.ipynb
+  !notebooks/10_where_basalt_solution.ipynb
 repo_name: "AI4EPS/EPS88_PyEarth"
 repo_url: "https://github.com/AI4EPS/EPS88_PyEarth"
 
@@ -82,3 +83,4 @@ nav:
     - "Week 7 — When will CO2 pass 450 ppm?": notebooks/07_co2_450_ppm_solution.ipynb
     - "Week 8 — How long was the Earth frozen?": notebooks/08_how_long_frozen_solution.ipynb
     - "Week 9 — Earthquake or nuclear explosion?": notebooks/09_explosion_or_earthquake_solution.ipynb
+    - "Week 10 — Where was this basalt made?": notebooks/10_where_basalt_solution.ipynb

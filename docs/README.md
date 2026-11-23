@@ -30,7 +30,7 @@ nothing to submit, and its worked solutions are published alongside it.
 | 7 | [When will CO2 pass 450 ppm?][w7] · [solutions][w7s] | Model selection | Climate |
 | 8 | [How long was the Earth frozen?][w8] · [solutions][w8s] | Confidence intervals | Geochronology |
 | 9 | [Earthquake or nuclear explosion?][w9] · [solutions][w9s] | Logistic regression | Seismology / policy |
-| 10 | [Where was this basalt made?][w10] | Random forests and SVM, Cross-validation | Geochemistry |
+| 10 | [Where was this basalt made?][w10] · [solutions][w10s] | Random forests and SVM, Cross-validation | Geochemistry |
 | 11 | [Can a computer sort the ocean into its water masses?][w11] | Clustering | Oceanography |
 | 12 | [If CO2 jumped to four times, how warm would Earth get, and when?][w12] | Neural networks | Climate science |
 | 13 | Can a machine hear an earthquake? | Convolutional networks | Seismology |
@@ -92,3 +92,4 @@ weekly notebook **75%** · project **15%** · participation **10%**
 [w7s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/07_co2_450_ppm_solution/
 [w8s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/08_how_long_frozen_solution/
 [w9s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/09_explosion_or_earthquake_solution/
+[w10s]: https://ai4eps.github.io/EPS88_PyEarth/notebooks/10_where_basalt_solution/
